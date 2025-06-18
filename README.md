@@ -59,7 +59,9 @@ After activation, install the packages:
 pip install -r requirements
 ```
 
-Run the bot
+Then, create a `.env` based on `.env.example`
+
+Finally, run the bot
 
 ```sh
 python ./bot.py
