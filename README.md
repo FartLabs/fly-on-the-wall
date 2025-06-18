@@ -59,3 +59,9 @@ After activation, install the packages:
 pip install -r requirements
 ```
 
+Run the bot
+
+```sh
+python ./bot.py
+```
+
