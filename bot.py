@@ -25,7 +25,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 # stores active recordings, all keyed by guild ID
 # this allows the bot to record in multiple servers simultaneously
-active_recordings = {} 
+active_recordings: dict[int, discord.VoiceClient] = {} 
 
 async def transcribe_audio(file_path: str):
     """Transcribes a single audio file using the local Whisper model."""
@@ -152,7 +152,5 @@ async def stop_recording(interaction: discord.ApplicationContext):
     vc.stop_recording()
     await vc.disconnect()
 
-if DISCORD_TOKEN:
-    bot.run(DISCORD_TOKEN)
-else:
-    print("Error: DISCORD_TOKEN environment variable not set.")
+if __name__ == "__main__":
+	bot.run(DISCORD_TOKEN)
