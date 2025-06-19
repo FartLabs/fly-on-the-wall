@@ -1,4 +1,5 @@
 # using pycord btw
+import shutil
 import discord
 from discord.ext import commands
 import os
@@ -31,11 +32,13 @@ async def transcribe_audio(file_path: str):
     """Transcribes a single audio file using the local Whisper model."""
     print(f"Loading Whisper model to transcribe {file_path}...")
 
-    # currently using the 'base' model but for higher accuracy if needed, we can use 'medium' or 'large' 
+    # for higher accuracy if needed, we can use 'medium' or 'large' 
 	# tradeoff: slower, requires more compute resources 
-    model = whisper.load_model("base")
+    # see https://github.com/openai/whisper?tab=readme-ov-file#available-models-and-languages
+    model = whisper.load_model("turbo")
     result = model.transcribe(file_path, fp16=False) 
     print("Transcription complete.")
+    print(f"Transcription result: {result['text'][:100]}...")  # print first 100 chars for brevity
     return result['text']
 
 
@@ -103,8 +106,22 @@ async def finished_callback(sink: discord.sinks.WaveSink, interaction: discord.I
     notes_filename = f"meeting_notes_{interaction.guild.id}.txt"
     with open(notes_filename, "w", encoding="utf-8") as f:
         f.write(summary)
+        
+	# check if file is too large for Discord 
+    # 10 mb is the limit for free users as of September 2024
+    max_discord_file_size = 10 * 1024 * 1024  
 
-	# TODO: handle case where text file is too large for Discord
+    if os.path.getsize(notes_filename) > max_discord_file_size:
+        notes_dir = "notes"
+        os.makedirs(notes_dir, exist_ok=True)
+        dest_path = os.path.join(notes_dir, notes_filename)
+        shutil.move(notes_filename, dest_path)
+        await interaction.followup.send(
+            f"Meeting notes are too large to send via Discord. "
+            f"The file has been saved to `{dest_path}` on the server."
+        )
+        return
+
     await interaction.followup.send(
         "Here are the meeting notes:",
         file=discord.File(notes_filename)
