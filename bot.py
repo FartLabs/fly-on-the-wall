@@ -70,7 +70,7 @@ async def summarize_text_with_ollama(text: str):
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(
             None, 
-            lambda: requests.post(OLLAMA_API_URL, json=payload, timeout=300)
+            lambda: requests.post(OLLAMA_API_GENERATE_ENDPOINT, json=payload, timeout=300)
         )
         response.raise_for_status() 
         
