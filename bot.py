@@ -1,7 +1,6 @@
 # using pycord btw
 import shutil
 import discord
-from discord.ext import commands
 import os
 import whisper 
 import requests 
@@ -22,7 +21,7 @@ intents.message_content = True
 intents.voice_states = True
 
 # command prefix not really needed since using slash commands 
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = discord.Bot(intents=intents)
 
 # stores active recordings, all keyed by guild ID
 # this allows the bot to record in multiple servers simultaneously
@@ -33,7 +32,7 @@ async def transcribe_audio(file_path: str):
     print(f"Loading Whisper model to transcribe {file_path}...")
 
     # for higher accuracy if needed, we can use 'medium' or 'large' 
-	# tradeoff: slower, requires more compute resources 
+    # tradeoff: slower, requires more compute resources 
     # see https://github.com/openai/whisper?tab=readme-ov-file#available-models-and-languages
     model = whisper.load_model("turbo")
     result = model.transcribe(file_path, fp16=False) 
@@ -46,13 +45,18 @@ async def summarize_text_with_ollama(text: str):
     """Sends text to a local LLM via Ollama for summarization."""
     print("Sending transcription to local LLM for summarization...")
 
-	# TODO: Make the prompt and model configurable via .env
+    # TODO: Make the prompt and model configurable via .env
     prompt = f"""
-    You are a helpful assistant specializing in summarizing meeting transcripts.
-    Please analyze the following raw text from a meeting and provide a structured summary.
+    You are a highly efficient and helpful assistant specializing in summarizing meeting transcripts.
+    Please analyze the following raw text from a meeting and provide a structured summary. 
+    Ignore filler words (e.g., 'um', 'ah', 'like'), repeated sentences, and conversational pleasantries. 
+    Focus only on the substantive content. If no action items or decisions were made, explicitly state
+    "No specific action items or decisions were recorded."
+
+   
     The summary should include:
     1. A concise, one-paragraph overview of the meeting's purpose and key discussions.
-    2. A bulleted list of the main topics discussed.
+    2. A bulleted list of the main topics discussed. Go into detail about each topic based on what was said.
     3. A bulleted list of any action items or decisions made.
 
     Here is the transcript:
@@ -64,7 +68,7 @@ async def summarize_text_with_ollama(text: str):
     payload = {
         "model": "llama3", 
         "prompt": prompt,
-		# get the full response at once
+        # get the full response at once
         "stream": False 
     }
 
@@ -85,10 +89,12 @@ async def summarize_text_with_ollama(text: str):
         print(f"Error communicating with Ollama: {e}")
         return f"Error: Could not connect to the local LLM. Is Ollama running?\nDetails: {e}"
 
-# called automatically when the recording sink is finished
-async def finished_callback(sink: discord.sinks.WaveSink, interaction: discord.Interaction):
+async def finished_callback(sink: discord.sinks.WaveSink, channel: discord.TextChannel):
     """Handles the audio files once recording is complete."""
-    await interaction.followup.send("Recording finished. Now processing audio, this may take a moment...")
+    await sink.vc.disconnect()
+
+    processing_message = await channel.send("✅ Recording finished. Now processing audio for transcription...") 
+
     full_transcription = ""
     for user_id, audio_data in sink.audio_data.items():
         file_path = f"temp_recording_{user_id}.wav"
@@ -103,11 +109,11 @@ async def finished_callback(sink: discord.sinks.WaveSink, interaction: discord.I
 
     summary = await summarize_text_with_ollama(full_transcription)
 
-    notes_filename = f"meeting_notes_{interaction.guild.id}.txt"
+    notes_filename = f"meeting_notes_{channel.guild.id}.txt"
     with open(notes_filename, "w", encoding="utf-8") as f:
         f.write(summary)
         
-	# check if file is too large for Discord 
+    # check if file is too large for Discord 
     # 10 mb is the limit for free users as of September 2024
     max_discord_file_size = 10 * 1024 * 1024  
 
@@ -116,17 +122,18 @@ async def finished_callback(sink: discord.sinks.WaveSink, interaction: discord.I
         os.makedirs(notes_dir, exist_ok=True)
         dest_path = os.path.join(notes_dir, notes_filename)
         shutil.move(notes_filename, dest_path)
-        await interaction.followup.send(
+        await channel.send(
             f"Meeting notes are too large to send via Discord. "
             f"The file has been saved to `{dest_path}` on the server."
         )
         return
 
-    await interaction.followup.send(
+    await channel.send(
         "Here are the meeting notes:",
         file=discord.File(notes_filename)
     )
 
+    await processing_message.delete()
     os.remove(notes_filename)
 
 @bot.event
@@ -134,40 +141,46 @@ async def on_ready():
     print(f'Logged in as {bot.user}')
     
 @bot.slash_command(name="start_recording", description="Starts recording the voice channel.")
-async def start_recording(interaction: discord.ApplicationContext):
-    if not interaction.user.voice or not interaction.user.voice.channel:
-        await interaction.response.send_message("You need to be in a voice channel to start recording.", ephemeral=True)
+async def start_recording(ctx: discord.ApplicationContext):
+    voice = ctx.author.voice
+    if not voice or not voice.channel:
+        await ctx.respond("You need to be in a voice channel to start recording.", ephemeral=True)
         return
 
-    voice_channel = interaction.user.voice.channel
-    
-    if interaction.guild.id in active_recordings:
-        await interaction.response.send_message("I'm already recording in this server!", ephemeral=True)
+    voice_channel = voice.channel
+
+    if ctx.guild_id in active_recordings:
+        await ctx.respond("I'm already recording in this server!", ephemeral=True)
         return
 
     try:
         vc = await voice_channel.connect()
-        vc.start_recording(discord.sinks.WaveSink(), finished_callback, interaction)
-        active_recordings[interaction.guild.id] = vc
-        await interaction.response.send_message(f"Started recording in **{voice_channel.name}**! Use `/stop_recording` to finish.")
+        vc.start_recording(discord.sinks.WaveSink(), finished_callback, ctx.channel)
+        active_recordings[ctx.guild_id] = vc
+        await ctx.respond(f"🔴 Started recording in **{voice_channel.name}**! Use `/stop_recording` to finish.")
     except discord.ClientException as e:
-        await interaction.response.send_message(f"Error starting recording: {e}", ephemeral=True)
+        await ctx.respond(f"Error starting recording: {e}", ephemeral=True)
+    
 
 @bot.slash_command(name="stop_recording", description="Stops the recording and generates notes.")
-async def stop_recording(interaction: discord.ApplicationContext):
-    if interaction.guild.id not in active_recordings:
-        await interaction.response.send_message("I'm not currently recording anything here.", ephemeral=True)
+async def stop_recording(ctx: discord.ApplicationContext):
+    if ctx.guild_id not in active_recordings:
+        await ctx.respond("I'm not currently recording anything here.", ephemeral=True)
         return
         
     # use defer() because the processing (transcription, etc.)
     # will happen in the background. 
-	# this acknowledges the command immediately
-    await interaction.response.defer(ephemeral=False)
+    # this acknowledges the command immediately
+    # await interaction.response.defer(ephemeral=False)
 
-    vc = active_recordings.pop(interaction.guild.id)
+    vc = active_recordings.pop(ctx.guild_id)
     # triggers the finished_callback function after stopping the recording
     vc.stop_recording()
-    await vc.disconnect()
+    await ctx.respond("Stopping the recording...")
+
+@bot.slash_command(description="Sends the bot's latency.") 
+async def ping(ctx: discord.ApplicationContext):
+    await ctx.respond(f"Pong! Latency is {bot.latency}")
 
 if __name__ == "__main__":
-	bot.run(DISCORD_TOKEN)
+    bot.run(DISCORD_TOKEN)
