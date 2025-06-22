@@ -34,7 +34,7 @@ async def transcribe_audio(file_path: str):
     # for higher accuracy if needed, we can use 'medium' or 'large' 
     # tradeoff: slower, requires more compute resources 
     # see https://github.com/openai/whisper?tab=readme-ov-file#available-models-and-languages
-    model = whisper.load_model("turbo")
+    model = whisper.load_model("turbo", download_root="./models/whisper/")
     result = model.transcribe(file_path, fp16=False) 
     print("Transcription complete.")
     print(f"Transcription result: {result['text'][:100]}...")  # print first 100 chars for brevity
