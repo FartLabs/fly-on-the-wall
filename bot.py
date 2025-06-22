@@ -5,6 +5,7 @@ import os
 import whisper 
 import requests 
 import asyncio
+import argparse
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,7 +13,7 @@ load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://localhost:11434")
 OLLAMA_API_GENERATE_ENDPOINT = OLLAMA_API_URL + "/api/generate"
-print("OLLAMA_API_GENERATE_ENDPOINT:", OLLAMA_API_GENERATE_ENDPOINT)
+AVAILABLE_WHISPER_MODELS = whisper.available_models()
 
 assert DISCORD_TOKEN, "Please set the DISCORD_TOKEN environment variable."
 
@@ -20,21 +21,39 @@ intents = discord.Intents.default()
 intents.message_content = True 
 intents.voice_states = True
 
-# command prefix not really needed since using slash commands 
 bot = discord.Bot(intents=intents)
 
 # stores active recordings, all keyed by guild ID
 # this allows the bot to record in multiple servers simultaneously
 active_recordings: dict[int, discord.VoiceClient] = {} 
 
+parser = argparse.ArgumentParser(description="Discord Meeting Notes Bot")
+parser.add_argument(
+    "--whisper-model",
+    type=str,
+    default="base",
+    help=f"Whisper model to use (available: {', '.join(AVAILABLE_WHISPER_MODELS)}). By default, it uses 'base'."
+)
+args = parser.parse_args()
+
+whisper_model: str = args.whisper_model
+chosen_model = whisper_model.lower()
+if chosen_model not in [m.lower() for m in AVAILABLE_WHISPER_MODELS]:
+    raise ValueError(
+        f"Invalid Whisper model '{whisper_model}'. "
+        f"Available models: {', '.join(AVAILABLE_WHISPER_MODELS)}"
+    )
+
+WHISPER_MODEL_TYPE = chosen_model
+
 async def transcribe_audio(file_path: str):
     """Transcribes a single audio file using the local Whisper model."""
-    print(f"Loading Whisper model to transcribe {file_path}...")
+    print(f"Loading Whisper model '{WHISPER_MODEL_TYPE}' to transcribe {file_path}...")
 
     # for higher accuracy if needed, we can use 'medium' or 'large' 
     # tradeoff: slower, requires more compute resources 
     # see https://github.com/openai/whisper?tab=readme-ov-file#available-models-and-languages
-    model = whisper.load_model("turbo", download_root="./models/whisper/")
+    model = whisper.load_model(WHISPER_MODEL_TYPE, download_root="./models/whisper/")
     result = model.transcribe(file_path, fp16=False) 
     print("Transcription complete.")
     print(f"Transcription result: {result['text'][:100]}...")  # print first 100 chars for brevity
@@ -183,4 +202,7 @@ async def ping(ctx: discord.ApplicationContext):
     await ctx.respond(f"Pong! Latency is {bot.latency}")
 
 if __name__ == "__main__":
+    print(f"Using Whisper model: {WHISPER_MODEL_TYPE}")
+    print(f"Using Ollama API at: {OLLAMA_API_URL}")
+    print("Change the Whisper model with --whisper-model")
     bot.run(DISCORD_TOKEN)
