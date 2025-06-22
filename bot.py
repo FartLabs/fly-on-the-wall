@@ -60,7 +60,7 @@ async def transcribe_audio(file_path: str):
     return result['text']
 
 
-async def summarize_text_with_ollama(text: str):
+async def summarize_text_with_ollama(text: str, participants: set[str]):
     """Sends text to a local LLM via Ollama for summarization."""
     print("Sending transcription to local LLM for summarization...")
 
@@ -70,8 +70,10 @@ async def summarize_text_with_ollama(text: str):
     Please analyze the following raw text from a meeting and provide a structured summary. 
     Ignore filler words (e.g., 'um', 'ah', 'like'), repeated sentences, and conversational pleasantries. 
     Focus only on the substantive content. If no action items or decisions were made, explicitly state
-    "No specific action items or decisions were recorded."
-
+    "No specific action items or decisions were recorded." 
+    
+    In the summary, list the participants who were in the meeting:
+	{', '.join(participants)}
    
     The summary should include:
     1. A concise, one-paragraph overview of the meeting's purpose and key discussions.
@@ -115,6 +117,7 @@ async def finished_callback(sink: discord.sinks.WaveSink, channel: discord.TextC
     processing_message = await channel.send("✅ Recording finished. Now processing audio for transcription...") 
 
     full_transcription = ""
+    participants = set()
     for user_id, audio_data in sink.audio_data.items():
         file_path = f"temp_recording_{user_id}.wav"
         with open(file_path, "wb") as f:
@@ -122,11 +125,13 @@ async def finished_callback(sink: discord.sinks.WaveSink, channel: discord.TextC
 
         transcription = await transcribe_audio(file_path)
         user = await bot.fetch_user(user_id)
-        full_transcription += f"[{user.display_name}]: {transcription}\n\n"
+        user_transcript_name = f"{user.display_name}_{user_id}"
+        participants.add(user_transcript_name)
+        full_transcription += f"[{user_transcript_name}]: {transcription}\n\n"
         
         os.remove(file_path)
 
-    summary = await summarize_text_with_ollama(full_transcription)
+    summary = await summarize_text_with_ollama(full_transcription, participants)
 
     notes_filename = f"meeting_notes_{channel.guild.id}.txt"
     with open(notes_filename, "w", encoding="utf-8") as f:
