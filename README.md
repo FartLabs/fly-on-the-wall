@@ -1,12 +1,30 @@
 # Discord Meeting Notes (name is subject to change)
 
-A bot that takes meeting notes for you on a Discord voice channel. This takes the local-first approach for implementing AI.
+A bot that takes meeting notes for you and other people on a Discord voice channel. This tool records and summarizes meetings at FartLabs, allowing participants to focus on contributing to discussions without wasting mental effort to take effective meeting notes.
+
+## Demo 
+
+TBA
+
+## Commands
+
+1. `/start_recording`
+2. `/stop_recording`
 
 ## Technology
+
+This takes the local-first approach for using AI. 
 
 1. PyCord for managing the discord bot itself
 2. OpenAI's Whisper model for transcribing speech to text
 3. llama3 via Ollama for summarizing the text
+
+## Todo (as of 6-21-25)
+
+* Add more controls: there is no way to stop or pause recordings
+* Better error handling
+* Be more flexible with choice of AI; don't be limited to Whisper or llama3
+* Support multiple langauges during meetings and for writing notes
 
 ## Development 
 
@@ -26,9 +44,9 @@ Set up the technologies below
 
 1. Python 3.12+
 2. ffmpeg
-3. ollama 
+3. Ollama 
 
-After setting them up, check if ollama is running at `http://localhost:11434`.
+After setting them up, check if Ollama is running at `http://localhost:11434`.
 
 Once it is running, install llama3 
 
@@ -36,7 +54,7 @@ Once it is running, install llama3
 ollama pull llama3
 ```
 
-> In the future, this can be configured to use any LLM of your choice
+> In the future, this can be configured to use any LLM of your choice from Ollama.
 
 Then, clone this repository and set up a virtual environment. This will isolate the packages from the rest of your system.
 
@@ -64,6 +82,6 @@ Then, create a `.env` based on `.env.example`
 Finally, run the bot
 
 ```sh
-python ./bot.py
+python ./bot.py --whisper-model base
 ```
 
