@@ -38,13 +38,14 @@ This takes the local-first approach for using AI.
 6. Invite the Bot to Your Server: Go to the **OAuth2 -> URL Generator tab**. Select the scopes: **bot**, **applications.commands** Then, in the **Bot Permissions** section, select **Connect**, **Speak**, and **Send Messages**.
 7. Copy the generated URL and paste it into your browser to invite the bot to your server.
 
-### Environment
+### Environment Setup
 
 Set up the technologies below
 
-1. Python 3.12+
-2. ffmpeg
-3. Ollama 
+1. [Python 3.12+](https://www.python.org/downloads/)
+2. [uv](https://docs.astral.sh/uv/getting-started/installation/)
+2. [ffmpeg](https://ffmpeg.org/download.html)
+3. [Ollama](https://ollama.com/download) 
 
 After setting them up, check if Ollama is running at `http://localhost:11434`.
 
@@ -56,32 +57,19 @@ ollama pull llama3
 
 > In the future, this can be configured to use any LLM of your choice from Ollama.
 
-Then, clone this repository and set up a virtual environment. This will isolate the packages from the rest of your system.
+Then, clone this repository.
+
+Create a `.env` based on `.env.example` using your secrets
+
+Finally, run the bot. This will install any dependencies if not available. 
 
 ```sh
-python -m venv venv # this will setup the virtual environment in the folder, `venv`.
+uv run ./bot.py 
 ```
 
-In the `venv` folder, there will be a `Scripts/` directory. Look for the `activate` related files.
-Depending on your OS, use them to activate your virtual environment:
+### Tools
 
-```ps1
-# windows powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\venv\Scripts\activate.ps1
-```
-
-After activation, install the packages:
-
+Run the below to format code with [ruff](https://docs.astral.sh/ruff/):
 ```sh
-pip install -r requirements
+uv run ruff format .
 ```
-
-Then, create a `.env` based on `.env.example`
-
-Finally, run the bot
-
-```sh
-python ./bot.py --whisper-model base
-```
-
