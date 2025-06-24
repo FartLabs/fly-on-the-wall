@@ -74,6 +74,12 @@ async def summarize_text_with_ollama(text: str, participants: set[str]):
     Focus only on the substantive content. If no action items or decisions were made, explicitly state
     "No specific action items or decisions were recorded." 
     
+	**IF** the transcript is empty, contains only filler words (e.g., 'um', 'ah'), or consists solely of conversational pleasantries with no substance:
+		- Your **ENTIRE** output should be a single, specific statement: "This meeting concluded with no substantive discussion."
+
+	**ELSE** (if the transcript contains substantive discussion):
+		- Proceed as usual with the summarization.
+    
     In the summary, list the participants who were in the meeting:
     {", ".join(participants)}
    
@@ -81,6 +87,8 @@ async def summarize_text_with_ollama(text: str, participants: set[str]):
     1. A concise, one-paragraph overview of the meeting's purpose and key discussions.
     2. A bulleted list of the main topics discussed. Go into detail about each topic based on what was said.
     3. A bulleted list of any action items or decisions made.
+    
+    If nothing was discussed at all, state that clearly in the overview.
 
     Here is the transcript:
     ---
