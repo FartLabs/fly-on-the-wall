@@ -15,11 +15,17 @@ OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://localhost:11434")
 OLLAMA_API_GENERATE_ENDPOINT = OLLAMA_API_URL + "/api/generate"
 AVAILABLE_WHISPER_MODELS = whisper.available_models()
 
+# check if file is too large for Discord
+# 10 mb is the limit for free users as of September 2024
+MAX_DISCORD_FILE_SIZE_MB = 10 * 1024 * 1024
+
 assert DISCORD_TOKEN, "Please set the DISCORD_TOKEN environment variable."
+
 
 intents = discord.Intents.default()
 intents.message_content = True
 intents.voice_states = True
+intents.members = True
 
 bot = discord.Bot(intents=intents)
 
@@ -74,11 +80,11 @@ async def summarize_text_with_ollama(text: str, participants: set[str]):
     Focus only on the substantive content. If no action items or decisions were made, explicitly state
     "No specific action items or decisions were recorded." 
     
-	**IF** the transcript is empty, contains only filler words (e.g., 'um', 'ah'), or consists solely of conversational pleasantries with no substance:
-		- Your **ENTIRE** output should be a single, specific statement: "This meeting concluded with no substantive discussion."
+    **IF** the transcript is empty, contains only filler words (e.g., 'um', 'ah'), or consists solely of conversational pleasantries with no substance:
+        - Your **ENTIRE** output should be a single, specific statement: "This meeting concluded with no substantive discussion."
 
-	**ELSE** (if the transcript contains substantive discussion):
-		- Proceed as usual with the summarization.
+    **ELSE** (if the transcript contains substantive discussion):
+        - Proceed as usual with the summarization.
     
     In the summary, list the participants who were in the meeting:
     {", ".join(participants)}
@@ -132,45 +138,46 @@ async def finished_callback(sink: discord.sinks.WaveSink, channel: discord.TextC
         "✅ Recording finished. Now processing audio for transcription..."
     )
 
-    full_transcription = ""
-    participants = set()
-    speakers = sink.audio_data.keys()
-    all_participants = sink.vc.channel.members
-
-    # transcribe each user's audio data if they spoke
-    for participant in all_participants:
-        if participant.bot:
-            continue
-        user_id = participant.id
-        username = participant.display_name or participant.name
-        user_transcript_name = f"{username}_{user_id}"
-        participants.add(user_transcript_name)
-        if participant not in speakers:
-            full_transcription += (
-                f"[{user_transcript_name}]: (was present but did not speak).\n\n"
-            )
-        else:
-            file_path = f"temp_recording_{user_id}.wav"
-            with open(file_path, "wb") as f:
-                f.write(sink.audio_data.file.read())
-            transcription = await transcribe_audio(file_path)
-            full_transcription += f"[{user_transcript_name}]: {transcription}\n\n"
-            os.remove(file_path)
+    try:
+        full_transcription, participants = await get_transcription_and_participants(
+            sink
+        )
+    except Exception as e:
+        await processing_message.edit(
+            content=f"❌ Error processing audio: {e}. Please try again later."
+        )
+        print(f"Error processing audio: {e}")
+        return
 
     # TODO: account for people that typed in the meeting
     # could have it auto create a thread or something to have people type their messages
 
     summary = await summarize_text_with_ollama(full_transcription, participants)
+    if not summary:
+        await processing_message.edit(
+            content="❌ No summary could be generated. Sending raw transcription instead."
+        )
+        await send_meeting_notes(channel, full_transcription)
+        await processing_message.delete()
+        return
+    try:
+        await send_meeting_notes(channel, summary)
+        await processing_message.delete()
+    except Exception as e:
+        await processing_message.edit(
+            content=f"❌ Error sending meeting notes: {e}. Please try again later."
+        )
+        print(f"Error sending meeting notes: {e}")
+        return
 
+
+async def send_meeting_notes(channel: discord.TextChannel, summary: str) -> None:
+    """Save and send meeting notes, handling Discord file size limits."""
     notes_filename = f"meeting_notes_{channel.guild.id}.txt"
     with open(notes_filename, "w", encoding="utf-8") as f:
         f.write(summary)
 
-    # check if file is too large for Discord
-    # 10 mb is the limit for free users as of September 2024
-    max_discord_file_size = 10 * 1024 * 1024
-
-    if os.path.getsize(notes_filename) > max_discord_file_size:
+    if os.path.getsize(notes_filename) > MAX_DISCORD_FILE_SIZE_MB:
         notes_dir = "notes"
         os.makedirs(notes_dir, exist_ok=True)
         dest_path = os.path.join(notes_dir, notes_filename)
@@ -182,9 +189,41 @@ async def finished_callback(sink: discord.sinks.WaveSink, channel: discord.TextC
         return
 
     await channel.send("Here are the meeting notes:", file=discord.File(notes_filename))
-
-    await processing_message.delete()
     os.remove(notes_filename)
+
+
+async def get_transcription_and_participants(
+    sink: discord.sinks.WaveSink,
+) -> tuple[str, set[str]]:
+    final_participant_ids = {member.id for member in sink.vc.channel.members}
+    speaking_user_ids = set(sink.audio_data.keys())
+    all_involved_user_ids = final_participant_ids.union(speaking_user_ids)
+    full_transcription = ""
+
+    # store names of participants for the summary of meeting notes
+    participants = set()
+
+    # transcribe each user's audio data if they spoke
+    for user_id in all_involved_user_ids:
+        user = bot.get_user(user_id)
+        if user is None or user.bot:
+            continue
+        user_display_name = user.display_name or user.name
+        user_transcript_name = f"{user_display_name}_{user_id}"
+        participants.add(user_transcript_name)
+        if user_id not in speaking_user_ids:
+            full_transcription += (
+                f"[{user_transcript_name}]: (was present but did not speak).\n\n"
+            )
+        else:
+            file_path = f"temp_recording_{user_id}.wav"
+            with open(file_path, "wb") as f:
+                f.write(sink.audio_data[user_id].file.read())
+            transcription = await transcribe_audio(file_path)
+            full_transcription += f"[{user_transcript_name}]: {transcription}\n\n"
+            os.remove(file_path)
+
+    return full_transcription, participants
 
 
 @bot.event
