@@ -157,19 +157,6 @@ async def finished_callback(sink: discord.sinks.WaveSink, channel: discord.TextC
             full_transcription += f"[{user_transcript_name}]: {transcription}\n\n"
             os.remove(file_path)
 
-    # for user_id, audio_data in sink.audio_data.items():
-    #     file_path = f"temp_recording_{user_id}.wav"
-    #     with open(file_path, "wb") as f:
-    #         f.write(audio_data.file.read())
-
-    #     transcription = await transcribe_audio(file_path)
-    #     user = await bot.fetch_user(user_id)
-    #     user_transcript_name = f"{user.display_name}_{user_id}"
-    #     participants.add(user_transcript_name)
-    #     full_transcription += f"[{user_transcript_name}]: {transcription}\n\n"
-
-    #     os.remove(file_path)
-
     # TODO: account for people that typed in the meeting
     # could have it auto create a thread or something to have people type their messages
 
