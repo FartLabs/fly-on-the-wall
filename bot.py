@@ -110,24 +110,20 @@ async def summarize_text_with_ollama(text: str, participants: set[str]):
         "stream": False,
     }
 
-    try:
-        # run the blocking requests call in a separate thread
-        loop = asyncio.get_event_loop()
-        response = await loop.run_in_executor(
-            None,
-            lambda: requests.post(
-                OLLAMA_API_GENERATE_ENDPOINT, json=payload, timeout=300
-            ),
-        )
-        response.raise_for_status()
+    # run the blocking requests call in a separate thread
+    loop = asyncio.get_event_loop()
+    response = await loop.run_in_executor(
+        None,
+        lambda: requests.post(
+            OLLAMA_API_GENERATE_ENDPOINT, json=payload, timeout=300
+        ),
+    )
+    response.raise_for_status()
 
-        response_data = response.json()
-        summary = response_data.get("response", "Error: Could not get a summary.")
-        print("Summarization complete.")
-        return summary
-    except requests.exceptions.RequestException as e:
-        print(f"Error communicating with Ollama: {e}")
-        return f"Error: Could not connect to the local LLM. Is Ollama running?\nDetails: {e}"
+    response_data = response.json()
+    summary = response_data.get("response", "Error: Could not get a summary.")
+    print("Summarization complete.")
+    return summary
 
 
 async def finished_callback(sink: discord.sinks.WaveSink, channel: discord.TextChannel):
@@ -144,7 +140,7 @@ async def finished_callback(sink: discord.sinks.WaveSink, channel: discord.TextC
         )
     except Exception as e:
         await processing_message.edit(
-            content=f"❌ Error processing audio: {e}. Please try again later."
+            content=f"❌ Error processing audio: {e}."
         )
         print(f"Error processing audio: {e}")
         return
@@ -152,23 +148,22 @@ async def finished_callback(sink: discord.sinks.WaveSink, channel: discord.TextC
     # TODO: account for people that typed in the meeting
     # could have it auto create a thread or something to have people type their messages
 
-    summary = await summarize_text_with_ollama(full_transcription, participants)
-    if not summary:
-        await processing_message.edit(
-            content="❌ No summary could be generated. Sending raw transcription instead."
-        )
-        await send_meeting_notes(channel, full_transcription)
-        await processing_message.delete()
-        return
     try:
-        await send_meeting_notes(channel, summary)
+        content = await summarize_text_with_ollama(full_transcription, participants)
+    except Exception as e:
+        await processing_message.edit(
+            content="⚠️ No summary could be generated. Sending raw transcription instead."
+        )
+        content = full_transcription
+
+    try:
+        await send_meeting_notes(channel, content)
         await processing_message.delete()
     except Exception as e:
         await processing_message.edit(
-            content=f"❌ Error sending meeting notes: {e}. Please try again later."
+            content=f"❌ Error sending the content: {e}."
         )
-        print(f"Error sending meeting notes: {e}")
-        return
+        print(f"Error sending the content: {e}")
 
 
 async def send_meeting_notes(channel: discord.TextChannel, summary: str) -> None:
@@ -183,12 +178,12 @@ async def send_meeting_notes(channel: discord.TextChannel, summary: str) -> None
         dest_path = os.path.join(notes_dir, notes_filename)
         shutil.move(notes_filename, dest_path)
         await channel.send(
-            f"Meeting notes are too large to send via Discord. "
+            f"File is too large to send via Discord. "
             f"The file has been saved to `{dest_path}` on the server."
         )
         return
 
-    await channel.send("Here are the meeting notes:", file=discord.File(notes_filename))
+    await channel.send("Here is your file:", file=discord.File(notes_filename))
     os.remove(notes_filename)
 
 
@@ -248,15 +243,26 @@ async def start_recording(ctx: discord.ApplicationContext):
         await ctx.respond("I'm already recording in this server!", ephemeral=True)
         return
 
+    vc = None
     try:
         vc = await voice_channel.connect()
+        await asyncio.sleep(0.5)
         vc.start_recording(discord.sinks.WaveSink(), finished_callback, ctx.channel)
         active_recordings[ctx.guild_id] = vc
         await ctx.respond(
             f"🔴 Started recording in **{voice_channel.name}**! Use `/stop_recording` to finish."
         )
-    except discord.ClientException as e:
-        await ctx.respond(f"Error starting recording: {e}")
+    except asyncio.TimeoutError:
+        await ctx.respond("Timed out while trying to connect to the voice channel.", ephemeral=True)
+        if vc and vc.is_connected():
+            await vc.disconnect(force=True)
+    except Exception as e:
+        await ctx.respond(f"Error starting recording: {e}", ephemeral=True)
+        print(f"Error starting recording: {e}")
+        if vc and vc.is_connected():
+            await vc.disconnect(force=True)
+        if ctx.guild_id in active_recordings:
+            del active_recordings[ctx.guild_id]
 
 
 @bot.slash_command(
