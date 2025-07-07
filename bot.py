@@ -63,15 +63,14 @@ async def transcribe_audio(file_path: str):
     model = whisper.load_model(WHISPER_MODEL_TYPE, download_root="./models/whisper/")
     result = model.transcribe(file_path, fp16=False)
     print("Transcription complete.")
-    print(
-        f"Transcription result: {result['text'][:100]}..."
-    )  # print first 100 chars for brevity
+    # print(
+    #     f"Transcription result: {result['text'][:100]}..."
+    # )  # print first 100 chars for brevity
     return result["text"]
 
 
 async def summarize_text_with_ollama(text: str, participants: set[str]):
     """Sends text to a local LLM via Ollama for summarization."""
-    print("Sending transcription to local LLM for summarization...")
 
     prompt = f"""
     You are a highly efficient and helpful assistant specializing in summarizing meeting transcripts.
@@ -114,9 +113,7 @@ async def summarize_text_with_ollama(text: str, participants: set[str]):
     loop = asyncio.get_event_loop()
     response = await loop.run_in_executor(
         None,
-        lambda: requests.post(
-            OLLAMA_API_GENERATE_ENDPOINT, json=payload, timeout=300
-        ),
+        lambda: requests.post(OLLAMA_API_GENERATE_ENDPOINT, json=payload, timeout=300),
     )
     response.raise_for_status()
 
@@ -129,40 +126,39 @@ async def summarize_text_with_ollama(text: str, participants: set[str]):
 async def finished_callback(sink: discord.sinks.WaveSink, channel: discord.TextChannel):
     """Handles the audio files once recording is complete."""
     await sink.vc.disconnect()
-
-    processing_message = await channel.send(
+    await channel.send(
         "✅ Recording finished. Now processing audio for transcription..."
     )
-
     try:
         full_transcription, participants = await get_transcription_and_participants(
             sink
         )
     except Exception as e:
-        await processing_message.edit(
-            content=f"❌ Error processing audio: {e}."
-        )
+        await channel.send(content=f"❌ Error processing audio: {e}.")
         print(f"Error processing audio: {e}")
         return
 
     # TODO: account for people that typed in the meeting
     # could have it auto create a thread or something to have people type their messages
 
+    await channel.send(
+        "Transcription complete. "
+        "Now sending the transcription to the local LLM for summarization..."
+    )
     try:
         content = await summarize_text_with_ollama(full_transcription, participants)
     except Exception as e:
-        await processing_message.edit(
-            content="⚠️ No summary could be generated. Sending raw transcription instead."
+        await channel.send(
+            content="⚠️ No summary could be generated. Will be using raw transcription instead..."
         )
         content = full_transcription
+        print(f"Error summarizing text: {e}")
 
+    await channel.send("Now sending the meeting notes...")
     try:
         await send_meeting_notes(channel, content)
-        await processing_message.delete()
     except Exception as e:
-        await processing_message.edit(
-            content=f"❌ Error sending the content: {e}."
-        )
+        await channel.send(content=f"❌ Error sending the content: {e}.")
         print(f"Error sending the content: {e}")
 
 
@@ -188,7 +184,7 @@ async def send_meeting_notes(channel: discord.TextChannel, summary: str) -> None
 
 
 async def get_transcription_and_participants(
-    sink: discord.sinks.WaveSink,
+    sink: discord.sinks,
 ) -> tuple[str, set[str]]:
     final_participant_ids = {member.id for member in sink.vc.channel.members}
     speaking_user_ids = set(sink.audio_data.keys())
@@ -224,6 +220,7 @@ async def get_transcription_and_participants(
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user}")
+    await cleanup_connections()
 
 
 @bot.slash_command(
@@ -239,30 +236,33 @@ async def start_recording(ctx: discord.ApplicationContext):
 
     voice_channel = voice.channel
 
-    if ctx.guild_id in active_recordings:
+    if voice_channel.guild.id in active_recordings:
         await ctx.respond("I'm already recording in this server!", ephemeral=True)
         return
 
     vc = None
+
     try:
         vc = await voice_channel.connect()
-        await asyncio.sleep(0.5)
         vc.start_recording(discord.sinks.WaveSink(), finished_callback, ctx.channel)
         active_recordings[ctx.guild_id] = vc
         await ctx.respond(
             f"🔴 Started recording in **{voice_channel.name}**! Use `/stop_recording` to finish."
         )
     except asyncio.TimeoutError:
-        await ctx.respond("Timed out while trying to connect to the voice channel.", ephemeral=True)
+        print("Timed out while trying to connect to the voice channel.")
+        # await ctx.respond("Timed out while trying to connect to the voice channel.", ephemeral=True)
         if vc and vc.is_connected():
             await vc.disconnect(force=True)
     except Exception as e:
-        await ctx.respond(f"Error starting recording: {e}", ephemeral=True)
+        # await ctx.respond(f"Error starting recording: {e}", ephemeral=True)
         print(f"Error starting recording: {e}")
         if vc and vc.is_connected():
+            print("Disconnecting due to error...")
             await vc.disconnect(force=True)
         if ctx.guild_id in active_recordings:
             del active_recordings[ctx.guild_id]
+            print(f"Removed {ctx.guild_id} from active recordings due to error.")
 
 
 @bot.slash_command(
@@ -284,8 +284,37 @@ async def ping(ctx: discord.ApplicationContext):
     await ctx.respond(f"Pong! Latency is {bot.latency}")
 
 
+async def cleanup_connections():
+    """Clean up all active recordings and voice connections."""
+    print("Cleaning up connections...")
+
+    for guild_id, vc in list(active_recordings.items()):
+        try:
+            if vc.is_connected():
+                vc.stop_recording()
+                await vc.disconnect(force=True)
+                print(f"Disconnected from guild {guild_id}")
+        except Exception as e:
+            print(f"Error disconnecting from guild {guild_id}: {e}")
+
+    active_recordings.clear()
+
+    for vc in bot.voice_clients:
+        try:
+            if vc.is_connected():
+                await vc.disconnect(force=True)
+                print(
+                    f"Disconnected remaining voice client from {vc.channel.guild.name}"
+                )
+        except Exception as e:
+            print(f"Error disconnecting voice client: {e}")
+
+    print("Cleanup complete.")
+
+
 if __name__ == "__main__":
     print(f"Using Whisper model: {WHISPER_MODEL_TYPE}")
     print(f"Using Ollama API at: {OLLAMA_API_URL}")
     print("Change the Whisper model with --whisper-model")
+
     bot.run(DISCORD_TOKEN)
