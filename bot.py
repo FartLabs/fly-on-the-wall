@@ -85,7 +85,7 @@ async def summarize_text_with_ollama(text: str, participants: set[str]):
     **ELSE** (if the transcript contains substantive discussion):
         - Proceed as usual with the summarization.
     
-    In the summary, list the participants who were in the meeting:
+    In the summary, list the participants who were in the meeting as shown below:
     {", ".join(participants)}
    
     The summary should include:
@@ -147,6 +147,7 @@ async def finished_callback(sink: discord.sinks.WaveSink, channel: discord.TextC
     )
     try:
         content = await summarize_text_with_ollama(full_transcription, participants)
+        await channel.send("LLM returned a summary of the meeting notes...")
     except Exception as e:
         await channel.send(
             content="⚠️ No summary could be generated. Will be using raw transcription instead..."
