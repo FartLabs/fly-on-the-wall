@@ -1,75 +1,117 @@
-# Discord Meeting Notes (name is subject to change)
+# Fly on the Wall (name is subject to change)
 
-A bot that takes meeting notes for you and other people on a Discord voice channel. This tool records and summarizes meetings at FartLabs, allowing participants to focus on contributing to discussions without wasting mental effort to take effective meeting notes.
+A flexible CLI tool that records meetings from your computer's audio, transcribes speech using Whisper, and generates summaries using a LLM via Ollama. The tool emphasizes the local-first approach with AI.
 
-## Demo 
+This records and summarizes meetings at FartLabs, allowing participants to focus on contributing to discussions without wasting mental effort to take effective meeting notes.
+
+## Demo
 
 TBA
 
-## Commands
+## Quick Start
 
-1. `/start_recording`
-2. `/stop_recording`
+>NOTE: "uv run" can be substituted for "python" in case you do not want to use uv for package management. 
+
+```sh
+# List available audio devices
+uv run recorder.py --list-devices
+
+# Start recording (press Ctrl+C to stop)
+uv run recorder.py
+
+# Record from a specific device
+uv run recorder.py --device 2
+```
+
+## Commands & Options
+
+| Option | Description |
+|--------|-------------|
+| `--list-devices` | List available audio input devices |
+| `--device <index>` | Specify audio input device by index |
+| `--whisper-model <model>` | Whisper model to use (tiny, base, small, medium, large) |
+| `--ollama-model <model>` | Ollama model for summarization (default: llama3) |
+| `--no-summary` | Skip LLM summarization, output raw transcription only |
+| `--participants "A,B,C"` | Comma-separated list of participant names |
+| `--output-dir <dir>` | Directory to save meeting notes (default: notes) |
+| `--keep-audio` | Keep the recorded audio file after processing |
+
+## Examples
+
+```sh
+# Use a more accurate Whisper model
+uv run recorder.py --whisper-model medium
+
+# Skip summarization (transcription only)
+python run recorder.py --no-summary
+
+# Specify participants for better meeting notes
+python run recorder.py --participants "Alice,Bob,Charlie"
+
+# Keep the audio file for reference
+python run recorder.py --keep-audio
+
+# Use a different Ollama model
+python run recorder.py --ollama-model mistral
+```
 
 ## Technology
 
-This takes the local-first approach for using AI. 
+This takes the local-first approach for using AI.
 
-1. PyCord for managing the discord bot itself
-2. OpenAI's Whisper model for transcribing speech to text
-3. llama3 via Ollama for summarizing the text
+1. **sounddevice** for capturing system audio
+2. **OpenAI's Whisper** model for transcribing speech to text
+3. **llama3 via Ollama** for summarizing the text
 
-## Todo (as of 6-21-25)
+## TODO 
 
-* Add more controls: there is no way to stop or pause recordings
-* Better error handling
-* Be more flexible with choice of AI; don't be limited to Whisper or llama3
-* Support multiple langauges during meetings and for writing notes
+- [ ] Add pause/resume functionality
+- [ ] Support for system audio loopback (capture all audio, not just mic)
+- [ ] Better speaker diarization
+- [ ] Support multiple languages
+- [ ] Real-time transcription mode
+- [ ] Export to different formats (markdown, PDF)
 
-## Development 
+## Set up Development
 
-### Discord Bot
+### Prerequisites
 
-1. Set up a Discord bot at <https://discord.com/developers/applications>.
-2. Create a **New Application**. 
-3. Go to the **Bot** tab and click **Add Bot**.
-4. Enable **Privileged Gateway Intents**: You need the **Message Content** Intent.
-5. Get the token: click **Reset Token** to reveal and take note of your bot's token, which will be used later.
-6. Invite the Bot to Your Server: Go to the **OAuth2 -> URL Generator tab**. Select the scopes: **bot**, **applications.commands** Then, in the **Bot Permissions** section, select **Connect**, **Speak**, and **Send Messages**.
-7. Copy the generated URL and paste it into your browser to invite the bot to your server.
-
-### Environment Setup
-
-Set up the technologies below
+Set up the technologies below:
 
 1. [Python 3.12+](https://www.python.org/downloads/)
 2. [uv](https://docs.astral.sh/uv/getting-started/installation/)
-2. [ffmpeg](https://ffmpeg.org/download.html)
-3. [Ollama](https://ollama.com/download) 
+3. [ffmpeg](https://ffmpeg.org/download.html)
+4. [Ollama](https://ollama.com/download)
 
-After setting them up, check if Ollama is running at `http://localhost:11434`.
+### Setup
 
-Once it is running, install llama3 
+After setting up prerequisites, check if Ollama is running at `http://localhost:11434`.
+
+Once it is running, install llama3 (or any LLM of your choice):
 
 ```sh
-ollama pull llama3
+ollama pull llama3 
 ```
-
-> In the future, this can be configured to use any LLM of your choice from Ollama.
 
 Then, clone this repository.
 
-Create a `.env` based on `.env.example` using your secrets
-
-Finally, run the bot. This will install any dependencies if not available. 
+Create a `.env` based on `.env.example` using your settings (optional):
 
 ```sh
-uv run ./bot.py 
+# .env
+OLLAMA_API_URL=http://localhost:11434
+```
+
+Finally, run the recorder:
+
+```sh
+uv run recorder.py
 ```
 
 ### Tools
 
 Run the below to format code with [ruff](https://docs.astral.sh/ruff/):
+
 ```sh
 uv run ruff format .
 ```
