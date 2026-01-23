@@ -52,7 +52,6 @@ let isRecording = false;
 let timerInterval: number | null = null;
 let elapsedSeconds = 0;
 
-// Recording state
 let mediaRecorder: MediaRecorder | null = null;
 let audioChunks: Blob[] = [];
 let activeStreams: MediaStream[] = [];
@@ -317,9 +316,10 @@ async function saveRecording(): Promise<void> {
     statusText.textContent = 'Error saving recording';
   }
 
-  // Reset after brief delay
+  // reset state and UI after brief delay
   setTimeout(() => {
     if (!isRecording) {
+      resetRecordingState();
       statusText.textContent = 'Ready to record';
     }
   }, 2000);
@@ -357,6 +357,17 @@ function stopRecording(): void {
     clearInterval(timerInterval);
     timerInterval = null;
   }
+}
+
+function resetRecordingState(): void {
+  mediaRecorder = null;
+  audioChunks = [];
+  activeStreams = [];
+  audioContext = null;
+  recordingStartTime = null;
+  elapsedSeconds = 0;
+  timerDisplay.textContent = formatTime(0);
+  console.log('Recording state reset - ready for new recording');
 }
 
 function toggleRecording(): void {
