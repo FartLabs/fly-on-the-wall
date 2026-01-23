@@ -47,6 +47,10 @@ const statusText = document.getElementById('statusText') as HTMLSpanElement;
 const timerDisplay = document.getElementById('timer') as HTMLDivElement;
 const devicesList = document.getElementById('devicesList') as HTMLDivElement;
 const refreshDevicesBtn = document.getElementById('refreshDevices') as HTMLButtonElement;
+const recordingControls = document.getElementById('recordingControls') as HTMLDivElement;
+const pauseBtn = document.getElementById('pauseBtn') as HTMLButtonElement;
+const resumeBtn = document.getElementById('resumeBtn') as HTMLButtonElement;
+const stopBtn = document.getElementById('stopBtn') as HTMLButtonElement;
 
 let isRecording = false;
 let timerInterval: number | null = null;
@@ -255,9 +259,11 @@ async function startRecording(): Promise<void> {
 
     isRecording = true;
     setAudioSettingsLocked(true);
-    recordBtn.classList.add('recording');
-    btnIcon.textContent = '⏹';
-    btnText.textContent = 'Stop Recording';
+
+    recordBtn.classList.add('hidden');
+    recordingControls.classList.remove('hidden');
+    pauseBtn.classList.remove('hidden');
+    resumeBtn.classList.add('hidden');
     statusIndicator.classList.add('recording');
     
     const statusParts = [];
@@ -324,7 +330,6 @@ async function saveRecording(): Promise<void> {
     statusText.textContent = 'Error saving recording';
   }
 
-  // reset state and UI after brief delay
   setTimeout(() => {
     if (!isRecording) {
       resetRecordingState();
@@ -355,10 +360,11 @@ function stopRecording(): void {
 
   isRecording = false;
   setAudioSettingsLocked(false);
-  recordBtn.classList.remove('recording');
+  recordBtn.classList.remove('hidden', 'recording');
+  recordingControls.classList.add('hidden');
   btnIcon.textContent = '⏺';
   btnText.textContent = 'Start Recording';
-  statusIndicator.classList.remove('recording');
+  statusIndicator.classList.remove('recording', 'paused');
   statusText.textContent = 'Saving recording...';
   
   if (timerInterval) {
@@ -386,7 +392,43 @@ function toggleRecording(): void {
   }
 }
 
+function pauseRecording(): void {
+  if (!mediaRecorder || mediaRecorder.state !== 'recording') return;
+  
+  mediaRecorder.pause();
+  
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+  
+  pauseBtn.classList.add('hidden');
+  resumeBtn.classList.remove('hidden');
+  statusIndicator.classList.add('paused');
+  statusText.textContent = 'Paused';
+  
+  console.log(`Recording paused at ${formatTime(elapsedSeconds)}`);
+}
+
+function resumeRecording(): void {
+  if (!mediaRecorder || mediaRecorder.state !== 'paused') return;
+  
+  mediaRecorder.resume();
+  
+  timerInterval = window.setInterval(updateTimer, 1000);
+  
+  resumeBtn.classList.add('hidden');
+  pauseBtn.classList.remove('hidden');
+  statusIndicator.classList.remove('paused');
+  statusText.textContent = 'Recording...';
+  
+  console.log('Recording resumed');
+}
+
 recordBtn.addEventListener('click', toggleRecording);
+pauseBtn.addEventListener('click', pauseRecording);
+resumeBtn.addEventListener('click', resumeRecording);
+stopBtn.addEventListener('click', stopRecording);
 
 interface AudioDeviceInfo {
   deviceId: string;
