@@ -22,6 +22,16 @@
           <span class="btn-text" id="btnText">Start Recording</span>
         </button>
       </div>
+      
+      <div class="audio-devices-card">
+        <div class="card-header">
+          <h2>🔊 Audio Devices</h2>
+          <button class="refresh-btn" id="refreshDevices" title="Refresh devices">↻</button>
+        </div>
+        <div class="devices-list" id="devicesList">
+          <p class="loading-text">Loading audio devices...</p>
+        </div>
+      </div>
     </div>
     <script type="module" src="/src/renderer.ts"></script>
   </body>
