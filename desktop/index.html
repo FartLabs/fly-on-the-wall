@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Fly on the Wall</title>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎙️ Fly on the Wall</h1>
+      <p class="subtitle">Meeting Recorder</p>
+      
+      <div class="recorder-card">
+        <div class="status-indicator" id="statusIndicator">
+          <span class="status-dot"></span>
+          <span class="status-text" id="statusText">Ready to record</span>
+        </div>
+        
+        <div class="timer" id="timer">00:00:00</div>
+        
+        <button class="record-btn" id="recordBtn">
+          <span class="btn-icon" id="btnIcon">⏺</span>
+          <span class="btn-text" id="btnText">Start Recording</span>
+        </button>
+      </div>
+    </div>
+    <script type="module" src="/src/renderer.ts"></script>
+  </body>
+</html>
