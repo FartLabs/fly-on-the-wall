@@ -28,9 +28,9 @@
 
 import './index.css';
 
-// Declare electronAPI exposed from preload
 declare global {
   interface Window {
+    // Declare electronAPI exposed from preload
     electronAPI: {
       saveRecording: (data: { buffer: ArrayBuffer; filename: string }) => Promise<{ success: boolean; path?: string; error?: string }>;
       getRecordingsDir: () => Promise<string>;
@@ -87,12 +87,10 @@ function setAudioSettingsLocked(locked: boolean): void {
   });
   devicesList.classList.toggle('disabled', locked);
   
-  // then lock refresh button
   refreshDevicesBtn.disabled = locked;
   refreshDevicesBtn.classList.toggle('disabled', locked);
 }
 
-// get active input devices (non-muted microphones)
 function getActiveInputDeviceIds(): string[] {
   const allDeviceItems = Array.from(devicesList.querySelectorAll('.device-item'));
   return allDeviceItems
@@ -106,6 +104,16 @@ function getActiveInputDeviceIds(): string[] {
     .map(el => (el as HTMLElement).dataset.deviceId)
     .filter((id): id is string => id !== undefined);
 }
+
+function isScreenSource (source: { id: string; name: string }): boolean {
+  const screenPatterns = ['screen', 'desktop', 'monitor', 'entire'];
+  const normalizedName = source.name.toLowerCase();
+  const normalizedId = source.id.toLowerCase();
+  
+  return screenPatterns.some(pattern => 
+    normalizedName.includes(pattern) || normalizedId.includes(pattern)
+  );
+};
 
 async function startRecording(): Promise<void> {
   const systemAudioEnabled = (document.getElementById('systemAudioToggle') as HTMLInputElement).checked;
@@ -132,12 +140,12 @@ async function startRecording(): Promise<void> {
       console.log('Getting system audio...');
       try {
         const sources = await window.electronAPI.getDesktopSources();
-        console.log('Available sources:', sources);
+        console.log('Available sources:', sources.map(s => ({ id: s.id, name: s.name })));
         
-        // use the first screen source for system audio
-        const screenSource = sources.find(s => s.name === 'Entire Screen' || s.name.includes('Screen'));
+        let screenSource = sources.find(isScreenSource) || sources[0];
         
         if (screenSource) {
+          console.log(`Using source: "${screenSource.name}" (${screenSource.id})`);
           const systemStream = await navigator.mediaDevices.getUserMedia({
             audio: {
               // @ts-expect-error - Electron-specific constraint for system audio
@@ -322,7 +330,7 @@ async function saveRecording(): Promise<void> {
       resetRecordingState();
       statusText.textContent = 'Ready to record';
     }
-  }, 2000);
+  }, 1500);
 }
 
 function stopRecording(): void {
