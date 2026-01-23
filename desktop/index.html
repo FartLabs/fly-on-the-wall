@@ -25,9 +25,28 @@
       
       <div class="audio-devices-card">
         <div class="card-header">
-          <h2>🔊 Audio Devices</h2>
+          <h2>🔊 Audio Sources</h2>
           <button class="refresh-btn" id="refreshDevices" title="Refresh devices">↻</button>
         </div>
+        
+        <div class="system-audio-section">
+          <div class="device-item system-audio" id="systemAudioItem">
+            <div class="device-info">
+              <span class="device-icon">🖥️</span>
+              <div class="device-details">
+                <div class="device-name">System Audio</div>
+                <div class="device-type">Desktop / Meeting Audio</div>
+              </div>
+            </div>
+            <label class="mute-toggle" title="Enable system audio">
+              <input type="checkbox" id="systemAudioToggle" checked>
+              <span class="mute-slider"></span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="section-divider">Microphones (Optional)</div>
+        
         <div class="devices-list" id="devicesList">
           <p class="loading-text">Loading audio devices...</p>
         </div>

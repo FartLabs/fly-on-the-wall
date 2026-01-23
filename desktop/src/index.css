@@ -307,3 +307,45 @@ h1 {
   font-size: 0.85rem;
   padding: 1rem;
 }
+
+/* System Audio Section */
+.system-audio-section {
+  margin-bottom: 0.75rem;
+}
+
+.device-item.system-audio {
+  background: rgba(102, 126, 234, 0.1);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+}
+
+.device-item.system-audio:hover {
+  background: rgba(102, 126, 234, 0.15);
+}
+
+.section-divider {
+  font-size: 0.75rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.5rem 0;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Disabled states during recording */
+.device-item.disabled,
+.devices-list.disabled .device-item {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.device-item.disabled .mute-toggle,
+.devices-list.disabled .mute-toggle {
+  cursor: not-allowed;
+}
+
+.refresh-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
