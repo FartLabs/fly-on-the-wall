@@ -27,14 +27,29 @@
  */
 
 import './index.css';
+import { 
+  transcribeAudio, 
+  getAllModelStatus, 
+  downloadModel, 
+  deleteModel as deleteModelFromCache, 
+  checkModelDownloaded,
+  type TranscriptionProgress,
+  type ModelStatus
+} from '../transcription';
+import { MODEL_SIZES, type WhisperModelSize } from '../transcription/whisper';
+
 
 declare global {
   interface Window {
     // Declare electronAPI exposed from preload
     electronAPI: {
       saveRecording: (data: { buffer: ArrayBuffer; filename: string }) => Promise<{ success: boolean; path?: string; error?: string }>;
+      saveTranscription: (data: { text: string; filename: string }) => Promise<{ success: boolean; path?: string; error?: string }>;
       getRecordingsDir: () => Promise<string>;
       getDesktopSources: () => Promise<Array<{ id: string; name: string }>>;
+      getModelsDir: () => Promise<string>;
+      checkModelExists: (modelId: string) => Promise<{ exists: boolean }>;
+      deleteModel: (modelId: string) => Promise<{ success: boolean }>;
     };
   }
 }
@@ -52,6 +67,21 @@ const pauseBtn = document.getElementById('pauseBtn') as HTMLButtonElement;
 const resumeBtn = document.getElementById('resumeBtn') as HTMLButtonElement;
 const stopBtn = document.getElementById('stopBtn') as HTMLButtonElement;
 
+const transcriptionCard = document.getElementById('transcriptionCard') as HTMLDivElement;
+const modelSelect = document.getElementById('modelSelect') as HTMLSelectElement;
+const transcriptionProgress = document.getElementById('transcriptionProgress') as HTMLDivElement;
+const progressFill = document.getElementById('progressFill') as HTMLDivElement;
+const progressText = document.getElementById('progressText') as HTMLParagraphElement;
+const transcriptionResult = document.getElementById('transcriptionResult') as HTMLDivElement;
+const transcriptionText = document.getElementById('transcriptionText') as HTMLDivElement;
+const transcriptionEmpty = document.getElementById('transcriptionEmpty') as HTMLDivElement;
+const copyTranscriptionBtn = document.getElementById('copyTranscription') as HTMLButtonElement;
+const saveTranscriptionBtn = document.getElementById('saveTranscription') as HTMLButtonElement;
+
+const modelsList = document.getElementById('modelsList') as HTMLDivElement;
+
+let downloadingModel: WhisperModelSize | null = null;
+
 let isRecording = false;
 let timerInterval: number | null = null;
 let elapsedSeconds = 0;
@@ -61,6 +91,9 @@ let audioChunks: Blob[] = [];
 let activeStreams: MediaStream[] = [];
 let audioContext: AudioContext | null = null;
 let recordingStartTime: Date | null = null;
+let lastRecordingBuffer: ArrayBuffer | null = null;
+let lastTranscription: string | null = null;
+let lastRecordingTimestamp: string | null = null;
 
 const mutedDevices = new Set<string>();
 
@@ -306,11 +339,14 @@ async function saveRecording(): Promise<void> {
   const timestamp = recordingStartTime 
     ? recordingStartTime.toISOString().replace(/[:.]/g, '-').slice(0, 19)
     : new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    // TODO: consider other audio file extensions 
   const filename = `recording_${timestamp}.webm`;
+  
+  lastRecordingTimestamp = timestamp;
 
   try {
     const arrayBuffer = await audioBlob.arrayBuffer();
+    
+    lastRecordingBuffer = arrayBuffer.slice(0);
     
     console.log(`Saving recording as: ${filename}`);
     const result = await window.electronAPI.saveRecording({
@@ -320,7 +356,10 @@ async function saveRecording(): Promise<void> {
 
     if (result.success) {
       console.log(`✅ Recording saved successfully: ${result.path}`);
-      statusText.textContent = 'Recording saved!';
+      statusText.textContent = 'Recording saved! Starting transcription...';
+      
+      transcriptionCard.classList.remove('hidden');
+      startTranscription();
     } else {
       console.error('Failed to save recording:', result.error);
       statusText.textContent = 'Failed to save recording';
@@ -567,5 +606,276 @@ navigator.mediaDevices.addEventListener('devicechange', () => {
 });
 
 loadAudioDevices();
+
+
+function updateTranscriptionProgress(progress: TranscriptionProgress): void {
+  transcriptionProgress.classList.remove('hidden');
+  transcriptionResult.classList.add('hidden');
+  transcriptionEmpty.classList.add('hidden');
+  
+  progressText.textContent = progress.message;
+  
+  if (progress.progress !== undefined) {
+    progressFill.style.width = `${progress.progress}%`;
+  } else if (progress.status === 'transcribing') {
+    progressFill.classList.add('indeterminate');
+  }
+  
+  if (progress.status !== 'transcribing') {
+    progressFill.classList.remove('indeterminate');
+  }
+}
+
+async function startTranscription(): Promise<void> {
+  if (!lastRecordingBuffer) {
+    console.error('No recording buffer available for transcription');
+    return;
+  }
+
+  const modelSize = modelSelect.value as WhisperModelSize;
+  
+  const isDownloaded = await checkModelDownloaded(modelSize);
+  if (!isDownloaded) {
+    const shouldDownload = confirm(
+      `The Whisper ${modelSize} model (${MODEL_SIZES[modelSize]}) is not downloaded.\n\n` +
+      `Would you like to download it now?`
+    );
+    
+    if (shouldDownload) {
+      await handleModelDownload(modelSize);
+      const nowDownloaded = await checkModelDownloaded(modelSize);
+      if (!nowDownloaded) {
+        alert('Model download failed. Please try again from the AI Models section.');
+        return;
+      }
+    } else {
+      return;
+    }
+  }
+  
+  console.log(`Starting transcription with model: ${modelSize}`);
+
+  transcriptionProgress.classList.remove('hidden');
+  transcriptionResult.classList.add('hidden');
+  transcriptionEmpty.classList.add('hidden');
+  progressFill.style.width = '0%';
+  progressFill.classList.remove('indeterminate');
+
+  try {
+    const result = await transcribeAudio(lastRecordingBuffer, {
+      modelSize,
+      onProgress: updateTranscriptionProgress
+    });
+
+    lastTranscription = result.text;
+    
+    progressFill.classList.remove('indeterminate');
+    transcriptionProgress.classList.add('hidden');
+    transcriptionResult.classList.remove('hidden');
+    transcriptionText.textContent = result.text || '(No speech detected)';
+    
+    console.log(`Transcription complete in ${result.duration.toFixed(1)}s`);
+    statusText.textContent = 'Transcription complete!';
+    
+  } catch (error) {
+    console.error('Transcription failed:', error);
+    transcriptionProgress.classList.add('hidden');
+    transcriptionEmpty.classList.remove('hidden');
+    transcriptionEmpty.innerHTML = `<p style="color: #ff6b81;">Transcription failed: ${error}</p>`;
+    statusText.textContent = 'Transcription failed';
+  }
+}
+
+async function copyTranscription(): Promise<void> {
+  if (!lastTranscription) return;
+  
+  try {
+    await navigator.clipboard.writeText(lastTranscription);
+    copyTranscriptionBtn.textContent = '✓ Copied!';
+    setTimeout(() => {
+      copyTranscriptionBtn.textContent = '📋 Copy';
+    }, 2000);
+  } catch (error) {
+    console.error('Failed to copy:', error);
+  }
+}
+
+async function saveTranscriptionToFile(): Promise<void> {
+  if (!lastTranscription || !lastRecordingTimestamp) return;
+  
+  const filename = `transcription_${lastRecordingTimestamp}.txt`;
+  
+  try {
+    const result = await window.electronAPI.saveTranscription({
+      text: lastTranscription,
+      filename: filename
+    });
+    
+    if (result.success) {
+      saveTranscriptionBtn.textContent = '✓ Saved!';
+      console.log(`Transcription saved: ${result.path}`);
+      setTimeout(() => {
+        saveTranscriptionBtn.textContent = '💾 Save';
+      }, 2000);
+    }
+  } catch (error) {
+    console.error('Failed to save transcription:', error);
+  }
+}
+
+copyTranscriptionBtn.addEventListener('click', copyTranscription);
+saveTranscriptionBtn.addEventListener('click', saveTranscriptionToFile);
+
+const MODEL_DESCRIPTIONS: Record<WhisperModelSize, string> = {
+  'tiny': 'Fastest, lower accuracy',
+  'base': 'Balanced speed & accuracy',
+  'small': 'Better accuracy, slower',
+  'medium': 'Best accuracy, slowest',
+  'large': 'Highest accuracy, requires more resources'
+};
+
+function createModelItemHTML(status: ModelStatus): string {
+  const isDownloading = downloadingModel === status.modelSize;
+  
+  return `
+    <div class="model-item ${status.downloaded ? 'downloaded' : ''}" data-model="${status.modelSize}">
+      <div class="model-info">
+        <div class="model-name">Whisper ${status.modelSize.charAt(0).toUpperCase() + status.modelSize.slice(1)}</div>
+        <div class="model-meta">
+          <span class="model-size">${status.size}</span>
+          <span class="model-status ${status.downloaded ? 'downloaded' : ''}">
+            ${status.downloaded ? '✓ Downloaded' : 'Not downloaded'}
+          </span>
+        </div>
+        <div class="model-description" style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">
+          ${MODEL_DESCRIPTIONS[status.modelSize]}
+        </div>
+      </div>
+      <div class="model-actions">
+        ${status.downloaded 
+          ? `<button class="model-btn delete-btn" data-model="${status.modelSize}" ${isDownloading ? 'disabled' : ''}>Delete</button>`
+          : `<button class="model-btn download-btn" data-model="${status.modelSize}" ${isDownloading ? 'disabled' : ''}>
+              ${isDownloading ? 'Downloading...' : 'Download'}
+            </button>`
+        }
+      </div>
+      ${isDownloading ? `
+        <div class="model-download-progress">
+          <div class="model-progress-bar">
+            <div class="model-progress-fill" id="model-progress-${status.modelSize}"></div>
+          </div>
+          <div class="model-progress-text" id="model-progress-text-${status.modelSize}">Starting...</div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+async function refreshModelsList(): Promise<void> {
+  try {
+    const statuses = await getAllModelStatus();
+    
+    modelsList.innerHTML = statuses.map(status => createModelItemHTML(status)).join('');
+    
+    // Add event listeners to buttons
+    modelsList.querySelectorAll('.download-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const modelSize = (e.currentTarget as HTMLButtonElement).dataset.model as WhisperModelSize;
+        handleModelDownload(modelSize);
+      });
+    });
+    
+    modelsList.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const modelSize = (e.currentTarget as HTMLButtonElement).dataset.model as WhisperModelSize;
+        handleModelDelete(modelSize);
+      });
+    });
+    
+    // Update the model select dropdown to only show downloaded models
+    updateModelSelectOptions(statuses);
+  } catch (error) {
+    console.error('Failed to refresh models list:', error);
+    modelsList.innerHTML = '<p class="error-text">Failed to load models</p>';
+  }
+}
+
+function updateModelSelectOptions(statuses: ModelStatus[]): void {
+  const downloadedModels = statuses.filter(s => s.downloaded);
+  const currentValue = modelSelect.value as WhisperModelSize;
+  
+  // Clear and repopulate
+  modelSelect.innerHTML = '';
+  
+  if (downloadedModels.length === 0) {
+    modelSelect.innerHTML = '<option value="" disabled selected>No models downloaded</option>';
+    modelSelect.disabled = true;
+  } else {
+    downloadedModels.forEach(status => {
+      const option = document.createElement('option');
+      option.value = status.modelSize;
+      option.textContent = `Whisper ${status.modelSize.charAt(0).toUpperCase() + status.modelSize.slice(1)} (${MODEL_SIZES[status.modelSize]})`;
+      modelSelect.appendChild(option);
+    });
+    modelSelect.disabled = false;
+    
+    // Restore selection if still available
+    if (downloadedModels.some(m => m.modelSize === currentValue)) {
+      modelSelect.value = currentValue;
+    }
+  }
+}
+
+async function handleModelDownload(modelSize: WhisperModelSize): Promise<void> {
+  if (downloadingModel) {
+    console.warn('Already downloading a model');
+    return;
+  }
+  
+  downloadingModel = modelSize;
+  await refreshModelsList(); // Update UI to show downloading state
+  
+  try {
+    await downloadModel(modelSize, (progress: TranscriptionProgress) => {
+      const progressFill = document.getElementById(`model-progress-${modelSize}`);
+      const progressText = document.getElementById(`model-progress-text-${modelSize}`);
+      
+      if (progressFill && progress.progress !== undefined) {
+        progressFill.style.width = `${progress.progress}%`;
+      }
+      if (progressText) {
+        progressText.textContent = progress.message;
+      }
+    });
+    
+    console.log(`Model ${modelSize} downloaded successfully`);
+  } catch (error) {
+    console.error(`Failed to download model ${modelSize}:`, error);
+    alert(`Failed to download model: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  } finally {
+    downloadingModel = null;
+    await refreshModelsList();
+  }
+}
+
+async function handleModelDelete(modelSize: WhisperModelSize): Promise<void> {
+  const confirmed = confirm(`Are you sure you want to delete the Whisper ${modelSize} model?`);
+  if (!confirmed) return;
+  
+  try {
+    const success = await deleteModelFromCache(modelSize);
+    if (success) {
+      console.log(`Model ${modelSize} deleted successfully`);
+    } else {
+      console.warn(`Failed to delete model ${modelSize}`);
+    }
+  } catch (error) {
+    console.error(`Failed to delete model ${modelSize}:`, error);
+  }
+  
+  await refreshModelsList();
+}
+
+refreshModelsList();
 
 console.log('🎙️ Fly on the Wall recorder UI initialized');

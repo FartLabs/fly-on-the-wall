@@ -1,7 +1,7 @@
-import { app, BrowserWindow, ipcMain, desktopCapturer } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import path from 'node:path';
-import fs from 'node:fs';
 import started from 'electron-squirrel-startup';
+
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -9,7 +9,7 @@ if (started) {
 }
 
 // Get the project root (parent of desktop folder)
-const getProjectRoot = (): string => {
+export const getProjectRoot = (): string => {
   // In development, __dirname is in .vite/build, so go up to desktop then to project root
   // In production, adjust as needed
   if (app.isPackaged) {
@@ -19,17 +19,6 @@ const getProjectRoot = (): string => {
   return path.resolve(__dirname, '..', '..', '..');
 };
 
-const getRecordingsDir = (): string => {
-  const projectRoot = getProjectRoot();
-  const recordingsDir = path.join(projectRoot, 'recordings');
-  
-  // Ensure recordings directory exists
-  if (!fs.existsSync(recordingsDir)) {
-    fs.mkdirSync(recordingsDir, { recursive: true });
-  }
-  
-  return recordingsDir;
-};
 
 const createWindow = () => {
   // Create the browser window.
@@ -50,9 +39,12 @@ const createWindow = () => {
     );
   }
 
+  mainWindow.maximize();
+
   // Open the DevTools.
   // mainWindow.webContents.openDevTools();
 };
+
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -76,45 +68,4 @@ app.on('activate', () => {
   }
 });
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.
 
-// IPC handler for saving recordings
-ipcMain.handle('save-recording', async (_event, data: { buffer: ArrayBuffer; filename: string }) => {
-  try {
-    const recordingsDir = getRecordingsDir();
-    const filePath = path.join(recordingsDir, data.filename);
-    
-    // Convert ArrayBuffer to Buffer and write to file
-    const buffer = Buffer.from(data.buffer);
-    fs.writeFileSync(filePath, buffer);
-    
-    console.log(`Recording saved: ${filePath}`);
-    return { success: true, path: filePath };
-  } catch (error) {
-    console.error('Error saving recording:', error);
-    return { success: false, error: String(error) };
-  }
-});
-
-// IPC handler to get recordings directory path
-ipcMain.handle('get-recordings-dir', () => {
-  return getRecordingsDir();
-});
-
-// IPC handler to get desktop audio sources
-ipcMain.handle('get-desktop-sources', async () => {
-  try {
-    const sources = await desktopCapturer.getSources({ 
-      types: ['screen', 'window'],
-      fetchWindowIcons: false
-    });
-    return sources.map(source => ({
-      id: source.id,
-      name: source.name,
-    }));
-  } catch (error) {
-    console.error('Error getting desktop sources:', error);
-    return [];
-  }
-});

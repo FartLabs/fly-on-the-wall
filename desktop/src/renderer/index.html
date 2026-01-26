@@ -6,7 +6,7 @@
   </head>
   <body>
     <div class="container">
-      <h1>🎙️ Fly on the Wall</h1>
+      <h1>Fly on the Wall</h1>
       <p class="subtitle">Meeting Recorder</p>
       
       <div class="recorder-card">
@@ -40,7 +40,7 @@
       
       <div class="audio-devices-card">
         <div class="card-header">
-          <h2>🔊 Audio Sources</h2>
+          <h2>Audio Sources</h2>
           <button class="refresh-btn" id="refreshDevices" title="Refresh devices">↻</button>
         </div>
         
@@ -66,7 +66,54 @@
           <p class="loading-text">Loading audio devices...</p>
         </div>
       </div>
+      
+      <div class="model-management-card" id="modelManagementCard">
+        <div class="card-header">
+          <h2>AI Models</h2>
+        </div>
+        
+        <p class="model-info-text">
+          Download models for transcription. Larger models are more accurate but slower.
+        </p>
+        
+        <div class="models-list" id="modelsList">
+        </div>
+      </div>
+      
+      <div class="transcription-card hidden" id="transcriptionCard">
+        <div class="card-header">
+          <h2>Transcription</h2>
+          <select class="model-select" id="modelSelect">
+            <option value="tiny">Whisper Tiny (fastest)</option>
+            <option value="base" selected>Whisper Base (balanced)</option>
+            <option value="small">Whisper Small (better quality)</option>
+          </select>
+        </div>
+        
+        <div class="transcription-progress hidden" id="transcriptionProgress">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <p class="progress-text" id="progressText">Loading model...</p>
+        </div>
+        
+        <div class="transcription-result hidden" id="transcriptionResult">
+          <div class="transcription-text" id="transcriptionText"></div>
+          <div class="transcription-actions">
+            <button class="action-btn" id="copyTranscription" title="Copy to clipboard">
+              Copy
+            </button>
+            <button class="action-btn" id="saveTranscription" title="Save to file">
+              Save
+            </button>
+          </div>
+        </div>
+        
+        <div class="transcription-empty" id="transcriptionEmpty">
+          <p>Record a meeting to see the transcription here.</p>
+        </div>
+      </div>
     </div>
-    <script type="module" src="/src/renderer.ts"></script>
+    <script type="module" src="./index.ts"></script>
   </body>
 </html>
