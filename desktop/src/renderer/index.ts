@@ -36,8 +36,8 @@ import {
   type TranscriptionProgress,
   type ModelStatus
 } from '../transcription';
-import { MODEL_SIZES, type WhisperModelSize } from '../transcription/whisper';
-
+import { MODEL_SIZES, type WhisperModelSize, MODEL_DESCRIPTIONS } from '../transcription/whisper';
+import { formatTime, isScreenSource } from './utils';
 
 declare global {
   interface Window {
@@ -97,15 +97,6 @@ let lastRecordingTimestamp: string | null = null;
 
 const mutedDevices = new Set<string>();
 
-function formatTime(totalSeconds: number): string {
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  return [hours, minutes, seconds]
-    .map(val => val.toString().padStart(2, '0'))
-    .join(':');
-}
-
 function updateTimer(): void {
   elapsedSeconds++;
   timerDisplay.textContent = formatTime(elapsedSeconds);
@@ -141,16 +132,6 @@ function getActiveInputDeviceIds(): string[] {
     .map(el => (el as HTMLElement).dataset.deviceId)
     .filter((id): id is string => id !== undefined);
 }
-
-function isScreenSource (source: { id: string; name: string }): boolean {
-  const screenPatterns = ['screen', 'desktop', 'monitor', 'entire'];
-  const normalizedName = source.name.toLowerCase();
-  const normalizedId = source.id.toLowerCase();
-  
-  return screenPatterns.some(pattern => 
-    normalizedName.includes(pattern) || normalizedId.includes(pattern)
-  );
-};
 
 async function startRecording(): Promise<void> {
   const systemAudioEnabled = (document.getElementById('systemAudioToggle') as HTMLInputElement).checked;
@@ -726,14 +707,6 @@ async function saveTranscriptionToFile(): Promise<void> {
 copyTranscriptionBtn.addEventListener('click', copyTranscription);
 saveTranscriptionBtn.addEventListener('click', saveTranscriptionToFile);
 
-const MODEL_DESCRIPTIONS: Record<WhisperModelSize, string> = {
-  'tiny': 'Fastest, lower accuracy',
-  'base': 'Balanced speed & accuracy',
-  'small': 'Better accuracy, slower',
-  'medium': 'Best accuracy, slowest',
-  'large': 'Highest accuracy, requires more resources'
-};
-
 function createModelItemHTML(status: ModelStatus): string {
   const isDownloading = downloadingModel === status.modelSize;
   
@@ -777,7 +750,6 @@ async function refreshModelsList(): Promise<void> {
     
     modelsList.innerHTML = statuses.map(status => createModelItemHTML(status)).join('');
     
-    // Add event listeners to buttons
     modelsList.querySelectorAll('.download-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const modelSize = (e.currentTarget as HTMLButtonElement).dataset.model as WhisperModelSize;
@@ -792,7 +764,6 @@ async function refreshModelsList(): Promise<void> {
       });
     });
     
-    // Update the model select dropdown to only show downloaded models
     updateModelSelectOptions(statuses);
   } catch (error) {
     console.error('Failed to refresh models list:', error);
@@ -804,7 +775,6 @@ function updateModelSelectOptions(statuses: ModelStatus[]): void {
   const downloadedModels = statuses.filter(s => s.downloaded);
   const currentValue = modelSelect.value as WhisperModelSize;
   
-  // Clear and repopulate
   modelSelect.innerHTML = '';
   
   if (downloadedModels.length === 0) {
@@ -833,7 +803,7 @@ async function handleModelDownload(modelSize: WhisperModelSize): Promise<void> {
   }
   
   downloadingModel = modelSize;
-  await refreshModelsList(); // Update UI to show downloading state
+  await refreshModelsList(); 
   
   try {
     await downloadModel(modelSize, (progress: TranscriptionProgress) => {

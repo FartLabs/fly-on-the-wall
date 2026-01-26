@@ -21,6 +21,15 @@ export const MODEL_SIZES: Record<WhisperModelSize, string> = {
   'large': '~3.2 GB',
 };
 
+export const MODEL_DESCRIPTIONS: Record<WhisperModelSize, string> = {
+  'tiny': 'Fastest, lower accuracy',
+  'base': 'Balanced speed & accuracy',
+  'small': 'Better accuracy, slower',
+  'medium': 'Best accuracy, slower',
+  'large': 'Highest accuracy, requires more resources'
+};
+
+
 export class WhisperPipeline {
   static task = 'automatic-speech-recognition' as const;
   static instance: AutomaticSpeechRecognitionPipeline | null = null;
