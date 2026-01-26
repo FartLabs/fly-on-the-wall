@@ -11,7 +11,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getRecordingsDir: () => ipcRenderer.invoke('get-recordings-dir'),
   getDesktopSources: () => ipcRenderer.invoke('get-desktop-sources'),
 
-  // model management
   getModelsDir: () => ipcRenderer.invoke('get-models-dir'),
   checkModelExists: (modelId: string) => ipcRenderer.invoke('check-model-exists', modelId),
   deleteModel: (modelId: string) => ipcRenderer.invoke('delete-model', modelId),

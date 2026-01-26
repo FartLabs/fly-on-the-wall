@@ -33,3 +33,25 @@ ipcMain.handle('get-recordings-dir', () => {
 
 });
 
+// pretty similar logic to "save-transcription" handler, could create function
+// if another handler does the same logic 
+ipcMain.handle('save-recording', async (_event, data: { buffer: ArrayBuffer; filename: string }) => {
+  try {
+    const projectRoot = getProjectRoot();
+    const recordingsDir = path.join(projectRoot, 'recordings');
+    
+    if (!fs.existsSync(recordingsDir)) {
+      fs.mkdirSync(recordingsDir, { recursive: true });
+    }
+    
+    const filePath = path.join(recordingsDir, data.filename);
+    const buffer = Buffer.from(data.buffer);
+    fs.writeFileSync(filePath, buffer);
+    
+    console.log(`Recording saved: ${filePath}`);
+    return { success: true, path: filePath };
+  } catch (error) {
+    console.error('Error saving recording:', error);
+    return { success: false, error: String(error) };
+  }
+});
