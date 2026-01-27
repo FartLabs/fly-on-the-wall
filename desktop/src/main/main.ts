@@ -1,3 +1,3 @@
-import "./app"
-import "./recordings"
-import "./models"
+import "./app";
+import "./recordings";
+import "./models";

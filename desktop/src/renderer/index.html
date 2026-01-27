@@ -11,24 +11,28 @@
           <h1>Fly on the Wall</h1>
           <p class="subtitle">Meeting Recorder</p>
         </div>
-        <button class="nav-btn" id="viewHistoryBtn" title="View past recordings">
+        <button
+          class="nav-btn"
+          id="viewHistoryBtn"
+          title="View past recordings"
+        >
           <span>History</span>
         </button>
       </div>
-      
+
       <div class="recorder-card">
         <div class="status-indicator" id="statusIndicator">
           <span class="status-dot"></span>
           <span class="status-text" id="statusText">Ready to record</span>
         </div>
-        
+
         <div class="timer" id="timer">00:00:00</div>
-        
+
         <button class="record-btn" id="recordBtn">
           <span class="btn-icon" id="btnIcon">⏺</span>
           <span class="btn-text" id="btnText">Start Recording</span>
         </button>
-        
+
         <div class="recording-controls hidden" id="recordingControls">
           <button class="control-btn pause-btn" id="pauseBtn">
             <span class="btn-icon">⏸</span>
@@ -44,13 +48,19 @@
           </button>
         </div>
       </div>
-      
+
       <div class="audio-devices-card">
         <div class="card-header">
           <h2>Audio Sources</h2>
-          <button class="refresh-btn" id="refreshDevices" title="Refresh devices">↻</button>
+          <button
+            class="refresh-btn"
+            id="refreshDevices"
+            title="Refresh devices"
+          >
+            ↻
+          </button>
         </div>
-        
+
         <div class="system-audio-section">
           <div class="device-item system-audio" id="systemAudioItem">
             <div class="device-info">
@@ -61,28 +71,27 @@
               </div>
             </div>
             <label class="mute-toggle" title="Enable system audio">
-              <input type="checkbox" id="systemAudioToggle" checked>
+              <input type="checkbox" id="systemAudioToggle" checked />
               <span class="mute-slider"></span>
             </label>
           </div>
         </div>
-        
+
         <div class="section-divider">Microphones (Optional)</div>
-        
+
         <div class="devices-list" id="devicesList">
           <p class="loading-text">Loading audio devices...</p>
         </div>
       </div>
-      
+
       <div class="model-management-card" id="modelManagementCard">
         <div class="card-header">
           <h2>AI Models</h2>
         </div>
-        
-        <div class="models-list" id="modelsList">
-        </div>
+
+        <div class="models-list" id="modelsList"></div>
       </div>
-      
+
       <div class="transcription-card hidden" id="transcriptionCard">
         <div class="card-header">
           <h2>Transcription</h2>
@@ -92,26 +101,34 @@
             <option value="small">Whisper Small (better quality)</option>
           </select>
         </div>
-        
+
         <div class="transcription-progress hidden" id="transcriptionProgress">
           <div class="progress-bar">
             <div class="progress-fill" id="progressFill"></div>
           </div>
           <p class="progress-text" id="progressText">Loading model...</p>
         </div>
-        
+
         <div class="transcription-result hidden" id="transcriptionResult">
           <div class="transcription-text" id="transcriptionText"></div>
           <div class="transcription-actions">
-            <button class="action-btn" id="copyTranscription" title="Copy to clipboard">
+            <button
+              class="action-btn"
+              id="copyTranscription"
+              title="Copy to clipboard"
+            >
               Copy
             </button>
-            <button class="action-btn" id="saveTranscription" title="Save to file">
+            <button
+              class="action-btn"
+              id="saveTranscription"
+              title="Save to file"
+            >
               Save
             </button>
           </div>
         </div>
-        
+
         <div class="transcription-empty" id="transcriptionEmpty">
           <p>Record a meeting to see the transcription here.</p>
         </div>
@@ -121,14 +138,16 @@
         <div class="card-header">
           <h2>Summary</h2>
         </div>
-        
+
         <div class="summary-progress hidden" id="summaryProgress">
           <div class="progress-bar">
             <div class="progress-fill" id="summaryProgressFill"></div>
           </div>
-          <p class="progress-text" id="summaryProgressText">Generating summary...</p>
+          <p class="progress-text" id="summaryProgressText">
+            Generating summary...
+          </p>
         </div>
-        
+
         <div class="summary-result hidden" id="summaryResult">
           <div class="summary-text" id="summaryText"></div>
           <div class="summary-actions">
@@ -140,7 +159,7 @@
             </button>
           </div>
         </div>
-        
+
         <div class="summary-empty hidden" id="summaryEmpty">
           <p>Summary will appear here after transcription.</p>
         </div>
@@ -162,9 +181,15 @@
       <div class="history-card">
         <div class="card-header">
           <h2>Saved Notes</h2>
-          <button class="refresh-btn" id="refreshHistoryBtn" title="Refresh list">↻</button>
+          <button
+            class="refresh-btn"
+            id="refreshHistoryBtn"
+            title="Refresh list"
+          >
+            ↻
+          </button>
         </div>
-        
+
         <div class="history-list" id="historyList">
           <p class="loading-text">Loading history...</p>
         </div>
@@ -174,8 +199,20 @@
         <div class="card-header">
           <h2 id="noteViewerTitle">Note</h2>
           <div class="viewer-actions">
-            <button class="action-btn" id="copyNoteBtn" title="Copy to clipboard">Copy</button>
-            <button class="action-btn delete-btn" id="deleteNoteBtn" title="Delete this note">Delete</button>
+            <button
+              class="action-btn"
+              id="copyNoteBtn"
+              title="Copy to clipboard"
+            >
+              Copy
+            </button>
+            <button
+              class="action-btn delete-btn"
+              id="deleteNoteBtn"
+              title="Delete this note"
+            >
+              Delete
+            </button>
             <button class="close-btn" id="closeNoteBtn" title="Close">✕</button>
           </div>
         </div>

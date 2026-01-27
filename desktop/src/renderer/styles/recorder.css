@@ -25,7 +25,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
@@ -43,7 +44,7 @@
 .timer {
   font-size: 3rem;
   font-weight: 300;
-  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+  font-family: "SF Mono", "Monaco", "Inconsolata", monospace;
   margin-bottom: 2rem;
   letter-spacing: 2px;
 }

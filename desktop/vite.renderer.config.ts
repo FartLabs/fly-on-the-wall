@@ -1,9 +1,9 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from "vite";
 
 // https://vitejs.dev/config
 export default defineConfig({
-root: 'src/renderer', 
+  root: "src/renderer",
   build: {
-    outDir: '.vite/renderer',
-  },
+    outDir: ".vite/renderer"
+  }
 });
