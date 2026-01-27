@@ -1,6 +1,7 @@
 import { elements, setUiLocked } from "./domNodes";
 import { getActiveInputDeviceIds } from "./devices";
 import { formatTime, isScreenSource } from "@/utils";
+import { refreshModelsList } from "./models";
 
 let mediaRecorder: MediaRecorder | null = null;
 let audioChunks: Blob[] = [];
@@ -124,6 +125,9 @@ export async function startRecording(
     elapsedSeconds = 0;
     elements.timerDisplay.textContent = formatTime(0);
     timerInterval = window.setInterval(updateTimer, 1000);
+    
+    // Update models UI to disable downloads/deletes during recording
+    refreshModelsList();
   } catch (error) {
     console.error("Error starting:", error);
     stopRecording();
@@ -154,6 +158,9 @@ export function stopRecording(): void {
     clearInterval(timerInterval);
     timerInterval = null;
   }
+  
+  // Update models UI to re-enable downloads/deletes
+  refreshModelsList();
 }
 
 export function pauseRecording(): void {

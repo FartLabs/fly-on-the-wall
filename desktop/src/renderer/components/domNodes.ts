@@ -26,7 +26,6 @@ export const elements = {
   transcriptionCard: document.getElementById(
     "transcriptionCard"
   ) as HTMLDivElement,
-  modelSelect: document.getElementById("modelSelect") as HTMLSelectElement,
   transcriptionProgress: document.getElementById(
     "transcriptionProgress"
   ) as HTMLDivElement,

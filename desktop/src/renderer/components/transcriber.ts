@@ -4,8 +4,8 @@ import {
   checkModelDownloaded,
   type TranscriptionProgress
 } from "@/transcription";
-import { type WhisperModelSize } from "@/transcription/whisper";
 import { runSummarization } from "./summarizer";
+import { getSelectedModel, setTranscriptionInProgress } from "./models";
 
 let lastTranscription: string | null = null;
 let lastTimestamp: string | null = null;
@@ -28,7 +28,14 @@ export async function runTranscription(
   timestamp: string
 ): Promise<void> {
   lastTimestamp = timestamp;
-  const modelSize = elements.modelSelect.value as WhisperModelSize;
+  const modelSize = getSelectedModel();
+
+  if (!modelSize) {
+    alert(
+      "No model selected. Please click on a model in the AI Models section to select it for transcription."
+    );
+    return;
+  }
 
   const isDownloaded = await checkModelDownloaded(modelSize);
   if (!isDownloaded) {
@@ -39,6 +46,8 @@ export async function runTranscription(
   elements.transcriptionCard.classList.remove("hidden");
   elements.transcriptionProgress.classList.remove("hidden");
   elements.progressFill.style.width = "0%";
+
+  setTranscriptionInProgress(true);
 
   try {
     const result = await transcribeAudio(buffer, {
@@ -74,6 +83,8 @@ export async function runTranscription(
     elements.transcriptionProgress.classList.add("hidden");
     elements.transcriptionEmpty.classList.remove("hidden");
     elements.transcriptionEmpty.innerHTML = `<p style="color: #ff6b81;">Failed: ${error}</p>`;
+  } finally {
+    setTranscriptionInProgress(false);
   }
 }
 

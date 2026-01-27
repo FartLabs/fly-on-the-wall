@@ -25,9 +25,37 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
+.model-item.selectable {
+  cursor: pointer;
+}
+
+.model-item.selectable:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.model-item.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.model-item.disabled:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  transform: none;
+}
+
 .model-item.downloaded {
   border-color: rgba(102, 126, 234, 0.3);
   background: rgba(102, 126, 234, 0.1);
+}
+
+.model-item.selected {
+  border-color: rgba(76, 175, 80, 0.5);
+  background: rgba(76, 175, 80, 0.15);
+  box-shadow: 0 0 15px rgba(76, 175, 80, 0.2);
 }
 
 .model-item.summary-model.downloaded {
@@ -88,7 +116,7 @@
   color: #fff;
 }
 
-.model-btn.download-btn:hover {
+.model-btn.download-btn:hover:not(:disabled) {
   transform: scale(1.05);
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
@@ -98,6 +126,8 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+  pointer-events: none;
+  opacity: 0.5;
 }
 
 .model-btn.delete-btn {
@@ -106,8 +136,23 @@
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
-.model-btn.delete-btn:hover {
+.model-btn.delete-btn:hover:not(:disabled) {
   background: rgba(239, 68, 68, 0.3);
+}
+
+.model-btn.delete-btn:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: #666;
+  border-color: rgba(255, 255, 255, 0.1);
+  cursor: not-allowed;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.model-btn:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+  opacity: 0.5;
 }
 
 .model-download-progress {
