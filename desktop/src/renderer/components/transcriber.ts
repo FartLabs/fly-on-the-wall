@@ -3,8 +3,8 @@ import {
   transcribeAudio,
   checkModelDownloaded,
   type TranscriptionProgress
-} from "../../transcription";
-import { type WhisperModelSize } from "../../transcription/whisper";
+} from "@/transcription";
+import { type WhisperModelSize } from "@/transcription/whisper";
 import { runSummarization } from "./summarizer";
 
 let lastTranscription: string | null = null;

@@ -5,23 +5,22 @@ import {
   deleteModel as deleteModelFromCache,
   type TranscriptionProgress,
   type ModelStatus
-} from "../../transcription";
+} from "@/transcription";
 import {
   MODEL_SIZES,
   type WhisperModelSize,
   MODEL_DESCRIPTIONS
-} from "../../transcription/whisper";
+} from "@/transcription/whisper";
 import {
   checkSummarizationModelDownloaded,
   downloadSummarizationModel,
   deleteSummarizationModel,
   type SummarizationProgress
-} from "../../summarization";
+} from "@/summarization";
 import {
   SUMMARIZATION_MODEL,
   MODEL_SIZE as SUMMARY_MODEL_SIZE
-} from "../../summarization/pipeline";
-
+} from "@/summarization/pipeline";
 let downloadingModel: WhisperModelSize | null = null;
 let downloadingSummaryModel = false;
 

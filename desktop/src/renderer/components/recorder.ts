@@ -1,6 +1,6 @@
 import { elements, setUiLocked } from "./domNodes";
 import { getActiveInputDeviceIds } from "./devices";
-import { formatTime, isScreenSource } from "../utils";
+import { formatTime, isScreenSource } from "@/utils";
 
 let mediaRecorder: MediaRecorder | null = null;
 let audioChunks: Blob[] = [];

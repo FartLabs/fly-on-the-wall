@@ -4,7 +4,7 @@ import {
   checkSummarizationModelDownloaded,
   downloadSummarizationModel,
   type SummarizationProgress
-} from "../../summarization";
+} from "@/summarization";
 
 let lastSummary: string | null = null;
 let lastTimestamp: string | null = null;
