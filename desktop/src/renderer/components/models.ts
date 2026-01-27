@@ -8,10 +8,9 @@ import {
   checkSummarizationModelDownloaded, 
   downloadSummarizationModel, 
   deleteSummarizationModel,
-  SUMMARIZATION_MODEL,
-  MODEL_SIZE as SUMMARY_MODEL_SIZE,
   type SummarizationProgress
 } from '../../summarization';
+import { SUMMARIZATION_MODEL, MODEL_SIZE as SUMMARY_MODEL_SIZE } from '../../summarization/pipeline';
 
 let downloadingModel: WhisperModelSize | null = null;
 let downloadingSummaryModel = false;

@@ -1,6 +1,6 @@
 // TODO: let users drop in their own onnx models for summarization
 
-import type { TextGenerationPipeline } from '@huggingface/transformers';
+import { SUMMARIZATION_MODEL, MODEL_SIZE, SummarizationPipeline } from './pipeline';
 
 export interface SummarizationProgress {
   status: 'loading' | 'downloading' | 'summarizing' | 'complete' | 'error';
@@ -13,52 +13,12 @@ export interface SummarizationResult {
   duration: number;
 }
 
-// other models worth using at small sizes and good performance: 
-// llama 3.2 1b, qwen 2.5 0.5b, smollm 135m
-// since transformers js is being used, need to use ONNX versions of the models
-// export const SUMMARIZATION_MODEL = 'onnx-community/Llama-3.2-1B-Instruct';
-export const SUMMARIZATION_MODEL = "onnx-community/Qwen2.5-0.5B-Instruct"
-export const MODEL_SIZE = '~500 MB';
-
 type ProgressCallback = (progress: SummarizationProgress) => void;
 
-class SummarizationPipelineWrapper {
-  static instance: TextGenerationPipeline | null = null;
-  static isDownloaded = false;
-
-  static async getInstance(
-    progressCallback?: (progress: { progress?: number; status?: string }) => void
-  ): Promise<TextGenerationPipeline> {
-    if (this.instance !== null) {
-      return this.instance;
-    }
-
-    const { pipeline, env } = await import('@huggingface/transformers');
-
-    env.allowLocalModels = false;
-    env.allowRemoteModels = true;
-
-    console.log(`Loading summarization model: ${SUMMARIZATION_MODEL}`);
-
-    const pipelineInstance = await pipeline('text-generation', SUMMARIZATION_MODEL, {
-      progress_callback: progressCallback,
-    });
-
-    this.instance = pipelineInstance as TextGenerationPipeline;
-    this.isDownloaded = true;
-
-    console.log('Summarization model loaded successfully');
-    return this.instance;
-  }
-
-  static dispose(): void {
-    this.instance = null;
-    console.log('SummarizationPipeline disposed');
-  }
-}
+const MIN_LENGTH_FOR_SUMMARIZATION = 20;
 
 export async function checkSummarizationModelDownloaded(): Promise<boolean> {
-  if (SummarizationPipelineWrapper.isDownloaded) {
+  if (SummarizationPipeline.isDownloaded) {
     return true;
   }
 
@@ -67,7 +27,7 @@ export async function checkSummarizationModelDownloaded(): Promise<boolean> {
     const testUrl = `https://huggingface.co/${SUMMARIZATION_MODEL}/resolve/main/config.json`;
     const cached = await cache.match(testUrl);
     if (cached) {
-      SummarizationPipelineWrapper.isDownloaded = true;
+      SummarizationPipeline.isDownloaded = true;
       return true;
     }
   } catch (e) {
@@ -86,7 +46,7 @@ export async function downloadSummarizationModel(
     message: `Downloading summarization model (${MODEL_SIZE})...`,
   });
 
-  await SummarizationPipelineWrapper.getInstance((progress) => {
+  await SummarizationPipeline.getInstance((progress) => {
     if ('progress' in progress && progress.progress !== undefined) {
       const percent = Math.round(progress.progress as number);
       onProgress?.({
@@ -106,8 +66,8 @@ export async function downloadSummarizationModel(
 
 export async function deleteSummarizationModel(): Promise<boolean> {
   try {
-    if (SummarizationPipelineWrapper.instance) {
-      SummarizationPipelineWrapper.dispose();
+    if (SummarizationPipeline.instance) {
+      SummarizationPipeline.dispose();
     }
 
     const cache = await caches.open('transformers-cache');
@@ -121,7 +81,7 @@ export async function deleteSummarizationModel(): Promise<boolean> {
       await cache.delete(key);
     }
 
-    SummarizationPipelineWrapper.isDownloaded = false;
+    SummarizationPipeline.isDownloaded = false;
     
     console.log(`Summarization model deleted: ${SUMMARIZATION_MODEL}`);
     return true;
@@ -159,8 +119,6 @@ Here is the transcript:
 ---
 ${transcript}
 ---
-
-Summary:
 `;
 }
 
@@ -171,9 +129,7 @@ export async function summarizeText(
 ): Promise<SummarizationResult> {
   const startTime = Date.now();
 
-  console.log('[Summarization] Starting with text length:', text.length);
-
-  if (text.trim().length < 20) {
+  if (text.trim().length < MIN_LENGTH_FOR_SUMMARIZATION) {
     return {
       summary: 'This meeting concluded with no substantive discussion.',
       duration: 0,
@@ -185,7 +141,7 @@ export async function summarizeText(
     message: 'Loading summarization model...',
   });
 
-  const generator = await SummarizationPipelineWrapper.getInstance((progress) => {
+  const generator = await SummarizationPipeline.getInstance((progress) => {
     if ('progress' in progress && progress.progress !== undefined) {
       const percent = Math.round(progress.progress as number);
       onProgress?.({
