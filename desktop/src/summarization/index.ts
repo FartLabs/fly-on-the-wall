@@ -95,6 +95,7 @@ export async function deleteSummarizationModel(): Promise<boolean> {
   }
 }
 
+// TODO: make prompt customizable by user
 function createSummarizationPrompt(
   transcript: string,
   participants: string[] = []

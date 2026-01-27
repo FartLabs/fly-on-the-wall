@@ -59,7 +59,7 @@ export async function startRecording(
             }
           });
 
-          systemStream.getVideoTracks().forEach((track) => track.stop()); // Audio only
+          systemStream.getVideoTracks().forEach((track) => track.stop()); 
           const audioTracks = systemStream.getAudioTracks();
           if (audioTracks.length > 0) {
             const audioOnlyStream = new MediaStream(audioTracks);
@@ -126,7 +126,6 @@ export async function startRecording(
     elements.timerDisplay.textContent = formatTime(0);
     timerInterval = window.setInterval(updateTimer, 1000);
     
-    // Update models UI to disable downloads/deletes during recording
     refreshModelsList();
   } catch (error) {
     console.error("Error starting:", error);
@@ -159,7 +158,6 @@ export function stopRecording(): void {
     timerInterval = null;
   }
   
-  // Update models UI to re-enable downloads/deletes
   refreshModelsList();
 }
 
