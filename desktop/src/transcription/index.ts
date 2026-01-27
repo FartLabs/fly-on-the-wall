@@ -1,11 +1,4 @@
-/**
- * Transcription service using Whisper models via transformers.js
- * Reference: https://huggingface.co/docs/transformers.js
- * 
- * Uses a singleton pipeline pattern for efficient model loading and caching.
- * In Electron's renderer process (browser context), transformers.js uses
- * the browser's Cache API for model storage. This is automatic and persistent.
- */
+// TODO: let users drop in their own transcription models, onnx compatible with transformers.js
 
 import type { AutomaticSpeechRecognitionPipeline } from '@huggingface/transformers';
 import { WHISPER_MODELS, WhisperPipeline, type WhisperModelSize, MODEL_SIZES, preprocessAudioWhisper } from './whisper';
@@ -32,7 +25,6 @@ export interface ModelStatus {
 type ProgressCallback = (progress: TranscriptionProgress) => void;
 
 export async function initModelsDir(): Promise<string> {
-  // In browser context, models are stored in Cache API
   console.log('Models stored in browser Cache API');
   return 'browser-cache';
 }
@@ -91,14 +83,14 @@ export async function downloadModel(
 
   console.log(`Downloading model: ${modelId}`);
  
-  // TODO: fix type check below
   await WhisperPipeline.getInstance(modelId, (progress) => {
-    if (progress.progress !== undefined) {
-      const percent = Math.round(progress.progress);
+    if ('progress' in progress && progress.progress !== undefined) {
+      const percent = Math.round(progress.progress as number);
+      const file = 'file' in progress ? progress.file : '';
       onProgress?.({
         status: 'downloading',
         progress: percent,
-        message: `Downloading: ${percent}%${progress.file ? ` (${progress.file})` : ''}`
+        message: `Downloading: ${percent}%${file ? ` (${file})` : ''}`
       });
     }
   });
@@ -162,11 +154,12 @@ async function getTranscriber(
   });
 
   const transcriber = await WhisperPipeline.getInstance(modelId, (progress) => {
-    if (progress.progress !== undefined) {
+    if ('progress' in progress && progress.progress !== undefined) {
+      const percent = progress.progress as number;
       onProgress?.({
         status: 'loading',
-        progress: progress.progress,
-        message: `Loading model: ${Math.round(progress.progress)}%`
+        progress: percent,
+        message: `Loading model: ${Math.round(percent)}%`
       });
     }
   });

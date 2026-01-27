@@ -7,8 +7,10 @@ export function formatTime(totalSeconds: number): string {
     .join(':');
 }
 
+// there might be a better way to do this that doesn't rely on string matching
+const screenPatterns = ['screen', 'desktop', 'monitor', 'entire'];
+
 export function isScreenSource(source: { id: string; name: string }): boolean {
-  const screenPatterns = ['screen', 'desktop', 'monitor', 'entire'];
   const normalizedName = source.name.toLowerCase();
   const normalizedId = source.id.toLowerCase();
   

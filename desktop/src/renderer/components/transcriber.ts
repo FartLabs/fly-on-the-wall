@@ -1,6 +1,7 @@
 import { elements } from './domNodes';
 import { transcribeAudio, checkModelDownloaded, type TranscriptionProgress } from '../../transcription';
 import { type WhisperModelSize } from '../../transcription/whisper';
+import { runSummarization } from './summarizer';
 
 let lastTranscription: string | null = null;
 let lastTimestamp: string | null = null;
@@ -41,6 +42,22 @@ export async function runTranscription(buffer: ArrayBuffer, timestamp: string): 
     elements.transcriptionResult.classList.remove('hidden');
     elements.transcriptionText.textContent = result.text || '(No speech detected)';
     elements.statusText.textContent = 'Transcription complete!';
+
+    console.log(`Transcription length: ${result.text.length} chars`);
+    
+    if (result.text && result.text.trim().length > 20) {
+      console.log('Starting summarization...');
+      elements.statusText.textContent = 'Generating summary...';
+      try {
+        await runSummarization(result.text, timestamp);
+        elements.statusText.textContent = 'Transcription & summary complete!';
+      } catch (error) {
+        console.error('Summarization error in transcriber:', error);
+        elements.statusText.textContent = 'Transcription complete! (Summary failed)';
+      }
+    } else {
+      console.log('Skipping summarization - text too short');
+    }
   } catch (error) {
     elements.transcriptionProgress.classList.add('hidden');
     elements.transcriptionEmpty.classList.remove('hidden');

@@ -4,8 +4,17 @@ import {
   type TranscriptionProgress, type ModelStatus 
 } from '../../transcription';
 import { MODEL_SIZES, type WhisperModelSize, MODEL_DESCRIPTIONS } from '../../transcription/whisper';
+import { 
+  checkSummarizationModelDownloaded, 
+  downloadSummarizationModel, 
+  deleteSummarizationModel,
+  SUMMARIZATION_MODEL,
+  MODEL_SIZE as SUMMARY_MODEL_SIZE,
+  type SummarizationProgress
+} from '../../summarization';
 
 let downloadingModel: WhisperModelSize | null = null;
+let downloadingSummaryModel = false;
 
 function createModelItemHTML(status: ModelStatus): string {
   const isDownloading = downloadingModel === status.modelSize;
@@ -44,22 +53,77 @@ function createModelItemHTML(status: ModelStatus): string {
   `;
 }
 
+function createSummaryModelHTML(downloaded: boolean): string {
+  const modelName = SUMMARIZATION_MODEL.split('/').pop() || 'Llama 3.2 1B';
+  
+  return `
+    <div class="model-item summary-model ${downloaded ? 'downloaded' : ''}" data-model="summary">
+      <div class="model-info">
+        <div class="model-name">🤖 ${modelName}</div>
+        <div class="model-meta">
+          <span class="model-size">${SUMMARY_MODEL_SIZE}</span>
+          <span class="model-status ${downloaded ? 'downloaded' : ''}">
+            ${downloaded ? '✓ Downloaded' : 'Not downloaded'}
+          </span>
+        </div>
+        <div class="model-description" style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">
+          AI model for generating meeting summaries
+        </div>
+      </div>
+      <div class="model-actions">
+        ${downloaded 
+          ? `<button class="model-btn delete-btn" data-model="summary" ${downloadingSummaryModel ? 'disabled' : ''}>Delete</button>`
+          : `<button class="model-btn download-btn" data-model="summary" ${downloadingSummaryModel ? 'disabled' : ''}>
+              ${downloadingSummaryModel ? 'Downloading...' : 'Download'}
+            </button>`
+        }
+      </div>
+      ${downloadingSummaryModel ? `
+        <div class="model-download-progress">
+          <div class="model-progress-bar">
+            <div class="model-progress-fill" id="model-progress-summary"></div>
+          </div>
+          <div class="model-progress-text" id="model-progress-text-summary">Starting...</div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
 export async function refreshModelsList(): Promise<void> {
   try {
     const statuses = await getAllModelStatus();
-    elements.modelsList.innerHTML = statuses.map(status => createModelItemHTML(status)).join('');
+    const summaryDownloaded = await checkSummarizationModelDownloaded();
+    
+    let html = '<div class="model-section"><h3 style="font-size: 0.9rem; color: #888; margin-bottom: 0.75rem;">Transcription Models</h3>';
+    html += statuses.map(status => createModelItemHTML(status)).join('');
+    html += '</div>';
+    
+    html += '<div class="model-section" style="margin-top: 1.5rem;"><h3 style="font-size: 0.9rem; color: #888; margin-bottom: 0.75rem;">Summarization Model</h3>';
+    html += createSummaryModelHTML(summaryDownloaded);
+    html += '</div>';
+    
+    elements.modelsList.innerHTML = html;
     
     elements.modelsList.querySelectorAll('.download-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const model = (e.currentTarget as HTMLButtonElement).dataset.model as WhisperModelSize;
-        handleModelDownload(model);
+        const model = (e.currentTarget as HTMLButtonElement).dataset.model;
+        if (model === 'summary') {
+          handleSummaryModelDownload();
+        } else {
+          handleModelDownload(model as WhisperModelSize);
+        }
       });
     });
     
     elements.modelsList.querySelectorAll('.delete-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const model = (e.currentTarget as HTMLButtonElement).dataset.model as WhisperModelSize;
-        handleModelDelete(model);
+        const model = (e.currentTarget as HTMLButtonElement).dataset.model;
+        if (model === 'summary') {
+          handleSummaryModelDelete();
+        } else {
+          handleModelDelete(model as WhisperModelSize);
+        }
       });
     });
 
@@ -107,9 +171,39 @@ async function handleModelDownload(modelSize: WhisperModelSize) {
   } catch (err) { alert(`Download failed: ${err}`); } 
   finally {
     downloadingModel = null;
+  }} 
+
+async function handleSummaryModelDownload() {
+  if (downloadingSummaryModel) return;
+  downloadingSummaryModel = true;
+  await refreshModelsList();
+  
+  try {
+    await downloadSummarizationModel((progress: SummarizationProgress) => {
+      const fill = document.getElementById('model-progress-summary');
+      const text = document.getElementById('model-progress-text-summary');
+      if (fill && progress.progress) fill.style.width = `${progress.progress}%`;
+      if (text) text.textContent = progress.message;
+    });
+  } catch (err) { 
+    alert(`Download failed: ${err}`); 
+  } finally {
+    downloadingSummaryModel = false;
     await refreshModelsList();
   }
 }
+
+async function handleSummaryModelDelete() {
+  if (!confirm(`Delete summarization model (${SUMMARY_MODEL_SIZE})?\n\nThis will free up disk space.`)) return;
+  
+  const success = await deleteSummarizationModel();
+  if (success) {
+    console.log('Summarization model deleted successfully');
+  } else {
+    alert('Failed to delete summarization model. Please try again.');
+  }
+  await refreshModelsList();
+  }
 
 async function handleModelDelete(modelSize: WhisperModelSize) {
   if (!confirm(`Delete ${modelSize} model?`)) return;

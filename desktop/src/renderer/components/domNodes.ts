@@ -26,6 +26,16 @@ export const elements = {
   copyTranscriptionBtn: document.getElementById('copyTranscription') as HTMLButtonElement,
   saveTranscriptionBtn: document.getElementById('saveTranscription') as HTMLButtonElement,
   
+  summaryCard: document.getElementById('summaryCard') as HTMLDivElement,
+  summaryProgress: document.getElementById('summaryProgress') as HTMLDivElement,
+  summaryProgressFill: document.getElementById('summaryProgressFill') as HTMLDivElement,
+  summaryProgressText: document.getElementById('summaryProgressText') as HTMLParagraphElement,
+  summaryResult: document.getElementById('summaryResult') as HTMLDivElement,
+  summaryText: document.getElementById('summaryText') as HTMLDivElement,
+  summaryEmpty: document.getElementById('summaryEmpty') as HTMLDivElement,
+  copySummaryBtn: document.getElementById('copySummary') as HTMLButtonElement,
+  saveSummaryBtn: document.getElementById('saveSummary') as HTMLButtonElement,
+
   modelsList: document.getElementById('modelsList') as HTMLDivElement,
 };
 
