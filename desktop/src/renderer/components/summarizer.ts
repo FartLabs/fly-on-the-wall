@@ -85,7 +85,7 @@ export async function checkAndDownloadSummarizationModel(): Promise<boolean> {
   }
 
   const shouldDownload = confirm(
-    'The AI summarization model (Llama 3.2 1B, ~1.2 GB) needs to be downloaded.\n\n' +
+    'The AI summarization model needs to be downloaded.\n\n' +
     'This only happens once and provides high-quality summaries. Download now?'
   );
 

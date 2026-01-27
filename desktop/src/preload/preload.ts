@@ -14,4 +14,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getModelsDir: () => ipcRenderer.invoke('get-models-dir'),
   checkModelExists: (modelId: string) => ipcRenderer.invoke('check-model-exists', modelId),
   deleteModel: (modelId: string) => ipcRenderer.invoke('delete-model', modelId),
+  
+  listNotes: () => ipcRenderer.invoke('list-notes'),
+  readNote: (filename: string) => ipcRenderer.invoke('read-note', filename),
+  deleteNote: (filename: string) => ipcRenderer.invoke('delete-note', filename),
 });

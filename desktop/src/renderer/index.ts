@@ -26,13 +26,14 @@
  * ```
  */
 
-import './index.css';
+import './styles/index.css';
 import { elements } from './components/domNodes';
 import { loadAudioDevices } from './components/devices'; 
 import { startRecording, stopRecording, pauseRecording, resumeRecording, isRecordingState } from './components/recorder';
 import { refreshModelsList } from './components/models';
 import { runTranscription, setupTranscriptionListeners } from './components/transcriber';
 import { setupSummarizationListeners } from './components/summarizer';
+import { setupHistoryListeners } from './components/history';
 
 declare global {
   interface Window {
@@ -45,6 +46,9 @@ declare global {
       getModelsDir: () => Promise<string>;
       checkModelExists: (modelId: string) => Promise<{ exists: boolean }>;
       deleteModel: (modelId: string) => Promise<{ success: boolean }>;
+      listNotes: () => Promise<{ success: boolean; files: Array<{ name: string; path: string; size: number; modified: string }>; error?: string }>;
+      readNote: (filename: string) => Promise<{ success: boolean; content?: string; error?: string }>;
+      deleteNote: (filename: string) => Promise<{ success: boolean; error?: string }>;
     };
   }
 }
@@ -80,3 +84,4 @@ elements.stopBtn.addEventListener('click', stopRecording);
 refreshModelsList();
 setupTranscriptionListeners();
 setupSummarizationListeners();
+setupHistoryListeners();

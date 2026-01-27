@@ -5,9 +5,16 @@
     <title>Fly on the Wall</title>
   </head>
   <body>
-    <div class="container">
-      <h1>Fly on the Wall</h1>
-      <p class="subtitle">Meeting Recorder</p>
+    <div class="container" id="mainPage">
+      <div class="header-with-nav">
+        <div>
+          <h1>Fly on the Wall</h1>
+          <p class="subtitle">Meeting Recorder</p>
+        </div>
+        <button class="nav-btn" id="viewHistoryBtn" title="View past recordings">
+          <span>History</span>
+        </button>
+      </div>
       
       <div class="recorder-card">
         <div class="status-indicator" id="statusIndicator">
@@ -139,6 +146,43 @@
         </div>
       </div>
     </div>
+
+    <div class="container hidden" id="historyPage">
+      <div class="header-with-nav">
+        <div>
+          <h1>History</h1>
+          <p class="subtitle">Past Transcriptions & Summaries</p>
+        </div>
+        <button class="nav-btn" id="backToMainBtn" title="Back to recorder">
+          <span>🏠</span>
+          <span>Recorder</span>
+        </button>
+      </div>
+
+      <div class="history-card">
+        <div class="card-header">
+          <h2>Saved Notes</h2>
+          <button class="refresh-btn" id="refreshHistoryBtn" title="Refresh list">↻</button>
+        </div>
+        
+        <div class="history-list" id="historyList">
+          <p class="loading-text">Loading history...</p>
+        </div>
+      </div>
+
+      <div class="note-viewer-card hidden" id="noteViewerCard">
+        <div class="card-header">
+          <h2 id="noteViewerTitle">Note</h2>
+          <div class="viewer-actions">
+            <button class="action-btn" id="copyNoteBtn" title="Copy to clipboard">Copy</button>
+            <button class="action-btn delete-btn" id="deleteNoteBtn" title="Delete this note">Delete</button>
+            <button class="close-btn" id="closeNoteBtn" title="Close">✕</button>
+          </div>
+        </div>
+        <div class="note-content" id="noteContent"></div>
+      </div>
+    </div>
+
     <script type="module" src="./index.ts"></script>
   </body>
 </html>

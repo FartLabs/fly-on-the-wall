@@ -62,3 +62,64 @@ ipcMain.handle('save-transcription', async (_event, data: { text: string; filena
   }
 });
 
+// TODO: would it be possible to store transcriptions and summaries in browser's db instead?
+
+ipcMain.handle('list-notes', async () => {
+  try {
+    const projectRoot = getProjectRoot();
+    const notesDir = path.join(projectRoot, 'notes');
+    
+    if (!fs.existsSync(notesDir)) {
+      return { success: true, files: [] };
+    }
+    
+    const files = fs.readdirSync(notesDir)
+      .filter(file => file.endsWith('.txt'))
+      .map(file => {
+        const filePath = path.join(notesDir, file);
+        const stats = fs.statSync(filePath);
+        return {
+          name: file,
+          path: filePath,
+          size: stats.size,
+          modified: stats.mtime.toISOString(),
+        };
+      })
+      .sort((a, b) => new Date(b.modified).getTime() - new Date(a.modified).getTime());
+    
+    return { success: true, files };
+  } catch (error) {
+    console.error('Error listing notes:', error);
+    return { success: false, error: String(error), files: [] };
+  }
+});
+
+ipcMain.handle('read-note', async (_event, filename: string) => {
+  try {
+    const projectRoot = getProjectRoot();
+    const notesDir = path.join(projectRoot, 'notes');
+    const filePath = path.join(notesDir, filename);
+    
+    const content = fs.readFileSync(filePath, 'utf-8');
+    return { success: true, content };
+  } catch (error) {
+    console.error('Error reading note:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle('delete-note', async (_event, filename: string) => {
+  try {
+    const projectRoot = getProjectRoot();
+    const notesDir = path.join(projectRoot, 'notes');
+    const filePath = path.join(notesDir, filename);
+    
+    fs.unlinkSync(filePath);
+    console.log(`Note deleted: ${filePath}`);
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting note:', error);
+    return { success: false, error: String(error) };
+  }
+});
+

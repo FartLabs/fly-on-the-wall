@@ -1,3 +1,5 @@
+// TODO: this is getting quite large, find a better way to organize DOM nodes
+// i.e see history.ts that maintains its own DOM references
 export const elements = {
   recordBtn: document.getElementById('recordBtn') as HTMLButtonElement,
   btnIcon: document.getElementById('btnIcon') as HTMLSpanElement,

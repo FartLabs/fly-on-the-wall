@@ -1,0 +1,116 @@
+.models-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.model-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.model-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+}
+
+.model-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.model-item.downloaded {
+  border-color: rgba(102, 126, 234, 0.3);
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.model-item.summary-model.downloaded {
+  border-color: rgba(74, 222, 128, 0.3);
+  background: rgba(74, 222, 128, 0.1);
+}
+
+.model-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.model-name {
+  font-weight: 500;
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.model-meta {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.model-size {
+  color: #aaa;
+}
+
+.model-status {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.model-status.downloaded {
+  color: #4ade80;
+}
+
+.model-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.model-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.model-btn.download-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+}
+
+.model-btn.download-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.model-btn.download-btn:disabled {
+  background: rgba(255, 255, 255, 0.2);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.model-btn.delete-btn {
+  background: rgba(239, 68, 68, 0.2);
+  color: #000;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.model-btn.delete-btn:hover {
+  background: rgba(239, 68, 68, 0.3);
+}
+
+.model-download-progress {
+  width: 100%;
+  margin-top: 0.5rem;
+}

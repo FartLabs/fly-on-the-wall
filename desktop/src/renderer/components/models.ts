@@ -54,7 +54,7 @@ function createModelItemHTML(status: ModelStatus): string {
 }
 
 function createSummaryModelHTML(downloaded: boolean): string {
-  const modelName = SUMMARIZATION_MODEL.split('/').pop() || 'Llama 3.2 1B';
+  const modelName = SUMMARIZATION_MODEL.split('/').pop();
   
   return `
     <div class="model-item summary-model ${downloaded ? 'downloaded' : ''}" data-model="summary">
