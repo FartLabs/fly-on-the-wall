@@ -20,6 +20,26 @@ export interface SummarizationResult {
 type ProgressCallback = (progress: SummarizationProgress) => void;
 
 const MIN_LENGTH_FOR_SUMMARIZATION = 20;
+const STORAGE_KEY_CUSTOM_PROMPT = "customSummarizationPrompt";
+
+export function getCustomPrompt(): string | null {
+  return localStorage.getItem(STORAGE_KEY_CUSTOM_PROMPT);
+}
+
+export function saveCustomPrompt(prompt: string): void {
+  if (prompt.trim()) {
+    localStorage.setItem(STORAGE_KEY_CUSTOM_PROMPT, prompt.trim());
+  } else {
+    localStorage.removeItem(STORAGE_KEY_CUSTOM_PROMPT);
+  }
+}
+
+export function getDefaultPromptTemplate(
+  transcript: string,
+  participants: string[] = []
+): string {
+  return createDefaultPrompt(transcript, participants);
+}
 
 export async function checkSummarizationModelDownloaded(): Promise<boolean> {
   if (SummarizationPipeline.isDownloaded) {
@@ -95,8 +115,7 @@ export async function deleteSummarizationModel(): Promise<boolean> {
   }
 }
 
-// TODO: make prompt customizable by user
-function createSummarizationPrompt(
+function createDefaultPrompt(
   transcript: string,
   participants: string[] = []
 ): string {
@@ -166,10 +185,16 @@ export async function summarizeText(
     message: "Generating summary..."
   });
 
-  const prompt = createSummarizationPrompt(text, participants);
+  const customPrompt = getCustomPrompt();
+  const prompt = customPrompt
+    ? customPrompt
+        .replace("{transcript}", text)
+        .replace("{participants}", participants.join(", ") || "Not specified")
+    : createDefaultPrompt(text, participants);
 
   try {
     const result = await generator(prompt, {
+      // TODO: make these parameters configurable by end user in future
       max_new_tokens: 1024,
       do_sample: true,
       temperature: 0.7,

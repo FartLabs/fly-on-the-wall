@@ -43,6 +43,7 @@ import {
 } from "./components/transcriber";
 import { setupSummarizationListeners } from "./components/summarizer";
 import { setupHistoryListeners } from "./components/history";
+import { setupPromptCustomizer } from "./components/promptCustomizer";
 
 declare global {
   interface Window {
@@ -117,3 +118,4 @@ refreshModelsList();
 setupTranscriptionListeners();
 setupSummarizationListeners();
 setupHistoryListeners();
+setupPromptCustomizer();

@@ -61,7 +61,18 @@ export const elements = {
   copySummaryBtn: document.getElementById("copySummary") as HTMLButtonElement,
   saveSummaryBtn: document.getElementById("saveSummary") as HTMLButtonElement,
 
-  modelsList: document.getElementById("modelsList") as HTMLDivElement
+  modelsList: document.getElementById("modelsList") as HTMLDivElement,
+
+  customPromptInput: document.getElementById(
+    "customPromptInput"
+  ) as HTMLTextAreaElement,
+  savePromptBtn: document.getElementById("savePromptBtn") as HTMLButtonElement,
+  resetPromptBtn: document.getElementById(
+    "resetPromptBtn"
+  ) as HTMLButtonElement,
+  viewDefaultPromptBtn: document.getElementById(
+    "viewDefaultPromptBtn"
+  ) as HTMLButtonElement
 };
 
 export function setUiLocked(locked: boolean): void {
