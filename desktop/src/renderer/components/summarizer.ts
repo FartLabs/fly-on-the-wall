@@ -10,16 +10,32 @@ let lastSummary: string | null = null;
 let lastTimestamp: string | null = null;
 
 export function clearSummary(): void {
-  elements.summaryCard.classList.add("hidden");
-  elements.summaryProgress.classList.add("hidden");
-  elements.summaryResult.classList.add("hidden");
-  elements.summaryEmpty.classList.remove("hidden");
-  elements.summaryText.textContent = "";
+  if (elements.summaryCard) {
+    elements.summaryCard.classList.add("hidden");
+  }
+  if (elements.summaryProgress) {
+    elements.summaryProgress.classList.add("hidden");
+  }
+  if (elements.summaryResult) {
+    elements.summaryResult.classList.add("hidden");
+  }
+  if (elements.summaryEmpty) {
+    elements.summaryEmpty.classList.remove("hidden");
+  }
+  if (elements.summaryText) {
+    elements.summaryText.textContent = "";
+  }
   lastSummary = null;
   lastTimestamp = null;
 }
 
 function updateSummaryProgress(progress: SummarizationProgress): void {
+  if (!elements.summaryProgress || !elements.summaryResult || 
+      !elements.summaryEmpty || !elements.summaryProgressText || !elements.summaryProgressFill) {
+    console.warn("Summary UI elements not found");
+    return;
+  }
+  
   elements.summaryProgress.classList.remove("hidden");
   elements.summaryResult.classList.add("hidden");
   elements.summaryEmpty.classList.add("hidden");
@@ -50,6 +66,11 @@ export async function runSummarization(
     }
   }
 
+  if (!elements.summaryCard || !elements.summaryProgress || !elements.summaryProgressFill) {
+    console.error("Summary UI elements not found");
+    return;
+  }
+
   elements.summaryCard.classList.remove("hidden");
   elements.summaryProgress.classList.remove("hidden");
   elements.summaryProgressFill.style.width = "0%";
@@ -62,22 +83,39 @@ export async function runSummarization(
 
     console.log("Summary result:", result);
 
-    elements.summaryProgressFill.classList.remove("indeterminate");
-    elements.summaryProgress.classList.add("hidden");
-    elements.summaryResult.classList.remove("hidden");
-    elements.summaryText.textContent =
-      result.summary || "(Could not generate summary)";
+    if (elements.summaryProgressFill) {
+      elements.summaryProgressFill.classList.remove("indeterminate");
+    }
+    if (elements.summaryProgress) {
+      elements.summaryProgress.classList.add("hidden");
+    }
+    if (elements.summaryResult) {
+      elements.summaryResult.classList.remove("hidden");
+    }
+    if (elements.summaryText) {
+      elements.summaryText.textContent =
+        result.summary || "(Could not generate summary)";
+    }
 
     console.log(`Summary generated in ${result.duration.toFixed(1)}s`);
   } catch (error) {
     console.error("Summarization failed:", error);
-    elements.summaryProgress.classList.add("hidden");
-    elements.summaryEmpty.classList.remove("hidden");
-    elements.summaryEmpty.innerHTML = `<p style="color: #ff6b81;">Summarization failed: ${error}</p>`;
+    if (elements.summaryProgress) {
+      elements.summaryProgress.classList.add("hidden");
+    }
+    if (elements.summaryEmpty) {
+      elements.summaryEmpty.classList.remove("hidden");
+      elements.summaryEmpty.innerHTML = `<p style="color: #ff6b81;">Summarization failed: ${error}</p>`;
+    }
   }
 }
 
 export function setupSummarizationListeners(): void {
+  if (!elements.copySummaryBtn || !elements.saveSummaryBtn) {
+    console.warn("Summary button elements not found");
+    return;
+  }
+  
   elements.copySummaryBtn.addEventListener("click", async () => {
     if (!lastSummary) return;
     await navigator.clipboard.writeText(lastSummary);
@@ -98,7 +136,7 @@ export function setupSummarizationListeners(): void {
     });
     if (result.success) {
       elements.saveSummaryBtn.textContent = "✓ Saved!";
-      setTimeout(() => (elements.saveSummaryBtn.textContent = "💾 Save"), 2000);
+      setTimeout(() => (elements.saveSummaryBtn.textContent = "Save"), 2000);
     }
   });
 }

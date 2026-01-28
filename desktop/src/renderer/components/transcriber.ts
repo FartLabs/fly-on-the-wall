@@ -11,6 +11,12 @@ let lastTranscription: string | null = null;
 let lastTimestamp: string | null = null;
 
 function updateProgress(progress: TranscriptionProgress): void {
+  if (!elements.transcriptionProgress || !elements.transcriptionResult || 
+      !elements.transcriptionEmpty || !elements.progressText || !elements.progressFill) {
+    console.warn("Transcription UI elements not found");
+    return;
+  }
+  
   elements.transcriptionProgress.classList.remove("hidden");
   elements.transcriptionResult.classList.add("hidden");
   elements.transcriptionEmpty.classList.add("hidden");
@@ -45,6 +51,13 @@ export async function runTranscription(
     return;
   }
 
+  // NOTE: lots of weird null UI elements and having to make null checks for them,
+  // may want to fix this in the future;
+  if (!elements.transcriptionCard || !elements.transcriptionProgress || !elements.progressFill) {
+    console.error("Transcription UI elements not found");
+    return;
+  }
+
   elements.transcriptionCard.classList.remove("hidden");
   elements.transcriptionProgress.classList.remove("hidden");
   elements.progressFill.style.width = "0%";
@@ -58,39 +71,64 @@ export async function runTranscription(
     });
     lastTranscription = result.text;
 
-    elements.progressFill.classList.remove("indeterminate");
-    elements.transcriptionProgress.classList.add("hidden");
-    elements.transcriptionResult.classList.remove("hidden");
-    elements.transcriptionText.textContent =
-      result.text || "(No speech detected)";
-    elements.statusText.textContent = "Transcription complete!";
+    if (elements.progressFill) {
+      elements.progressFill.classList.remove("indeterminate");
+    }
+    if (elements.transcriptionProgress) {
+      elements.transcriptionProgress.classList.add("hidden");
+    }
+    if (elements.transcriptionResult) {
+      elements.transcriptionResult.classList.remove("hidden");
+    }
+    if (elements.transcriptionText) {
+      elements.transcriptionText.textContent =
+        result.text || "(No speech detected)";
+    }
+    if (elements.statusText) {
+      elements.statusText.textContent = "Transcription complete!";
+    }
 
     console.log(`Transcription length: ${result.text.length} chars`);
 
     if (result.text && result.text.trim().length > 20) {
       console.log("Starting summarization...");
-      elements.statusText.textContent = "Generating summary...";
+      if (elements.statusText) {
+        elements.statusText.textContent = "Generating summary...";
+      }
       try {
         await runSummarization(result.text, timestamp);
-        elements.statusText.textContent = "Transcription & summary complete!";
+        if (elements.statusText) {
+          elements.statusText.textContent = "Transcription & summary complete!";
+        }
       } catch (error) {
         console.error("Summarization error in transcriber:", error);
-        elements.statusText.textContent =
-          "Transcription complete! (Summary failed)";
+        if (elements.statusText) {
+          elements.statusText.textContent =
+            "Transcription complete! (Summary failed)";
+        }
       }
     } else {
       console.log("Skipping summarization - text too short");
     }
   } catch (error) {
-    elements.transcriptionProgress.classList.add("hidden");
-    elements.transcriptionEmpty.classList.remove("hidden");
-    elements.transcriptionEmpty.innerHTML = `<p style="color: #ff6b81;">Failed: ${error}</p>`;
+    if (elements.transcriptionProgress) {
+      elements.transcriptionProgress.classList.add("hidden");
+    }
+    if (elements.transcriptionEmpty) {
+      elements.transcriptionEmpty.classList.remove("hidden");
+      elements.transcriptionEmpty.innerHTML = `<p style="color: #ff6b81;">Failed: ${error}</p>`;
+    }
   } finally {
     setTranscriptionInProgress(false);
   }
 }
 
 export function setupTranscriptionListeners() {
+  if (!elements.copyTranscriptionBtn || !elements.saveTranscriptionBtn) {
+    console.warn("Transcription button elements not found");
+    return;
+  }
+  
   elements.copyTranscriptionBtn.addEventListener("click", async () => {
     if (!lastTranscription) return;
     await navigator.clipboard.writeText(lastTranscription);
@@ -112,7 +150,7 @@ export function setupTranscriptionListeners() {
     if (result.success) {
       elements.saveTranscriptionBtn.textContent = "✓ Saved!";
       setTimeout(
-        () => (elements.saveTranscriptionBtn.textContent = "💾 Save"),
+        () => (elements.saveTranscriptionBtn.textContent = "Save"),
         2000
       );
     }

@@ -24,42 +24,42 @@ export const elements = {
   systemAudioItem: document.getElementById("systemAudioItem") as HTMLDivElement,
 
   transcriptionCard: document.getElementById(
-    "transcriptionCard"
+    "rightPanelTranscriptionCard"
   ) as HTMLDivElement,
   transcriptionProgress: document.getElementById(
-    "transcriptionProgress"
+    "rightPanelTranscriptionProgress"
   ) as HTMLDivElement,
-  progressFill: document.getElementById("progressFill") as HTMLDivElement,
-  progressText: document.getElementById("progressText") as HTMLParagraphElement,
+  progressFill: document.getElementById("rightPanelProgressFill") as HTMLDivElement,
+  progressText: document.getElementById("rightPanelProgressText") as HTMLParagraphElement,
   transcriptionResult: document.getElementById(
-    "transcriptionResult"
+    "rightPanelTranscriptionResult"
   ) as HTMLDivElement,
   transcriptionText: document.getElementById(
-    "transcriptionText"
+    "rightPanelTranscriptionText"
   ) as HTMLDivElement,
   transcriptionEmpty: document.getElementById(
-    "transcriptionEmpty"
+    "rightPanelTranscriptionEmpty"
   ) as HTMLDivElement,
   copyTranscriptionBtn: document.getElementById(
-    "copyTranscription"
+    "rightPanelCopyTranscription"
   ) as HTMLButtonElement,
   saveTranscriptionBtn: document.getElementById(
-    "saveTranscription"
+    "rightPanelSaveTranscription"
   ) as HTMLButtonElement,
 
-  summaryCard: document.getElementById("summaryCard") as HTMLDivElement,
-  summaryProgress: document.getElementById("summaryProgress") as HTMLDivElement,
+  summaryCard: document.getElementById("rightPanelSummaryCard") as HTMLDivElement,
+  summaryProgress: document.getElementById("rightPanelSummaryProgress") as HTMLDivElement,
   summaryProgressFill: document.getElementById(
-    "summaryProgressFill"
+    "rightPanelSummaryProgressFill"
   ) as HTMLDivElement,
   summaryProgressText: document.getElementById(
-    "summaryProgressText"
+    "rightPanelSummaryProgressText"
   ) as HTMLParagraphElement,
-  summaryResult: document.getElementById("summaryResult") as HTMLDivElement,
-  summaryText: document.getElementById("summaryText") as HTMLDivElement,
-  summaryEmpty: document.getElementById("summaryEmpty") as HTMLDivElement,
-  copySummaryBtn: document.getElementById("copySummary") as HTMLButtonElement,
-  saveSummaryBtn: document.getElementById("saveSummary") as HTMLButtonElement,
+  summaryResult: document.getElementById("rightPanelSummaryResult") as HTMLDivElement,
+  summaryText: document.getElementById("rightPanelSummaryText") as HTMLDivElement,
+  summaryEmpty: document.getElementById("rightPanelSummaryEmpty") as HTMLDivElement,
+  copySummaryBtn: document.getElementById("rightPanelCopySummary") as HTMLButtonElement,
+  saveSummaryBtn: document.getElementById("rightPanelSaveSummary") as HTMLButtonElement,
 
   modelsList: document.getElementById("modelsList") as HTMLDivElement,
 
@@ -75,7 +75,10 @@ export const elements = {
   ) as HTMLButtonElement,
 
   sidebar: document.getElementById("sidebar") as HTMLDivElement,
-  sidebarTrigger: document.getElementById("sidebarTrigger") as HTMLDivElement
+  sidebarTrigger: document.getElementById("sidebarTrigger") as HTMLDivElement,
+
+  rightPanel: document.getElementById("rightPanel") as HTMLDivElement,
+  rightPanelTrigger: document.getElementById("rightPanelTrigger") as HTMLDivElement
 };
 
 export function setUiLocked(locked: boolean): void {

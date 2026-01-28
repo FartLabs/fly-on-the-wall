@@ -50,6 +50,80 @@
         </div>
       </div>
     </div>
+    <div class="right-panel-trigger" id="rightPanelTrigger">
+      <div class="right-panel-handle">||</div>
+    </div>
+    <div class="right-panel-container" id="rightPanel">
+      <h2 class="right-panel-title">Transcription & Summary</h2>
+      
+      <div class="right-panel-transcription-card hidden" id="rightPanelTranscriptionCard">
+        <div class="card-header">
+          <h2>Transcription</h2>
+        </div>
+
+        <div class="transcription-progress hidden" id="rightPanelTranscriptionProgress">
+          <div class="progress-bar">
+            <div class="progress-fill" id="rightPanelProgressFill"></div>
+          </div>
+          <p class="progress-text" id="rightPanelProgressText">Loading model...</p>
+        </div>
+
+        <div class="transcription-result hidden" id="rightPanelTranscriptionResult">
+          <div class="transcription-text" id="rightPanelTranscriptionText"></div>
+          <div class="transcription-actions">
+            <button
+              class="action-btn"
+              id="rightPanelCopyTranscription"
+              title="Copy to clipboard"
+            >
+              Copy
+            </button>
+            <button
+              class="action-btn"
+              id="rightPanelSaveTranscription"
+              title="Save to file"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+
+        <div class="transcription-empty" id="rightPanelTranscriptionEmpty">
+          <p>Record a meeting to see the transcription here.</p>
+        </div>
+      </div>
+
+      <div class="right-panel-summary-card hidden" id="rightPanelSummaryCard">
+        <div class="card-header">
+          <h2>Summary</h2>
+        </div>
+
+        <div class="summary-progress hidden" id="rightPanelSummaryProgress">
+          <div class="progress-bar">
+            <div class="progress-fill" id="rightPanelSummaryProgressFill"></div>
+          </div>
+          <p class="progress-text" id="rightPanelSummaryProgressText">
+            Generating summary...
+          </p>
+        </div>
+
+        <div class="summary-result hidden" id="rightPanelSummaryResult">
+          <div class="summary-text" id="rightPanelSummaryText"></div>
+          <div class="summary-actions">
+            <button class="action-btn" id="rightPanelCopySummary" title="Copy summary">
+              Copy
+            </button>
+            <button class="action-btn" id="rightPanelSaveSummary" title="Save summary">
+              Save
+            </button>
+          </div>
+        </div>
+
+        <div class="summary-empty hidden" id="rightPanelSummaryEmpty">
+          <p>Summary will appear here after transcription.</p>
+        </div>
+      </div>
+    </div>
     <div class="container" id="mainPage">
       <div class="header-with-nav">
         <div>
@@ -129,74 +203,6 @@
         </div>
       </div>
 
-      </div>
-
-      <div class="transcription-card hidden" id="transcriptionCard">
-        <div class="card-header">
-          <h2>Transcription</h2>
-        </div>
-
-        <div class="transcription-progress hidden" id="transcriptionProgress">
-          <div class="progress-bar">
-            <div class="progress-fill" id="progressFill"></div>
-          </div>
-          <p class="progress-text" id="progressText">Loading model...</p>
-        </div>
-
-        <div class="transcription-result hidden" id="transcriptionResult">
-          <div class="transcription-text" id="transcriptionText"></div>
-          <div class="transcription-actions">
-            <button
-              class="action-btn"
-              id="copyTranscription"
-              title="Copy to clipboard"
-            >
-              Copy
-            </button>
-            <button
-              class="action-btn"
-              id="saveTranscription"
-              title="Save to file"
-            >
-              Save
-            </button>
-          </div>
-        </div>
-
-        <div class="transcription-empty" id="transcriptionEmpty">
-          <p>Record a meeting to see the transcription here.</p>
-        </div>
-      </div>
-
-      <div class="summary-card hidden" id="summaryCard">
-        <div class="card-header">
-          <h2>Summary</h2>
-        </div>
-
-        <div class="summary-progress hidden" id="summaryProgress">
-          <div class="progress-bar">
-            <div class="progress-fill" id="summaryProgressFill"></div>
-          </div>
-          <p class="progress-text" id="summaryProgressText">
-            Generating summary...
-          </p>
-        </div>
-
-        <div class="summary-result hidden" id="summaryResult">
-          <div class="summary-text" id="summaryText"></div>
-          <div class="summary-actions">
-            <button class="action-btn" id="copySummary" title="Copy summary">
-              Copy
-            </button>
-            <button class="action-btn" id="saveSummary" title="Save summary">
-              Save
-            </button>
-          </div>
-        </div>
-
-        <div class="summary-empty hidden" id="summaryEmpty">
-          <p>Summary will appear here after transcription.</p>
-        </div>
       </div>
     </div>
 

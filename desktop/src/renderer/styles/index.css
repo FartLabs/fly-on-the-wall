@@ -8,4 +8,5 @@
 @import "./transcription.css";
 @import "./summarization.css";
 @import "./history.css";
-@import "./sidebar.css";
+@import "./leftSideBar.css";
+@import "./rightSideBar.css";
