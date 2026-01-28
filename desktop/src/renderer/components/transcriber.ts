@@ -11,12 +11,17 @@ let lastTranscription: string | null = null;
 let lastTimestamp: string | null = null;
 
 function updateProgress(progress: TranscriptionProgress): void {
-  if (!elements.transcriptionProgress || !elements.transcriptionResult || 
-      !elements.transcriptionEmpty || !elements.progressText || !elements.progressFill) {
+  if (
+    !elements.transcriptionProgress ||
+    !elements.transcriptionResult ||
+    !elements.transcriptionEmpty ||
+    !elements.progressText ||
+    !elements.progressFill
+  ) {
     console.warn("Transcription UI elements not found");
     return;
   }
-  
+
   elements.transcriptionProgress.classList.remove("hidden");
   elements.transcriptionResult.classList.add("hidden");
   elements.transcriptionEmpty.classList.add("hidden");
@@ -53,7 +58,11 @@ export async function runTranscription(
 
   // NOTE: lots of weird null UI elements and having to make null checks for them,
   // may want to fix this in the future;
-  if (!elements.transcriptionCard || !elements.transcriptionProgress || !elements.progressFill) {
+  if (
+    !elements.transcriptionCard ||
+    !elements.transcriptionProgress ||
+    !elements.progressFill
+  ) {
     console.error("Transcription UI elements not found");
     return;
   }
@@ -128,7 +137,7 @@ export function setupTranscriptionListeners() {
     console.warn("Transcription button elements not found");
     return;
   }
-  
+
   elements.copyTranscriptionBtn.addEventListener("click", async () => {
     if (!lastTranscription) return;
     await navigator.clipboard.writeText(lastTranscription);

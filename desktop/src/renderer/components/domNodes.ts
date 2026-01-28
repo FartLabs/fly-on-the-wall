@@ -29,8 +29,12 @@ export const elements = {
   transcriptionProgress: document.getElementById(
     "rightPanelTranscriptionProgress"
   ) as HTMLDivElement,
-  progressFill: document.getElementById("rightPanelProgressFill") as HTMLDivElement,
-  progressText: document.getElementById("rightPanelProgressText") as HTMLParagraphElement,
+  progressFill: document.getElementById(
+    "rightPanelProgressFill"
+  ) as HTMLDivElement,
+  progressText: document.getElementById(
+    "rightPanelProgressText"
+  ) as HTMLParagraphElement,
   transcriptionResult: document.getElementById(
     "rightPanelTranscriptionResult"
   ) as HTMLDivElement,
@@ -47,19 +51,33 @@ export const elements = {
     "rightPanelSaveTranscription"
   ) as HTMLButtonElement,
 
-  summaryCard: document.getElementById("rightPanelSummaryCard") as HTMLDivElement,
-  summaryProgress: document.getElementById("rightPanelSummaryProgress") as HTMLDivElement,
+  summaryCard: document.getElementById(
+    "rightPanelSummaryCard"
+  ) as HTMLDivElement,
+  summaryProgress: document.getElementById(
+    "rightPanelSummaryProgress"
+  ) as HTMLDivElement,
   summaryProgressFill: document.getElementById(
     "rightPanelSummaryProgressFill"
   ) as HTMLDivElement,
   summaryProgressText: document.getElementById(
     "rightPanelSummaryProgressText"
   ) as HTMLParagraphElement,
-  summaryResult: document.getElementById("rightPanelSummaryResult") as HTMLDivElement,
-  summaryText: document.getElementById("rightPanelSummaryText") as HTMLDivElement,
-  summaryEmpty: document.getElementById("rightPanelSummaryEmpty") as HTMLDivElement,
-  copySummaryBtn: document.getElementById("rightPanelCopySummary") as HTMLButtonElement,
-  saveSummaryBtn: document.getElementById("rightPanelSaveSummary") as HTMLButtonElement,
+  summaryResult: document.getElementById(
+    "rightPanelSummaryResult"
+  ) as HTMLDivElement,
+  summaryText: document.getElementById(
+    "rightPanelSummaryText"
+  ) as HTMLDivElement,
+  summaryEmpty: document.getElementById(
+    "rightPanelSummaryEmpty"
+  ) as HTMLDivElement,
+  copySummaryBtn: document.getElementById(
+    "rightPanelCopySummary"
+  ) as HTMLButtonElement,
+  saveSummaryBtn: document.getElementById(
+    "rightPanelSaveSummary"
+  ) as HTMLButtonElement,
 
   modelsList: document.getElementById("modelsList") as HTMLDivElement,
 
@@ -78,7 +96,9 @@ export const elements = {
   sidebarTrigger: document.getElementById("sidebarTrigger") as HTMLDivElement,
 
   rightPanel: document.getElementById("rightPanel") as HTMLDivElement,
-  rightPanelTrigger: document.getElementById("rightPanelTrigger") as HTMLDivElement
+  rightPanelTrigger: document.getElementById(
+    "rightPanelTrigger"
+  ) as HTMLDivElement
 };
 
 export function setUiLocked(locked: boolean): void {

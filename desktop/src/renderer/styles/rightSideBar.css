@@ -1,201 +1,201 @@
 .right-panel-container {
-    position: fixed;
-    top: 0;
-    right: -450px; /* Hide off-screen initially */
-    width: 450px;
-    height: 100vh;
-    background: rgba(22, 33, 62, 0.95);
-    backdrop-filter: blur(15px);
-    border-left: 1px solid rgba(255, 255, 255, 0.1);
-    transition: right 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-    z-index: 1000;
-    padding: 1.5rem;
-    overflow-y: auto;
-    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.3);
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+  position: fixed;
+  top: 0;
+  right: -450px; /* Hide off-screen initially */
+  width: 450px;
+  height: 100vh;
+  background: rgba(22, 33, 62, 0.95);
+  backdrop-filter: blur(15px);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+  padding: 1.5rem;
+  overflow-y: auto;
+  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .right-panel-container.open {
-    right: 0;
+  right: 0;
 }
 
 .right-panel-trigger {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 15vw; /* Trigger width */
-    height: 100vh;
-    z-index: 999;
-    background: transparent;
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 15vw; /* Trigger width */
+  height: 100vh;
+  z-index: 999;
+  background: transparent;
 }
 
 .right-panel-handle {
-    position: absolute;
-    top: 50%;
-    right: 0;
-    transform: translateY(-50%);
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.5);
-    padding: 12px 6px;
-    border-top-left-radius: 8px;
-    border-bottom-left-radius: 8px;
-    font-size: 10px;
-    font-weight: bold;
-    letter-spacing: -1px;
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-right: none;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+  padding: 12px 6px;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: -1px;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
 }
 
 .right-panel-trigger:hover .right-panel-handle {
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
-    padding-right: 8px; /* Slight nudge */
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding-right: 8px; /* Slight nudge */
 }
 
 .right-panel-title {
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin-bottom: 1.5rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    color: #fff;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
 }
 
 .right-panel-transcription-card,
 .right-panel-summary-card {
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 12px;
-    padding: 1.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .right-panel-transcription-card .card-header,
 .right-panel-summary-card .card-header {
-    margin-bottom: 1rem;
+  margin-bottom: 1rem;
 }
 
 .right-panel-transcription-card .card-header h2,
 .right-panel-summary-card .card-header h2 {
-    font-size: 1rem;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.9);
-    margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
 }
 
 .right-panel-container .transcription-text {
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 8px;
-    padding: 1rem;
-    max-height: 250px;
-    overflow-y: auto;
-    font-size: 0.85rem;
-    line-height: 1.6;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    color: #e0e0e0;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  max-height: 250px;
+  overflow-y: auto;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: #e0e0e0;
 }
 
 .right-panel-container .summary-text {
-    background: rgba(102, 126, 234, 0.1);
-    border: 1px solid rgba(102, 126, 234, 0.2);
-    border-radius: 8px;
-    padding: 1rem;
-    font-size: 0.85rem;
-    line-height: 1.6;
-    color: #e0e0e0;
-    max-height: 250px;
-    overflow-y: auto;
+  background: rgba(102, 126, 234, 0.1);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  border-radius: 8px;
+  padding: 1rem;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #e0e0e0;
+  max-height: 250px;
+  overflow-y: auto;
 }
 
 .right-panel-container .transcription-actions,
 .right-panel-container .summary-actions {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
 }
 
 .right-panel-container .transcription-empty,
 .right-panel-container .summary-empty {
-    text-align: center;
-    color: #666;
-    padding: 1rem;
-    font-size: 0.85rem;
+  text-align: center;
+  color: #666;
+  padding: 1rem;
+  font-size: 0.85rem;
 }
 
 .right-panel-container .action-btn {
-    background: rgba(102, 126, 234, 0.2);
-    border: 1px solid rgba(102, 126, 234, 0.3);
-    color: #fff;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    transition: all 0.2s ease;
+  background: rgba(102, 126, 234, 0.2);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
 }
 
 .right-panel-container .action-btn:hover {
-    background: rgba(102, 126, 234, 0.3);
-    border-color: rgba(102, 126, 234, 0.5);
+  background: rgba(102, 126, 234, 0.3);
+  border-color: rgba(102, 126, 234, 0.5);
 }
 
 .right-panel-container::-webkit-scrollbar {
-    width: 6px;
+  width: 6px;
 }
 
 .right-panel-container::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .right-panel-container::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
 }
 
 .right-panel-container::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 /* Progress bar styling */
 .right-panel-container .progress-bar {
-    width: 100%;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 2px;
-    overflow: hidden;
-    margin-bottom: 0.5rem;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
 }
 
 .right-panel-container .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-    transition: width 0.3s ease;
-    width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  transition: width 0.3s ease;
+  width: 0%;
 }
 
 .right-panel-container .progress-fill.indeterminate {
-    width: 100%;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #667eea 100%);
-    background-size: 200% 100%;
-    animation: indeterminateProgress 1.5s linear infinite;
+  width: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #667eea 100%);
+  background-size: 200% 100%;
+  animation: indeterminateProgress 1.5s linear infinite;
 }
 
 @keyframes indeterminateProgress {
-    0% {
-        background-position: 200% 0;
-    }
-    100% {
-        background-position: -200% 0;
-    }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .right-panel-container .progress-text {
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.7);
-    margin: 0;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
 }

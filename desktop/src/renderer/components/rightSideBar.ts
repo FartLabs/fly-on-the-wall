@@ -28,13 +28,13 @@ export function setupRightPanelListeners() {
   rightPanelTrigger.addEventListener("mouseleave", closeRightPanel);
   rightPanel.addEventListener("mouseenter", openRightPanel);
   rightPanel.addEventListener("mouseleave", closeRightPanel);
-  
+
   // Also close if we click outside (optional, but good UX)
   document.addEventListener("click", (e) => {
     const target = e.target as HTMLElement;
     if (
-      !rightPanel.contains(target) && 
-      !rightPanelTrigger.contains(target) && 
+      !rightPanel.contains(target) &&
+      !rightPanelTrigger.contains(target) &&
       rightPanel.classList.contains("open")
     ) {
       rightPanel.classList.remove("open");

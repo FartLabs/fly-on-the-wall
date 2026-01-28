@@ -30,12 +30,17 @@ export function clearSummary(): void {
 }
 
 function updateSummaryProgress(progress: SummarizationProgress): void {
-  if (!elements.summaryProgress || !elements.summaryResult || 
-      !elements.summaryEmpty || !elements.summaryProgressText || !elements.summaryProgressFill) {
+  if (
+    !elements.summaryProgress ||
+    !elements.summaryResult ||
+    !elements.summaryEmpty ||
+    !elements.summaryProgressText ||
+    !elements.summaryProgressFill
+  ) {
     console.warn("Summary UI elements not found");
     return;
   }
-  
+
   elements.summaryProgress.classList.remove("hidden");
   elements.summaryResult.classList.add("hidden");
   elements.summaryEmpty.classList.add("hidden");
@@ -66,7 +71,11 @@ export async function runSummarization(
     }
   }
 
-  if (!elements.summaryCard || !elements.summaryProgress || !elements.summaryProgressFill) {
+  if (
+    !elements.summaryCard ||
+    !elements.summaryProgress ||
+    !elements.summaryProgressFill
+  ) {
     console.error("Summary UI elements not found");
     return;
   }
@@ -115,7 +124,7 @@ export function setupSummarizationListeners(): void {
     console.warn("Summary button elements not found");
     return;
   }
-  
+
   elements.copySummaryBtn.addEventListener("click", async () => {
     if (!lastSummary) return;
     await navigator.clipboard.writeText(lastSummary);
