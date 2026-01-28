@@ -72,7 +72,10 @@ export const elements = {
   ) as HTMLButtonElement,
   viewDefaultPromptBtn: document.getElementById(
     "viewDefaultPromptBtn"
-  ) as HTMLButtonElement
+  ) as HTMLButtonElement,
+
+  sidebar: document.getElementById("sidebar") as HTMLDivElement,
+  sidebarTrigger: document.getElementById("sidebarTrigger") as HTMLDivElement
 };
 
 export function setUiLocked(locked: boolean): void {

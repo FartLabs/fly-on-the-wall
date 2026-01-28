@@ -5,6 +5,51 @@
     <title>Fly on the Wall</title>
   </head>
   <body>
+    <div class="sidebar-trigger" id="sidebarTrigger">
+      <div class="sidebar-handle">||</div>
+    </div>
+    <div class="sidebar-container" id="sidebar">
+      <h2 class="sidebar-title">Settings & Models</h2>
+      <div class="model-management-card" id="modelManagementCard">
+        <div class="card-header">
+          <h2>AI Models</h2>
+        </div>
+
+        <div class="models-list" id="modelsList"></div>
+
+        <div class="prompt-customization-section">
+          <h3
+            style="
+              font-size: 0.9rem;
+              color: #888;
+              margin-bottom: 0.5rem;
+              margin-top: 1.5rem;
+            "
+          >
+            Summarization Prompt
+          </h3>
+          <p style="font-size: 0.75rem; color: #666; margin-bottom: 0.75rem">
+            Customize how AI summarizes your meetings. Leave empty to use
+            default.
+          </p>
+          <textarea
+            id="customPromptInput"
+            class="custom-prompt-input"
+            placeholder="Enter custom prompt or leave empty for default..."
+            rows="6"
+          ></textarea>
+          <div class="prompt-actions">
+            <button class="action-btn" id="savePromptBtn">Save Prompt</button>
+            <button class="action-btn secondary" id="resetPromptBtn">
+              Reset to Default
+            </button>
+            <button class="action-btn secondary" id="viewDefaultPromptBtn">
+              View Default
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="container" id="mainPage">
       <div class="header-with-nav">
         <div>
@@ -84,44 +129,6 @@
         </div>
       </div>
 
-      <div class="model-management-card" id="modelManagementCard">
-        <div class="card-header">
-          <h2>AI Models</h2>
-        </div>
-
-        <div class="models-list" id="modelsList"></div>
-
-        <div class="prompt-customization-section">
-          <h3
-            style="
-              font-size: 0.9rem;
-              color: #888;
-              margin-bottom: 0.5rem;
-              margin-top: 1.5rem;
-            "
-          >
-            Summarization Prompt
-          </h3>
-          <p style="font-size: 0.75rem; color: #666; margin-bottom: 0.75rem">
-            Customize how AI summarizes your meetings. Leave empty to use
-            default.
-          </p>
-          <textarea
-            id="customPromptInput"
-            class="custom-prompt-input"
-            placeholder="Enter custom prompt or leave empty for default..."
-            rows="6"
-          ></textarea>
-          <div class="prompt-actions">
-            <button class="action-btn" id="savePromptBtn">Save Prompt</button>
-            <button class="action-btn secondary" id="resetPromptBtn">
-              Reset to Default
-            </button>
-            <button class="action-btn secondary" id="viewDefaultPromptBtn">
-              View Default
-            </button>
-          </div>
-        </div>
       </div>
 
       <div class="transcription-card hidden" id="transcriptionCard">

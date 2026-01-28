@@ -44,6 +44,7 @@ import {
 import { setupSummarizationListeners } from "./components/summarizer";
 import { setupHistoryListeners } from "./components/history";
 import { setupPromptCustomizer } from "./components/promptCustomizer";
+import { setupSidebarListeners } from "./components/sidebar";
 
 declare global {
   interface Window {
@@ -119,3 +120,4 @@ setupTranscriptionListeners();
 setupSummarizationListeners();
 setupHistoryListeners();
 setupPromptCustomizer();
+setupSidebarListeners();
