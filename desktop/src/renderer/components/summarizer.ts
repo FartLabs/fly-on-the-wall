@@ -9,6 +9,16 @@ import {
 let lastSummary: string | null = null;
 let lastTimestamp: string | null = null;
 
+export function clearSummary(): void {
+  elements.summaryCard.classList.add("hidden");
+  elements.summaryProgress.classList.add("hidden");
+  elements.summaryResult.classList.add("hidden");
+  elements.summaryEmpty.classList.remove("hidden");
+  elements.summaryText.textContent = "";
+  lastSummary = null;
+  lastTimestamp = null;
+}
+
 function updateSummaryProgress(progress: SummarizationProgress): void {
   elements.summaryProgress.classList.remove("hidden");
   elements.summaryResult.classList.add("hidden");
