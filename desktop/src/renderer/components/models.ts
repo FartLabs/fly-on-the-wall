@@ -98,7 +98,8 @@ function createModelItemHTML(status: ModelStatus): string {
 function createSummaryModelHTML(downloaded: boolean): string {
   const modelName = SUMMARIZATION_MODEL.split("/").pop();
   const isRecording = isRecordingState();
-  const isButtonDisabled = downloadingSummaryModel || isTranscribing || isRecording;
+  const isButtonDisabled =
+    downloadingSummaryModel || isTranscribing || isRecording;
 
   return `
     <div class="model-item summary-model ${downloaded ? "downloaded" : ""}" data-model="summary">
@@ -186,10 +187,12 @@ export async function refreshModelsList(): Promise<void> {
         if (isRecordingState() || isTranscribing) {
           e.preventDefault();
           e.stopPropagation();
-          console.log("Cannot download models during recording or transcription");
+          console.log(
+            "Cannot download models during recording or transcription"
+          );
           return;
         }
-        
+
         const model = (e.currentTarget as HTMLButtonElement).dataset.model;
         if (model === "summary") {
           handleSummaryModelDownload();
@@ -207,7 +210,7 @@ export async function refreshModelsList(): Promise<void> {
           console.log("Cannot delete models during recording or transcription");
           return;
         }
-        
+
         const model = (e.currentTarget as HTMLButtonElement).dataset.model;
         if (model === "summary") {
           handleSummaryModelDelete();

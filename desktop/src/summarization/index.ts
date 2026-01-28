@@ -179,10 +179,11 @@ export async function summarizeText(
 
     console.log("Raw summarization result:", result);
 
-    // @ts-expect-error - result type varies
     const generatedText = Array.isArray(result)
-      ? result[0]?.generated_text
-      : result?.generated_text;
+      ? // @ts-ignore: weird typing from transformers
+        result[0]?.generated_text
+      : // @ts-ignore: weird typing from transformers
+        result?.generated_text;
     const summary = (generatedText || "Could not generate summary.").trim();
 
     console.log("Generated summary:", summary);

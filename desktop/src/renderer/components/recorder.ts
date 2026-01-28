@@ -59,7 +59,7 @@ export async function startRecording(
             }
           });
 
-          systemStream.getVideoTracks().forEach((track) => track.stop()); 
+          systemStream.getVideoTracks().forEach((track) => track.stop());
           const audioTracks = systemStream.getAudioTracks();
           if (audioTracks.length > 0) {
             const audioOnlyStream = new MediaStream(audioTracks);
@@ -125,7 +125,7 @@ export async function startRecording(
     elapsedSeconds = 0;
     elements.timerDisplay.textContent = formatTime(0);
     timerInterval = window.setInterval(updateTimer, 1000);
-    
+
     refreshModelsList();
   } catch (error) {
     console.error("Error starting:", error);
@@ -157,7 +157,7 @@ export function stopRecording(): void {
     clearInterval(timerInterval);
     timerInterval = null;
   }
-  
+
   refreshModelsList();
 }
 
