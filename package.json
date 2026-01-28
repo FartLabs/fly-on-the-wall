@@ -1,12 +1,9 @@
 {
   "scripts": {
-    "start": "npm run start -w desktop",
+    "start": "cd desktop && npm run start",
     "fmt": "prettier --write .",
     "fmt:check": "prettier --check ."
   },
-  "workspaces": [
-    "desktop"
-  ],
   "dependencies": {
     "prettier": "^3.8.1"
   }

@@ -5,6 +5,7 @@ import {
   MODEL_SIZE,
   SummarizationPipeline
 } from "./pipeline";
+import { sendWorkerMessage } from "../worker-client";
 
 export interface SummarizationProgress {
   status: "loading" | "downloading" | "summarizing" | "complete" | "error";
@@ -42,16 +43,12 @@ export function getDefaultPromptTemplate(
 }
 
 export async function checkSummarizationModelDownloaded(): Promise<boolean> {
-  if (SummarizationPipeline.isDownloaded) {
-    return true;
-  }
-
+  // check the browser's Cache API
   try {
     const cache = await caches.open("transformers-cache");
     const testUrl = `https://huggingface.co/${SUMMARIZATION_MODEL}/resolve/main/config.json`;
     const cached = await cache.match(testUrl);
     if (cached) {
-      SummarizationPipeline.isDownloaded = true;
       return true;
     }
   } catch (e) {
@@ -70,13 +67,12 @@ export async function downloadSummarizationModel(
     message: `Downloading summarization model (${MODEL_SIZE})...`
   });
 
-  await SummarizationPipeline.getInstance((progress) => {
-    if ("progress" in progress && progress.progress !== undefined) {
-      const percent = Math.round(progress.progress as number);
+  await sendWorkerMessage({ type: "download-summarization" }, (data) => {
+    if (data.status === "downloading") {
       onProgress?.({
         status: "downloading",
-        progress: percent,
-        message: `Downloading: ${percent}%`
+        progress: data.progress,
+        message: `Downloading: ${data.progress}%`
       });
     }
   });
@@ -90,10 +86,6 @@ export async function downloadSummarizationModel(
 
 export async function deleteSummarizationModel(): Promise<boolean> {
   try {
-    if (SummarizationPipeline.instance) {
-      SummarizationPipeline.dispose();
-    }
-
     const cache = await caches.open("transformers-cache");
 
     const cacheKeys = await cache.keys();
@@ -105,9 +97,14 @@ export async function deleteSummarizationModel(): Promise<boolean> {
       await cache.delete(key);
     }
 
-    SummarizationPipeline.isDownloaded = false;
+    console.log(
+      `Summarization model deleted from cache: ${SUMMARIZATION_MODEL}`
+    );
 
-    console.log(`Summarization model deleted: ${SUMMARIZATION_MODEL}`);
+    // Dispose from worker memory
+    await sendWorkerMessage({ type: "dispose-summarization" });
+    console.log("Disposed Summarization model from worker memory");
+
     return true;
   } catch (error) {
     console.error("Failed to delete summarization model:", error);
@@ -169,22 +166,6 @@ export async function summarizeText(
     message: "Loading summarization model..."
   });
 
-  const generator = await SummarizationPipeline.getInstance((progress) => {
-    if ("progress" in progress && progress.progress !== undefined) {
-      const percent = Math.round(progress.progress as number);
-      onProgress?.({
-        status: "downloading",
-        progress: percent,
-        message: `Downloading model: ${percent}%`
-      });
-    }
-  });
-
-  onProgress?.({
-    status: "summarizing",
-    message: "Generating summary..."
-  });
-
   const customPrompt = getCustomPrompt();
   const prompt = customPrompt
     ? customPrompt
@@ -193,22 +174,42 @@ export async function summarizeText(
     : createDefaultPrompt(text, participants);
 
   try {
-    const result = await generator(prompt, {
-      // TODO: make these parameters configurable by end user in future
-      max_new_tokens: 1024,
-      do_sample: true,
-      temperature: 0.7,
-      top_p: 0.9,
-      return_full_text: false
-    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result: any = await sendWorkerMessage(
+      {
+        type: "summarize",
+        text: prompt, // Note: The worker expects 'text' but our prompt logic is here. Wait, handleSummarize in worker takes 'text' and passes it to generator.
+        // The 'text' argument to generator IS the prompt for text-generation models.
+        // So passing the full prompt as 'text' is correct.
+        params: {
+          max_new_tokens: 1024,
+          do_sample: true,
+          temperature: 0.7,
+          top_p: 0.9,
+          return_full_text: false
+        }
+      },
+      (data) => {
+        if (data.status === "downloading") {
+          onProgress?.({
+            status: "downloading",
+            progress: data.progress,
+            message: `Downloading model: ${data.progress}%`
+          });
+        } else if (data.status === "summarizing") {
+          onProgress?.({
+            status: "summarizing",
+            message: "Generating summary..."
+          });
+        }
+      }
+    );
 
     console.log("Raw summarization result:", result);
 
     const generatedText = Array.isArray(result)
-      ? // @ts-ignore: weird typing from transformers
-        result[0]?.generated_text
-      : // @ts-ignore: weird typing from transformers
-        result?.generated_text;
+      ? result[0]?.generated_text
+      : result?.generated_text;
     const summary = (generatedText || "Could not generate summary.").trim();
 
     console.log("Generated summary:", summary);
@@ -227,6 +228,10 @@ export async function summarizeText(
     };
   } catch (error) {
     console.error("Summarization error:", error);
+    onProgress?.({
+      status: "error",
+      message: `Summarization failed: ${error}`
+    });
     throw new Error(`Failed to generate summary: ${error}`);
   }
 }

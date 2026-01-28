@@ -1,13 +1,12 @@
 // TODO: let users drop in their own transcription models, onnx compatible with transformers.js
 
-import type { AutomaticSpeechRecognitionPipeline } from "@huggingface/transformers";
 import {
   WHISPER_MODELS,
-  WhisperPipeline,
   type WhisperModelSize,
   MODEL_SIZES,
   preprocessAudioWhisper
 } from "./whisper";
+import { sendWorkerMessage } from "../worker-client";
 
 export interface TranscriptionProgress {
   status: "loading" | "downloading" | "transcribing" | "complete" | "error";
@@ -40,17 +39,12 @@ export async function checkModelDownloaded(
 ): Promise<boolean> {
   const modelId = WHISPER_MODELS[modelSize];
 
-  if (WhisperPipeline.downloadedModels.has(modelId)) {
-    return true;
-  }
-
   // check the browser's Cache API
   try {
     const cache = await caches.open("transformers-cache");
     const testUrl = `https://huggingface.co/${modelId}/resolve/main/config.json`;
     const cached = await cache.match(testUrl);
     if (cached) {
-      WhisperPipeline.downloadedModels.add(modelId);
       return true;
     }
   } catch (e) {
@@ -91,19 +85,24 @@ export async function downloadModel(
 
   console.log(`Downloading model: ${modelId}`);
 
-  await WhisperPipeline.getInstance(modelId, (progress) => {
-    if ("progress" in progress && progress.progress !== undefined) {
-      const percent = Math.round(progress.progress as number);
-      const file = "file" in progress ? progress.file : "";
-      onProgress?.({
-        status: "downloading",
-        progress: percent,
-        message: `Downloading: ${percent}%${file ? ` (${file})` : ""}`
-      });
+  await sendWorkerMessage(
+    { type: "download-whisper", model: modelId },
+    (data) => {
+      if (data.status === "downloading") {
+        onProgress?.({
+          status: "downloading",
+          progress: data.progress,
+          message: `Downloading: ${data.progress}%${data.file ? ` (${data.file})` : ""}`
+        });
+      } else if (data.status === "loading") {
+        onProgress?.({
+          status: "loading",
+          progress: 0,
+          message: data.message || "Loading..."
+        });
+      }
     }
-  });
-
-  console.log("Model downloaded and loaded successfully");
+  );
 
   onProgress?.({
     status: "complete",
@@ -116,10 +115,6 @@ export async function deleteModel(
   modelSize: WhisperModelSize
 ): Promise<boolean> {
   const modelId = WHISPER_MODELS[modelSize];
-
-  if (WhisperPipeline.currentModel === modelId) {
-    WhisperPipeline.dispose();
-  }
 
   // Delete from browser Cache API
   try {
@@ -138,53 +133,21 @@ export async function deleteModel(
       }
     }
 
-    WhisperPipeline.downloadedModels.delete(modelId);
     console.log(`Deleted ${deletedCount} cached files for model ${modelId}`);
+
+    // Also dispose from worker memory
+    await sendWorkerMessage({ type: "dispose-whisper" });
+    console.log("Disposed Whisper model from worker memory");
+
     return deletedCount > 0;
   } catch (error) {
-    console.error("Error deleting model from cache:", error);
+    console.error("Error deleting model:", error);
     return false;
   }
 }
 
-async function getTranscriber(
-  modelSize: WhisperModelSize = "base",
-  onProgress?: ProgressCallback
-): Promise<AutomaticSpeechRecognitionPipeline> {
-  const modelId = WHISPER_MODELS[modelSize];
-
-  if (!WhisperPipeline.isLoaded(modelId)) {
-    const isDownloaded = await checkModelDownloaded(modelSize);
-    if (!isDownloaded) {
-      throw new Error(
-        `Model "${modelSize}" is not downloaded. Please download it first.`
-      );
-    }
-  }
-
-  onProgress?.({
-    status: "loading",
-    progress: 0,
-    message: `Loading Whisper ${modelSize} model...`
-  });
-
-  const transcriber = await WhisperPipeline.getInstance(modelId, (progress) => {
-    if ("progress" in progress && progress.progress !== undefined) {
-      const percent = progress.progress as number;
-      onProgress?.({
-        status: "loading",
-        progress: percent,
-        message: `Loading model: ${Math.round(percent)}%`
-      });
-    }
-  });
-
-  return transcriber;
-}
-
 /**
- * Transcribe audio using Whisper
- * Uses the singleton pipeline for efficient model management
+ * Transcribe audio using Whisper worker
  */
 export async function transcribeAudio(
   audioData: ArrayBuffer,
@@ -196,43 +159,29 @@ export async function transcribeAudio(
 ): Promise<TranscriptionResult> {
   const { modelSize = "base", language, onProgress } = options;
   const startTime = Date.now();
+  const modelId = WHISPER_MODELS[modelSize];
 
   try {
-    const transcriber = await getTranscriber(modelSize, onProgress);
-
-    onProgress?.({
-      status: "transcribing",
-      message: "Preparing audio..."
-    });
-
+    console.log("Preparing audio...");
     const audioArray = await preprocessAudioWhisper(audioData);
 
-    onProgress?.({
-      status: "transcribing",
-      message: "Transcribing audio..."
-    });
-
-    console.log("Starting transcription...");
-    console.log(
-      `Audio length: ${audioArray.length} samples (${audioArray.length / 16000}s)`
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result: any = await sendWorkerMessage(
+      { type: "transcribe", audioData: audioArray, model: modelId, language },
+      (data) => {
+        onProgress?.({
+          status: data.status as any,
+          message: data.message || "",
+          progress: data.progress
+        });
+      }
     );
 
-    const result = await transcriber(audioArray, {
-      language: language || "en",
-      task: "transcribe",
-      chunk_length_s: 30,
-      stride_length_s: 5,
-      return_timestamps: false
-    });
-
-    // Extract text from result (handle both single and array results)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const transcription = Array.isArray(result)
       ? (result[0] as any).text
       : (result as any).text;
-    const duration = (Date.now() - startTime) / 1000;
 
-    console.log(`Transcription complete in ${duration.toFixed(1)}s`);
+    const duration = (Date.now() - startTime) / 1000;
 
     onProgress?.({
       status: "complete",
@@ -242,13 +191,12 @@ export async function transcribeAudio(
     return {
       text: transcription.trim(),
       duration,
-      model: WHISPER_MODELS[modelSize]
+      model: modelId
     };
-  } catch (error) {
-    console.error("Transcription error:", error);
+  } catch (error: any) {
     onProgress?.({
       status: "error",
-      message: `Transcription failed: ${error}`
+      message: `Transcription failed: ${error.message || error}`
     });
     throw error;
   }
