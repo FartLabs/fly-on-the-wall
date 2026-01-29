@@ -11,7 +11,6 @@ export function getWorker(): Worker {
     });
     worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
       const data = event.data;
-      // console.log("[WorkerClient] Received message from worker:", data.type); // Verbose
       if (currentHandler) {
         currentHandler(data);
       } else {

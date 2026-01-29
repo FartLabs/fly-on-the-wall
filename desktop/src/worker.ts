@@ -1,8 +1,6 @@
-import { pipeline, env } from "@huggingface/transformers";
+import { env } from "@huggingface/transformers";
 import {
   WhisperPipeline,
-  WHISPER_MODELS,
-  preprocessAudioWhisper
 } from "./transcription/whisper";
 import {
   SummarizationPipeline,
@@ -10,7 +8,7 @@ import {
 } from "./summarization/pipeline";
 
 // Configure environment for worker
-env.allowLocalModels = false;
+env.allowLocalModels = true;
 env.allowRemoteModels = true;
 
 // Define message types
@@ -21,7 +19,7 @@ export type WorkerMessage =
       model: string;
       language?: string;
     }
-  | { type: "summarize"; text: string; params?: any }
+  | { type: "summarize"; text: string; modelId?: string; params?: any }
   | { type: "download-whisper"; model: string }
   | { type: "download-summarization" }
   | { type: "check-whisper"; model: string }
@@ -130,8 +128,8 @@ async function handleTranscribe(data: {
   self.postMessage({ type: "result", result });
 }
 
-async function handleSummarize(data: { text: string; params?: any }) {
-  const { text, params } = data;
+async function handleSummarize(data: { text: string; modelId?: string; params?: any }) {
+  const { text, modelId, params } = data;
   console.log(`[Worker] Starting summarization...`);
 
   self.postMessage({
@@ -140,7 +138,9 @@ async function handleSummarize(data: { text: string; params?: any }) {
     message: "Loading summarization model..."
   });
 
-  const generator = await SummarizationPipeline.getInstance((progress: any) => {
+  const modelToLoad = modelId || SUMMARIZATION_MODEL;
+
+  const generator = await SummarizationPipeline.getInstance(modelToLoad, (progress: any) => {
     if (
       progress.status === "progress" ||
       typeof progress.progress === "number"

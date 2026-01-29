@@ -16,6 +16,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke("check-model-exists", modelId),
   deleteModel: (modelId: string) => ipcRenderer.invoke("delete-model", modelId),
 
+  // selectCustomModelFolder: () => ipcRenderer.invoke("select-custom-model-folder"),
+  // validateCustomModel: (modelPath: string) => 
+  //   ipcRenderer.invoke("validate-custom-model", modelPath),
+  // importCustomModel: (data: { sourcePath: string; modelName: string }) =>
+  //   ipcRenderer.invoke("import-custom-model", data),
+  // listCustomModels: () => ipcRenderer.invoke("list-custom-models"),
+  // readModelFile: (url: string) => ipcRenderer.invoke("read-model-file", url),
+
   listNotes: () => ipcRenderer.invoke("list-notes"),
   readNote: (filename: string) => ipcRenderer.invoke("read-note", filename),
   deleteNote: (filename: string) => ipcRenderer.invoke("delete-note", filename)

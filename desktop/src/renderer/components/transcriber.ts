@@ -5,7 +5,7 @@ import {
   type TranscriptionProgress
 } from "@/transcription";
 import { runSummarization, clearSummary } from "./summarizer";
-import { getSelectedModel, setTranscriptionInProgress } from "./models";
+import { getSelectedTranscriptionModel, setTranscriptionInProgress } from "./models";
 
 let lastTranscription: string | null = null;
 let lastTimestamp: string | null = null;
@@ -41,7 +41,7 @@ export async function runTranscription(
   lastTimestamp = timestamp;
   clearSummary();
 
-  const modelSize = getSelectedModel();
+  const modelSize = getSelectedTranscriptionModel();
 
   if (!modelSize) {
     alert(

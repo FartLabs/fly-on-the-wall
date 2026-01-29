@@ -36,7 +36,7 @@ import {
   resumeRecording,
   isRecordingState
 } from "./components/recorder";
-import { refreshModelsList } from "./components/models";
+import { refreshModelsList, getSelectedTranscriptionModel, getSelectedSummaryModel } from "./components/models";
 import {
   runTranscription,
   setupTranscriptionListeners
@@ -64,6 +64,36 @@ declare global {
       getModelsDir: () => Promise<string>;
       checkModelExists: (modelId: string) => Promise<{ exists: boolean }>;
       deleteModel: (modelId: string) => Promise<{ success: boolean }>;
+      // selectCustomModelFolder: () => Promise<{ 
+      //   success: boolean; 
+      //   path?: string; 
+      //   canceled?: boolean;
+      //   error?: string;
+      // }>;
+      // validateCustomModel: (modelPath: string) => Promise<{
+      //   valid: boolean;
+      //   error?: string;
+      //   modelType?: string;
+      //   modelName?: string;
+      // }>;
+      // importCustomModel: (data: { 
+      //   sourcePath: string; 
+      //   modelName: string 
+      // }) => Promise<{ 
+      //   success: boolean; 
+      //   path?: string;
+      //   modelId?: string;
+      //   error?: string;
+      // }>;
+      // listCustomModels: () => Promise<{
+      //   success: boolean;
+      //   models: Array<{
+      //     id: string;
+      //     name: string;
+      //     path: string;
+      //   }>;
+      //   error?: string;
+      // }>;
       listNotes: () => Promise<{
         success: boolean;
         files: Array<{
@@ -116,7 +146,14 @@ elements.pauseBtn.addEventListener("click", pauseRecording);
 elements.resumeBtn.addEventListener("click", resumeRecording);
 elements.stopBtn.addEventListener("click", stopRecording);
 
-refreshModelsList();
+refreshModelsList()
+  .then(() => {
+    const selTranscription = getSelectedTranscriptionModel();
+    const selSummary = getSelectedSummaryModel();
+    console.log(`selected transcription model: ${selTranscription}`);
+    console.log(`selected summarization model: ${selSummary}`);
+  })
+  .catch((err) => console.error("Error refreshing models on startup:", err));
 setupTranscriptionListeners();
 setupSummarizationListeners();
 setupHistoryListeners();

@@ -3,7 +3,6 @@
 import {
   SUMMARIZATION_MODEL,
   MODEL_SIZE,
-  SummarizationPipeline
 } from "./pipeline";
 import { sendWorkerMessage } from "../worker-client";
 
@@ -150,6 +149,7 @@ ${transcript}
 export async function summarizeText(
   text: string,
   onProgress?: ProgressCallback,
+  modelId?: string | null,
   participants: string[] = []
 ): Promise<SummarizationResult> {
   const startTime = Date.now();
@@ -173,22 +173,17 @@ export async function summarizeText(
         .replace("{participants}", participants.join(", ") || "Not specified")
     : createDefaultPrompt(text, participants);
 
+  const actualModelId = modelId || SUMMARIZATION_MODEL;
+  console.log(`Using summarization model: ${actualModelId}`);
+
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result: any = await sendWorkerMessage(
       {
         type: "summarize",
-        text: prompt, // Note: The worker expects 'text' but our prompt logic is here. Wait, handleSummarize in worker takes 'text' and passes it to generator.
-        // The 'text' argument to generator IS the prompt for text-generation models.
-        // So passing the full prompt as 'text' is correct.
-        params: {
-          max_new_tokens: 1024,
-          do_sample: true,
-          temperature: 0.7,
-          top_p: 0.9,
-          return_full_text: false
-        }
-      },
+        text: prompt, 
+        modelId: actualModelId, 
+     },
       (data) => {
         if (data.status === "downloading") {
           onProgress?.({

@@ -10,33 +10,42 @@ export const MODEL_SIZE = "~500 MB";
 export class SummarizationPipeline {
   static instance: TextGenerationPipeline | null = null;
   static isDownloaded = false;
+  static currentModelId: string | null = null;
 
   static async getInstance(
+    modelId: string = SUMMARIZATION_MODEL,
     progressCallback?: (progress: {
       progress?: number;
       status?: string;
     }) => void
   ): Promise<TextGenerationPipeline> {
-    if (this.instance !== null) {
+    // If instance exists and it's the same model, return it
+    if (this.instance !== null && this.currentModelId === modelId) {
       return this.instance;
+    }
+
+    // but if switching models, dispose current instance
+    if (this.instance !== null && this.currentModelId !== modelId) {
+      this.dispose();
     }
 
     const { pipeline, env } = await import("@huggingface/transformers");
 
-    env.allowLocalModels = false;
+    env.allowLocalModels = true;
     env.allowRemoteModels = true;
 
-    console.log(`Loading summarization model: ${SUMMARIZATION_MODEL}`);
+    console.log(`Loading summarization model: ${modelId}`);
 
     const pipelineInstance = await pipeline(
       "text-generation",
-      SUMMARIZATION_MODEL,
+      modelId,
       {
         progress_callback: progressCallback
       }
     );
 
     this.instance = pipelineInstance as TextGenerationPipeline;
+    this.currentModelId = modelId;
     this.isDownloaded = true;
 
     console.log("Summarization model loaded successfully");
@@ -45,6 +54,7 @@ export class SummarizationPipeline {
 
   static dispose(): void {
     this.instance = null;
+    this.currentModelId = null;
     console.log("SummarizationPipeline disposed");
   }
 }

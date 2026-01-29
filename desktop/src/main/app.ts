@@ -39,8 +39,8 @@ const createWindow = () => {
 
   mainWindow.maximize();
 
-  // Open the DevTools.
-  // mainWindow.webContents.openDevTools();
+  // Open the DevTools if in development mode.
+  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) mainWindow.webContents.openDevTools();
 };
 
 // This method will be called when Electron has finished
