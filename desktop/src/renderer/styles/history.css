@@ -80,9 +80,51 @@
   color: #e0e0e0;
   max-height: 500px;
   overflow-y: auto;
-  white-space: pre-wrap;
+  white-space: normal;
   word-wrap: break-word;
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
     sans-serif;
+}
+
+.note-sections {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 1rem;
+}
+
+.note-section {
+  background: rgba(0,0,0,0.05);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  min-height: 200px;
+  overflow-y: auto;
+}
+
+.note-section-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #fff;
+}
+
+.note-section-body {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: #e6e6e6;
+}
+
+.editable {
+  outline: 2px dashed rgba(102,126,234,0.35);
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+
+.editable-body:focus {
+  outline: 2px dashed rgba(102,126,234,0.5);
+}
+
+@media (max-width: 900px) {
+  .note-sections {
+    grid-template-columns: 1fr;
+  }
 }

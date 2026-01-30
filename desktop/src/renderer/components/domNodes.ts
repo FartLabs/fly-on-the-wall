@@ -47,8 +47,8 @@ export const elements = {
   copyTranscriptionBtn: document.getElementById(
     "rightPanelCopyTranscription"
   ) as HTMLButtonElement,
-  saveTranscriptionBtn: document.getElementById(
-    "rightPanelSaveTranscription"
+  saveNoteBtn: document.getElementById(
+    "rightPanelSaveNote"
   ) as HTMLButtonElement,
 
   summaryCard: document.getElementById(
@@ -75,9 +75,6 @@ export const elements = {
   copySummaryBtn: document.getElementById(
     "rightPanelCopySummary"
   ) as HTMLButtonElement,
-  saveSummaryBtn: document.getElementById(
-    "rightPanelSaveSummary"
-  ) as HTMLButtonElement,
 
   modelsList: document.getElementById("modelsList") as HTMLDivElement,
 
@@ -98,7 +95,8 @@ export const elements = {
   rightPanel: document.getElementById("rightPanel") as HTMLDivElement,
   rightPanelTrigger: document.getElementById(
     "rightPanelTrigger"
-  ) as HTMLDivElement
+  ) as HTMLDivElement,
+  exportNoteBtn: document.getElementById("exportNoteBtn") as HTMLButtonElement,
 };
 
 export function setUiLocked(locked: boolean): void {

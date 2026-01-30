@@ -1,6 +1,6 @@
 import { elements, setUiLocked } from "./domNodes";
 import { getActiveInputDeviceIds } from "./devices";
-import { formatTime, isScreenSource } from "@/utils";
+import { formatSecondsToTime, isScreenSource } from "@/utils";
 import { refreshModelsList } from "./models";
 
 let mediaRecorder: MediaRecorder | null = null;
@@ -16,7 +16,7 @@ type OnRecordingComplete = (buffer: ArrayBuffer, timestamp: string) => void;
 
 function updateTimer(): void {
   elapsedSeconds++;
-  elements.timerDisplay.textContent = formatTime(elapsedSeconds);
+  elements.timerDisplay.textContent = formatSecondsToTime(elapsedSeconds);
 }
 
 export async function startRecording(
@@ -123,7 +123,7 @@ export async function startRecording(
     elements.statusText.textContent = `Recording...`;
 
     elapsedSeconds = 0;
-    elements.timerDisplay.textContent = formatTime(0);
+    elements.timerDisplay.textContent = formatSecondsToTime(0);
     timerInterval = window.setInterval(updateTimer, 1000);
 
     refreshModelsList();

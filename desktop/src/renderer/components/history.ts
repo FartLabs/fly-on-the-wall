@@ -1,8 +1,11 @@
+import { generateDateLabel, convertToLocaleTime, escapeHtml, getBaseName } from "@/utils";
+
 interface NoteFile {
   name: string;
   path: string;
   size: number;
   modified: string;
+  isJson?: boolean;
 }
 
 let currentNoteFilename: string | null = null;
@@ -61,18 +64,15 @@ function createHistoryItem(file: NoteFile): HTMLElement {
   const item = document.createElement("div");
   item.className = "history-item";
 
-  const type = getFileType(file.name);
-  const icon = type === "transcription" ? "📝" : "📄";
-  const typeLabel = type === "transcription" ? "Transcription" : "Summary";
+  const filenameLabel = getBaseName(file.name);
 
   const date = new Date(file.modified);
-  const formattedDate = formatDate(date);
-  const formattedTime = formatTime(date);
+  const formattedDate = generateDateLabel(date);
+  const formattedTime = convertToLocaleTime(date);
 
   item.innerHTML = `
-    <div class="history-item-icon">${icon}</div>
     <div class="history-item-info">
-      <div class="history-item-type">${typeLabel}</div>
+      <div class="history-item-type">${filenameLabel}</div>
       <div class="history-item-date">${formattedDate} at ${formattedTime}</div>
     </div>
     <button class="history-item-btn" title="View">👁️</button>
@@ -82,39 +82,6 @@ function createHistoryItem(file: NoteFile): HTMLElement {
   viewBtn?.addEventListener("click", () => openNote(file.name));
 
   return item;
-}
-
-function getFileType(filename: string): "transcription" | "summary" {
-  if (filename.startsWith("transcription_")) {
-    return "transcription";
-  }
-  return "summary";
-}
-
-function formatDate(date: Date): string {
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  if (date.toDateString() === today.toDateString()) {
-    return "Today";
-  } else if (date.toDateString() === yesterday.toDateString()) {
-    return "Yesterday";
-  }
-
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: date.getFullYear() !== today.getFullYear() ? "numeric" : undefined
-  });
-}
-
-function formatTime(date: Date): string {
-  return date.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true
-  });
 }
 
 async function openNote(filename: string): Promise<void> {
@@ -130,14 +97,151 @@ async function openNote(filename: string): Promise<void> {
 
     const noteViewerCard = document.getElementById("noteViewerCard");
     const noteViewerTitle = document.getElementById("noteViewerTitle");
-    const noteContent = document.getElementById("noteContent");
+    const noteTranscription = document.getElementById("noteTranscription");
+    const noteSummary = document.getElementById("noteSummary");
 
-    if (!noteViewerCard || !noteViewerTitle || !noteContent) return;
+    if (!noteViewerCard || !noteViewerTitle || !noteTranscription || !noteSummary) return;
 
-    const type = getFileType(filename);
-    noteViewerTitle.textContent =
-      type === "transcription" ? "Transcription" : "Summary";
-    noteContent.textContent = result.content;
+    noteTranscription.textContent = "";
+    noteSummary.textContent = "";
+
+    if (result.content && typeof result.content === "object") {
+      const noteId = result.content.id || filename.replace(/\.json$/, "");
+      noteViewerTitle.textContent = noteId;
+      noteViewerTitle.removeAttribute("contenteditable");
+      noteViewerTitle.classList.remove("editable");
+
+      noteTranscription.innerHTML = `<div>${escapeHtml(result.content.transcription || "")}</div>`;
+      noteSummary.innerHTML = `<div>${escapeHtml(result.content.summary || "")}</div>`;
+      noteTranscription.removeAttribute("contenteditable");
+      noteSummary.removeAttribute("contenteditable");
+      noteTranscription.classList.remove("editable-body");
+      noteSummary.classList.remove("editable-body");
+
+      const copyTransBtn = document.getElementById("copyTranscriptionBtn");
+      const copySummaryBtn = document.getElementById("copySummaryBtn");
+      
+      noteTranscription.setAttribute("contenteditable", "true");
+      noteSummary.setAttribute("contenteditable", "true");
+      noteTranscription.classList.add("editable-body");
+      noteSummary.classList.add("editable-body");
+
+      const exportNoteBtn = document.getElementById("exportNoteBtn");
+
+      async function saveEdits() {
+        try {
+          const newTitle = (noteViewerTitle.textContent || "").trim();
+          const newTrans = noteTranscription.textContent || "";
+          const newSum = noteSummary.textContent || "";
+
+          if (!newTrans && !newSum) {
+            alert("Cannot save empty note.");
+            return;
+          }
+
+          const safeBase = (newTitle || noteId)
+            .replace(/[^a-zA-Z0-9-_ ]/g, "")
+            .trim()
+            .replace(/\s+/g, "_");
+          const newFilename = `${safeBase || noteId}.json`;
+
+          const res = await window.electronAPI.saveNote({
+            transcription: newTrans,
+            summary: newSum,
+            filename: newFilename
+          });
+
+          if (res && res.success) {
+            if (newFilename !== filename) {
+              await window.electronAPI.deleteNote(filename);
+              currentNoteFilename = newFilename;
+            }
+            alert("Note saved");
+            loadHistory();
+          } else {
+            alert("Failed to save note: " + (res && res.error));
+          }
+        } catch (err) {
+          console.error("Error saving note from viewer:", err);
+          alert("Error saving note");
+        }
+      }
+
+      noteViewerTitle.onclick = () => {
+        noteViewerTitle.setAttribute("contenteditable", "true");
+        noteViewerTitle.classList.add("editable");
+        noteViewerTitle.focus();
+      };
+
+      // save on Enter when editing title
+      noteViewerTitle.onkeydown = (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          // remove title editable styling after saving
+          saveEdits().then(() => {
+            noteViewerTitle.removeAttribute("contenteditable");
+            noteViewerTitle.classList.remove("editable");
+          });
+        }
+      };
+
+      // auto-save when transcription/summary lose focus
+      noteTranscription.onblur = () => {
+        saveEdits();
+      };
+      noteSummary.onblur = () => {
+        saveEdits();
+      };
+
+      if (copyTransBtn) {
+        copyTransBtn.onclick = async () => {
+          try {
+            await navigator.clipboard.writeText(noteTranscription.textContent || "");
+            const orig = copyTransBtn.textContent;
+            copyTransBtn.textContent = "Copied!";
+            setTimeout(() => (copyTransBtn.textContent = orig), 2000);
+          } catch (err) {
+            console.error("Copy transcription failed:", err);
+          }
+        };
+      }
+
+
+      if (copySummaryBtn) {
+        copySummaryBtn.onclick = async () => {
+          try {
+            await navigator.clipboard.writeText(noteSummary.textContent || "");
+            const orig = copySummaryBtn.textContent;
+            copySummaryBtn.textContent = "Copied!";
+            setTimeout(() => (copySummaryBtn.textContent = orig), 2000);
+          } catch (err) {
+            console.error("Copy summary failed:", err);
+          }
+        };
+      }
+
+      if (exportNoteBtn) {
+        exportNoteBtn.onclick = async () => {
+          try {
+            const res = await window.electronAPI.exportNote({
+              filename: filename,
+              format: "pdf"
+            });
+            if (res && res.success) {
+              alert(`Exported to ${res.path}`);
+            } else {
+              alert(`Export failed: ${res && res.error}`);
+            }
+          } catch (err) {
+            console.error("Export failed:", err);
+            alert("Export failed");
+          }
+        };
+      }
+    } else {
+      alert("Note format not supported");
+      return;
+    }
 
     noteViewerCard.classList.remove("hidden");
   } catch (error) {
@@ -152,27 +256,6 @@ function closeNoteViewer(): void {
     noteViewerCard.classList.add("hidden");
   }
   currentNoteFilename = null;
-}
-
-async function copyCurrentNote(): Promise<void> {
-  const noteContent = document.getElementById("noteContent");
-  if (!noteContent) return;
-
-  try {
-    await navigator.clipboard.writeText(noteContent.textContent || "");
-
-    const copyBtn = document.getElementById("copyNoteBtn");
-    if (copyBtn) {
-      const originalText = copyBtn.textContent;
-      copyBtn.textContent = "Copied!";
-      setTimeout(() => {
-        copyBtn.textContent = originalText;
-      }, 2000);
-    }
-  } catch (error) {
-    console.error("Failed to copy:", error);
-    alert("Failed to copy to clipboard");
-  }
 }
 
 async function deleteCurrentNote(): Promise<void> {
@@ -204,7 +287,6 @@ export function setupHistoryListeners(): void {
   const backToMainBtn = document.getElementById("backToMainBtn");
   const refreshHistoryBtn = document.getElementById("refreshHistoryBtn");
   const closeNoteBtn = document.getElementById("closeNoteBtn");
-  const copyNoteBtn = document.getElementById("copyNoteBtn");
   const deleteNoteBtn = document.getElementById("deleteNoteBtn");
 
   viewHistoryBtn?.addEventListener("click", showHistoryPage);
@@ -217,6 +299,5 @@ export function setupHistoryListeners(): void {
   });
 
   closeNoteBtn?.addEventListener("click", closeNoteViewer);
-  copyNoteBtn?.addEventListener("click", copyCurrentNote);
   deleteNoteBtn?.addEventListener("click", deleteCurrentNote);
 }

@@ -92,13 +92,6 @@
             >
               Copy
             </button>
-            <button
-              class="action-btn"
-              id="rightPanelSaveTranscription"
-              title="Save to file"
-            >
-              Save
-            </button>
           </div>
         </div>
 
@@ -131,19 +124,15 @@
             >
               Copy
             </button>
-            <button
-              class="action-btn"
-              id="rightPanelSaveSummary"
-              title="Save summary"
-            >
-              Save
-            </button>
           </div>
         </div>
 
         <div class="summary-empty hidden" id="rightPanelSummaryEmpty">
           <p>Summary will appear here after transcription.</p>
         </div>
+      </div>
+      <div class="right-panel-save-wrapper">
+        <button class="action-btn primary hidden" id="rightPanelSaveNote" title="Save transcription + summary as note">Save Note</button>
       </div>
     </div>
     <div class="container" id="mainPage">
@@ -261,10 +250,10 @@
           <div class="viewer-actions">
             <button
               class="action-btn"
-              id="copyNoteBtn"
-              title="Copy to clipboard"
+              id="exportNoteBtn"
+              title="Export this note"
             >
-              Copy
+              Export
             </button>
             <button
               class="action-btn delete-btn"
@@ -276,7 +265,28 @@
             <button class="close-btn" id="closeNoteBtn" title="Close">✕</button>
           </div>
         </div>
-        <div class="note-content" id="noteContent"></div>
+        <div class="note-content" id="noteContent">
+          <div class="note-sections" id="noteSections">
+            <section class="note-section transcription-section">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 class="note-section-title">Transcription</h3>
+                <div class="section-actions">
+                  <button class="action-btn" id="copyTranscriptionBtn" title="Copy transcription">Copy</button>
+                </div>
+              </div>
+              <div class="note-section-body" id="noteTranscription"></div>
+            </section>
+            <section class="note-section summary-section">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 class="note-section-title">Summary</h3>
+                <div class="section-actions">
+                  <button class="action-btn" id="copySummaryBtn" title="Copy summary">Copy</button>
+                </div>
+              </div>
+              <div class="note-section-body" id="noteSummary"></div>
+            </section>
+          </div>
+        </div>
       </div>
     </div>
 

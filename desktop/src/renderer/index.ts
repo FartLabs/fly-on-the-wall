@@ -49,7 +49,6 @@ import { setupRightPanelListeners } from "./components/rightSideBar";
 
 declare global {
   interface Window {
-    // Declare electronAPI exposed from preload
     electronAPI: {
       saveRecording: (data: {
         buffer: ArrayBuffer;
@@ -59,6 +58,7 @@ declare global {
         text: string;
         filename: string;
       }) => Promise<{ success: boolean; path?: string; error?: string }>;
+      saveNote: (data: { transcription: string; summary?: string; filename?: string; metadata?: Record<string, any> }) => Promise<{ success: boolean; filename?: string; error?: string }>;
       getRecordingsDir: () => Promise<string>;
       getDesktopSources: () => Promise<Array<{ id: string; name: string }>>;
       getModelsDir: () => Promise<string>;
@@ -110,6 +110,7 @@ declare global {
       deleteNote: (
         filename: string
       ) => Promise<{ success: boolean; error?: string }>;
+      exportNote: (data: { filename: string; format: string }) => Promise<{ success: boolean; path?: string; error?: string }>;
     };
   }
 }
@@ -147,13 +148,44 @@ elements.resumeBtn.addEventListener("click", resumeRecording);
 elements.stopBtn.addEventListener("click", stopRecording);
 
 refreshModelsList()
-  .then(() => {
+  .then(async () => {
     const selTranscription = getSelectedTranscriptionModel();
     const selSummary = getSelectedSummaryModel();
     console.log(`selected transcription model: ${selTranscription}`);
     console.log(`selected summarization model: ${selSummary}`);
-  })
-  .catch((err) => console.error("Error refreshing models on startup:", err));
+
+    const firstRunKey = "introNoteCreated";
+    const alreadyCreated = localStorage.getItem(firstRunKey) === "true";
+
+    console.log("Is user's first run?", !alreadyCreated);
+ 
+    // create a introductory note if none exist yet
+    // this will not run if user already has notes saved
+      try {
+      if (alreadyCreated) return;
+          const r = await window.electronAPI.listNotes();
+          if (r.success && Array.isArray(r.files) && r.files.length === 0) {
+            console.log("First run with empty notes — creating introductory note");
+            try {
+              const res = await window.electronAPI.saveNote({
+                transcription: "Welcome to Fly on the Wall! This note demonstrates the new structured notes format. Your transcriptions and summaries will be stored here.",
+                summary: "This is your introductory summary. Enjoy the app!"
+              });
+              if (res.success) {
+                localStorage.setItem(firstRunKey, "true");
+                console.log("Introductory note created:", res.filename);
+              } else {
+                console.error("Failed to create introductory note:", res.error);
+              }
+            } catch (err) {
+              console.error("Error saving introductory note:", err);
+            }
+        }
+      } catch (err) {
+        console.error("Error checking/creating introductory note:", err);
+      }
+  }).catch((err) => console.error("Error refreshing models on startup:", err));
+
 setupTranscriptionListeners();
 setupSummarizationListeners();
 setupHistoryListeners();
