@@ -1,7 +1,14 @@
-import { ipcMain, desktopCapturer } from "electron";
+import { app, ipcMain, desktopCapturer } from "electron";
 import path from "node:path";
 import fs from "node:fs";
-import { getProjectRoot } from "./app";
+
+const getRecordingsDir = (): string => {
+  const recordingsDir = path.join(app.getPath("userData"), "recordings");
+  if (!fs.existsSync(recordingsDir)) {
+    fs.mkdirSync(recordingsDir, { recursive: true });
+  }
+  return recordingsDir;
+};
 
 ipcMain.handle("get-desktop-sources", async () => {
   try {
@@ -20,29 +27,14 @@ ipcMain.handle("get-desktop-sources", async () => {
 });
 
 ipcMain.handle("get-recordings-dir", () => {
-  const projectRoot = getProjectRoot();
-  const recordingsDir = path.join(projectRoot, "recordings");
-
-  if (!fs.existsSync(recordingsDir)) {
-    fs.mkdirSync(recordingsDir, { recursive: true });
-  }
-
-  return recordingsDir;
+  return getRecordingsDir();
 });
 
-// pretty similar logic to "save-transcription" handler, could create function
-// if another handler does the same logic
 ipcMain.handle(
   "save-recording",
   async (_event, data: { buffer: ArrayBuffer; filename: string }) => {
     try {
-      const projectRoot = getProjectRoot();
-      const recordingsDir = path.join(projectRoot, "recordings");
-
-      if (!fs.existsSync(recordingsDir)) {
-        fs.mkdirSync(recordingsDir, { recursive: true });
-      }
-
+      const recordingsDir = getRecordingsDir();
       const filePath = path.join(recordingsDir, data.filename);
       const buffer = Buffer.from(data.buffer);
       fs.writeFileSync(filePath, buffer);

@@ -2,7 +2,6 @@ import { app, ipcMain, dialog } from "electron";
 import { BrowserWindow } from "electron";
 import path from "node:path";
 import fs from "node:fs";
-import { getProjectRoot } from "./app";
 
 const getModelsDir = (): string => {
   const modelsDir = path.join(app.getPath("userData"), "models");
@@ -10,6 +9,14 @@ const getModelsDir = (): string => {
     fs.mkdirSync(modelsDir, { recursive: true });
   }
   return modelsDir;
+};
+
+const getNotesDir = (): string => {
+  const notesDir = path.join(app.getPath("userData"), "notes");
+  if (!fs.existsSync(notesDir)) {
+    fs.mkdirSync(notesDir, { recursive: true });
+  }
+  return notesDir;
 };
 
 ipcMain.handle("get-models-dir", () => {
@@ -48,13 +55,7 @@ ipcMain.handle(
   "save-transcription",
   async (_event, data: { text: string; filename: string }) => {
     try {
-      const projectRoot = getProjectRoot();
-      const notesDir = path.join(projectRoot, "notes");
-
-      if (!fs.existsSync(notesDir)) {
-        fs.mkdirSync(notesDir, { recursive: true });
-      }
-
+      const notesDir = getNotesDir();
       const filePath = path.join(notesDir, data.filename);
       fs.writeFileSync(filePath, data.text, "utf-8");
 
@@ -81,12 +82,7 @@ ipcMain.handle(
     }
   ) => {
     try {
-      const projectRoot = getProjectRoot();
-      const notesDir = path.join(projectRoot, "notes");
-
-      if (!fs.existsSync(notesDir)) {
-        fs.mkdirSync(notesDir, { recursive: true });
-      }
+      const notesDir = getNotesDir();
 
       const ts = new Date();
       const filename =
@@ -115,12 +111,7 @@ ipcMain.handle(
 
 ipcMain.handle("list-notes", async () => {
   try {
-    const projectRoot = getProjectRoot();
-    const notesDir = path.join(projectRoot, "notes");
-
-    if (!fs.existsSync(notesDir)) {
-      return { success: true, files: [] };
-    }
+    const notesDir = getNotesDir();
 
     const files = fs
       .readdirSync(notesDir)
@@ -150,8 +141,7 @@ ipcMain.handle("list-notes", async () => {
 
 ipcMain.handle("read-note", async (_event, filename: string) => {
   try {
-    const projectRoot = getProjectRoot();
-    const notesDir = path.join(projectRoot, "notes");
+    const notesDir = getNotesDir();
     const filePath = path.join(notesDir, filename);
 
     const content = fs.readFileSync(filePath, "utf-8");
@@ -170,8 +160,7 @@ ipcMain.handle("read-note", async (_event, filename: string) => {
 
 ipcMain.handle("delete-note", async (_event, filename: string) => {
   try {
-    const projectRoot = getProjectRoot();
-    const notesDir = path.join(projectRoot, "notes");
+    const notesDir = getNotesDir();
     const filePath = path.join(notesDir, filename);
 
     fs.unlinkSync(filePath);
@@ -187,8 +176,7 @@ ipcMain.handle(
   "export-note",
   async (_event, data: { filename: string; format: string }) => {
     try {
-      const projectRoot = getProjectRoot();
-      const notesDir = path.join(projectRoot, "notes");
+      const notesDir = getNotesDir();
       const filePath = path.join(notesDir, data.filename);
 
       if (!fs.existsSync(filePath)) {
@@ -208,11 +196,13 @@ ipcMain.handle(
         }
       });
 
-      await win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html));
+      await win.loadURL(
+        "data:text/html;charset=utf-8," + encodeURIComponent(html)
+      );
 
       if (data.format === "pdf") {
         const pdfBuffer = await win.webContents.printToPDF({
-          printBackground: true,
+          printBackground: true
         });
 
         const { canceled, filePath: savePath } = await dialog.showSaveDialog({
@@ -255,7 +245,7 @@ ipcMain.handle(
 
 //     const configPath = path.join(modelPath, "config.json");
 //     const tokenizerPath = path.join(modelPath, "tokenizer.json");
-    
+
 //     if (!fs.existsSync(configPath)) {
 //       return { valid: false, error: "Missing config.json - not a valid model" };
 //     }
@@ -266,11 +256,11 @@ ipcMain.handle(
 
 //     const files = fs.readdirSync(modelPath);
 //     const hasOnnxFiles = files.some(file => file.endsWith('.onnx') || file.endsWith('.onnx_data'));
-    
+
 //     if (!hasOnnxFiles) {
-//       return { 
-//         valid: false, 
-//         error: "No ONNX model files found - model must be in ONNX format for transformers.js" 
+//       return {
+//         valid: false,
+//         error: "No ONNX model files found - model must be in ONNX format for transformers.js"
 //       };
 //     }
 
@@ -280,15 +270,15 @@ ipcMain.handle(
 //     // Extract model name from path or config
 //     const modelName = config.name || config._name_or_path || path.basename(modelPath);
 
-//     return { 
-//       valid: true, 
+//     return {
+//       valid: true,
 //       modelType: 'text-generation',
-//       modelName 
+//       modelName
 //     };
 //   } catch (error) {
-//     return { 
-//       valid: false, 
-//       error: `Error validating model: ${error instanceof Error ? error.message : String(error)}` 
+//     return {
+//       valid: false,
+//       error: `Error validating model: ${error instanceof Error ? error.message : String(error)}`
 //     };
 //   }
 // }
@@ -317,8 +307,8 @@ ipcMain.handle(
 //   return validateSummarizationModel(modelPath);
 // });
 
-// ipcMain.handle("import-custom-model", async (_event, data: { 
-//   sourcePath: string; 
+// ipcMain.handle("import-custom-model", async (_event, data: {
+//   sourcePath: string;
 //   modelName: string;
 // }) => {
 //   try {
@@ -330,14 +320,14 @@ ipcMain.handle(
 //     }
 
 //     const modelsDir = getModelsDir();
-    
+
 //     const safeName = modelName.replace(/[^a-zA-Z0-9-_]/g, '_');
 //     const targetPath = path.join(modelsDir, `custom--${safeName}`);
 
 //     if (fs.existsSync(targetPath)) {
-//       return { 
-//         success: false, 
-//         error: "A custom model with this name already exists" 
+//       return {
+//         success: false,
+//         error: "A custom model with this name already exists"
 //       };
 //     }
 
@@ -348,8 +338,8 @@ ipcMain.handle(
 //     const modelUrl = `app-data://${relativePath.replace(/\\/g, '/')}`;
 
 //     console.log(`Custom model imported: ${targetPath}`);
-//     return { 
-//       success: true, 
+//     return {
+//       success: true,
 //       path: targetPath,
 //       url: modelUrl,
 //       modelId: `custom--${safeName}`
@@ -363,7 +353,7 @@ ipcMain.handle(
 // ipcMain.handle("list-custom-models", async () => {
 //   try {
 //     const modelsDir = getModelsDir();
-    
+
 //     if (!fs.existsSync(modelsDir)) {
 //       return { success: true, models: [] };
 //     }
@@ -374,9 +364,9 @@ ipcMain.handle(
 //       .map(entry => {
 //         const modelPath = path.join(modelsDir, entry.name);
 //         const configPath = path.join(modelPath, 'config.json');
-        
+
 //         let modelName = entry.name.replace('custom--', '');
-        
+
 //         if (fs.existsSync(configPath)) {
 //           try {
 //             const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
@@ -405,11 +395,11 @@ ipcMain.handle(
 
 // function copyDirectory(source: string, destination: string) {
 //   const entries = fs.readdirSync(source, { withFileTypes: true });
-  
+
 //   for (const entry of entries) {
 //     const srcPath = path.join(source, entry.name);
 //     const destPath = path.join(destination, entry.name);
-    
+
 //     if (entry.isDirectory()) {
 //       fs.mkdirSync(destPath, { recursive: true });
 //       copyDirectory(srcPath, destPath);
