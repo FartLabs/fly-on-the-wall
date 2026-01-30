@@ -36,13 +36,9 @@ export class SummarizationPipeline {
 
     console.log(`Loading summarization model: ${modelId}`);
 
-    const pipelineInstance = await pipeline(
-      "text-generation",
-      modelId,
-      {
-        progress_callback: progressCallback
-      }
-    );
+    const pipelineInstance = await pipeline("text-generation", modelId, {
+      progress_callback: progressCallback
+    });
 
     this.instance = pipelineInstance as TextGenerationPipeline;
     this.currentModelId = modelId;

@@ -62,7 +62,7 @@ export async function runSummarization(
   lastTimestamp = timestamp;
 
   const selectedModelId = getSelectedSummaryModel();
-  console.log(`Using summarization model: ${selectedModelId || 'default'}`);
+  console.log(`Using summarization model: ${selectedModelId || "default"}`);
 
   const isDownloaded = await checkSummarizationModelDownloaded();
   console.log("Summarization model downloaded:", isDownloaded);
@@ -91,7 +91,11 @@ export async function runSummarization(
 
   try {
     console.log("Calling summarizeText...");
-    const result = await summarizeText(transcription, updateSummaryProgress, selectedModelId);
+    const result = await summarizeText(
+      transcription,
+      updateSummaryProgress,
+      selectedModelId
+    );
     lastSummary = result.summary;
 
     console.log("Summary result:", result);

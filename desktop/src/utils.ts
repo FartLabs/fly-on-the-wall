@@ -57,8 +57,8 @@ export function escapeHtml(unsafe: string): string {
 
 export function getBaseName(filename: string): string {
   // preserve filenames that are just an extension (e.g., ".gitignore")
-  if (filename.startsWith('.') && filename.lastIndexOf('.') === 0) {
+  if (filename.startsWith(".") && filename.lastIndexOf(".") === 0) {
     return filename;
   }
   return filename.replace(/\..*$/, "");
-};
+}

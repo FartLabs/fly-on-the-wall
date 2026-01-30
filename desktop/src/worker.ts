@@ -1,7 +1,5 @@
 import { env } from "@huggingface/transformers";
-import {
-  WhisperPipeline,
-} from "./transcription/whisper";
+import { WhisperPipeline } from "./transcription/whisper";
 import {
   SummarizationPipeline,
   SUMMARIZATION_MODEL
@@ -128,7 +126,11 @@ async function handleTranscribe(data: {
   self.postMessage({ type: "result", result });
 }
 
-async function handleSummarize(data: { text: string; modelId?: string; params?: any }) {
+async function handleSummarize(data: {
+  text: string;
+  modelId?: string;
+  params?: any;
+}) {
   const { text, modelId, params } = data;
   console.log(`[Worker] Starting summarization...`);
 
@@ -140,19 +142,22 @@ async function handleSummarize(data: { text: string; modelId?: string; params?: 
 
   const modelToLoad = modelId || SUMMARIZATION_MODEL;
 
-  const generator = await SummarizationPipeline.getInstance(modelToLoad, (progress: any) => {
-    if (
-      progress.status === "progress" ||
-      typeof progress.progress === "number"
-    ) {
-      self.postMessage({
-        type: "status",
-        status: "downloading",
-        progress: progress.progress,
-        file: progress.file
-      });
+  const generator = await SummarizationPipeline.getInstance(
+    modelToLoad,
+    (progress: any) => {
+      if (
+        progress.status === "progress" ||
+        typeof progress.progress === "number"
+      ) {
+        self.postMessage({
+          type: "status",
+          status: "downloading",
+          progress: progress.progress,
+          file: progress.file
+        });
+      }
     }
-  });
+  );
 
   self.postMessage({
     type: "status",

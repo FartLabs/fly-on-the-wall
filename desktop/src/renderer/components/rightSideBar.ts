@@ -21,7 +21,7 @@ export function setupRightPanelListeners() {
   const closeRightPanel = () => {
     closeTimeout = window.setTimeout(() => {
       rightPanel.classList.remove("open");
-    }, 300); 
+    }, 300);
   };
 
   rightPanelTrigger.addEventListener("mouseenter", openRightPanel);

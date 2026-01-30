@@ -1,4 +1,9 @@
-import { generateDateLabel, convertToLocaleTime, escapeHtml, getBaseName } from "@/utils";
+import {
+  generateDateLabel,
+  convertToLocaleTime,
+  escapeHtml,
+  getBaseName
+} from "@/utils";
 
 interface NoteFile {
   name: string;
@@ -100,7 +105,13 @@ async function openNote(filename: string): Promise<void> {
     const noteTranscription = document.getElementById("noteTranscription");
     const noteSummary = document.getElementById("noteSummary");
 
-    if (!noteViewerCard || !noteViewerTitle || !noteTranscription || !noteSummary) return;
+    if (
+      !noteViewerCard ||
+      !noteViewerTitle ||
+      !noteTranscription ||
+      !noteSummary
+    )
+      return;
 
     noteTranscription.textContent = "";
     noteSummary.textContent = "";
@@ -120,7 +131,7 @@ async function openNote(filename: string): Promise<void> {
 
       const copyTransBtn = document.getElementById("copyTranscriptionBtn");
       const copySummaryBtn = document.getElementById("copySummaryBtn");
-      
+
       noteTranscription.setAttribute("contenteditable", "true");
       noteSummary.setAttribute("contenteditable", "true");
       noteTranscription.classList.add("editable-body");
@@ -196,7 +207,9 @@ async function openNote(filename: string): Promise<void> {
       if (copyTransBtn) {
         copyTransBtn.onclick = async () => {
           try {
-            await navigator.clipboard.writeText(noteTranscription.textContent || "");
+            await navigator.clipboard.writeText(
+              noteTranscription.textContent || ""
+            );
             const orig = copyTransBtn.textContent;
             copyTransBtn.textContent = "Copied!";
             setTimeout(() => (copyTransBtn.textContent = orig), 2000);
@@ -205,7 +218,6 @@ async function openNote(filename: string): Promise<void> {
           }
         };
       }
-
 
       if (copySummaryBtn) {
         copySummaryBtn.onclick = async () => {

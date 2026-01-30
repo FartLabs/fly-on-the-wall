@@ -28,7 +28,9 @@ let isTranscribing = false;
 export const STORAGE_KEY_SELECTED_TRANSCRIPTION_MODEL = "selectedWhisperModel";
 export const STORAGE_KEY_SELECTED_SUMMARY_MODEL = "selectedSummaryModel";
 
-export function saveSelectedTranscriptionModel(modelSize: WhisperModelSize): void {
+export function saveSelectedTranscriptionModel(
+  modelSize: WhisperModelSize
+): void {
   localStorage.setItem(STORAGE_KEY_SELECTED_TRANSCRIPTION_MODEL, modelSize);
 }
 
@@ -110,7 +112,9 @@ function createSummaryModelHTML(downloaded: boolean): string {
   const isButtonDisabled =
     downloadingSummaryModel || isTranscribing || isRecording;
   const selectedSummaryModel = getSelectedSummaryModel();
-  const isSelected = downloaded && (!selectedSummaryModel || selectedSummaryModel === SUMMARIZATION_MODEL);
+  const isSelected =
+    downloaded &&
+    (!selectedSummaryModel || selectedSummaryModel === SUMMARIZATION_MODEL);
   const isClickable = downloaded && !isTranscribing && !isRecording;
 
   return `
@@ -181,9 +185,9 @@ export async function refreshModelsList(): Promise<void> {
     html +=
       '<div class="model-section" style="margin-top: 1.5rem;"><h3 style="font-size: 0.9rem; color: #888; margin-bottom: 0.75rem;">Summarization Model</h3>';
     html += createSummaryModelHTML(summaryDownloaded);
-    
+
     // custom model selection disabled for now
-    
+
     // const selectedSummaryModel = getSelectedSummaryModel();
     // const isRecording = isRecordingState();
     // try {
@@ -217,19 +221,21 @@ export async function refreshModelsList(): Promise<void> {
     // } catch (error) {
     //   console.error('Failed to load custom models:', error);
     // }
-    
+
     // html += `
     //   <button class="action-btn" id="importCustomModelBtn" style="width: 100%; margin-top: 1rem; background: rgba(102, 126, 234, 0.2); border: 1px solid rgba(102, 126, 234, 0.3);">
     //     📁 Import Custom Model
     //   </button>
     // `;
-    
+
     // html += "</div>";
 
     elements.modelsList.innerHTML = html;
 
     elements.modelsList
-      .querySelectorAll(".model-item.selectable[data-model]:not([data-model=\"summary\"])")
+      .querySelectorAll(
+        '.model-item.selectable[data-model]:not([data-model="summary"])'
+      )
       .forEach((item) => {
         item.addEventListener("click", (e) => {
           const target = e.target as HTMLElement;
@@ -273,11 +279,11 @@ export async function refreshModelsList(): Promise<void> {
 
         const model = (e.currentTarget as HTMLButtonElement).dataset.model;
         const modelId = (e.currentTarget as HTMLButtonElement).dataset.modelId;
-        
+
         // if (modelId) {
-          // handleCustomModelDelete(modelId);
+        // handleCustomModelDelete(modelId);
         // }
-         if (model === "summary") {
+        if (model === "summary") {
           handleSummaryModelDelete();
         } else {
           handleModelDelete(model as WhisperModelSize);
@@ -285,17 +291,19 @@ export async function refreshModelsList(): Promise<void> {
       });
     });
 
-    elements.modelsList.querySelectorAll(".summary-model.selectable").forEach((item) => {
-      item.addEventListener("click", (e) => {
-        const target = e.target as HTMLElement;
-        if (target.closest(".model-actions")) return;
+    elements.modelsList
+      .querySelectorAll(".summary-model.selectable")
+      .forEach((item) => {
+        item.addEventListener("click", (e) => {
+          const target = e.target as HTMLElement;
+          if (target.closest(".model-actions")) return;
 
-        const modelId = (e.currentTarget as HTMLElement).dataset.modelId;
-        if (modelId) {
-          selectSummaryModel(modelId);
-        }
+          const modelId = (e.currentTarget as HTMLElement).dataset.modelId;
+          if (modelId) {
+            selectSummaryModel(modelId);
+          }
+        });
       });
-    });
 
     // custom model selection disabled for now
 
@@ -303,14 +311,14 @@ export async function refreshModelsList(): Promise<void> {
     //   item.addEventListener("click", (e) => {
     //     const target = e.target as HTMLElement;
     //     if (target.closest(".model-actions")) return;
-    
+
     //     const modelUrl = (e.currentTarget as HTMLElement).dataset.modelUrl;
     //     if (modelUrl) {
     //       selectSummaryModel(modelUrl);
     //     }
     //   });
     // });
-    
+
     // const importBtn = document.getElementById("importCustomModelBtn");
     // if (importBtn) {
     //   importBtn.addEventListener("click", handleImportCustomModel);
@@ -416,7 +424,7 @@ async function handleModelDelete(modelSize: WhisperModelSize) {
 // async function handleImportCustomModel() {
 //   try {
 //     const selectResult = await window.electronAPI.selectCustomModelFolder();
-    
+
 //     if (!selectResult.success) {
 //       if (!selectResult.canceled) {
 //         alert(`Error selecting folder: ${selectResult.error}`);
@@ -429,7 +437,7 @@ async function handleModelDelete(modelSize: WhisperModelSize) {
 //     }
 
 //     const validation = await window.electronAPI.validateCustomModel(selectResult.path);
-    
+
 //     if (!validation.valid) {
 //       alert(`Invalid model:\n\n${validation.error}\n\nPlease select a valid ONNX model folder for summarization.`);
 //       return;
@@ -456,11 +464,11 @@ async function handleModelDelete(modelSize: WhisperModelSize) {
 //       }
 
 //       alert(`Model imported successfully!\n\nName: ${finalName}\nID: ${importResult.modelId}\n\nYou can now use this model for summarization.`);
-      
+
 //       if (importResult.url) {
 //         selectSummaryModel(importResult.url);
 //       }
-      
+
 //       await refreshModelsList();
 //     } catch (error) {
 //       document.body.removeChild(importingMsg);
@@ -479,7 +487,7 @@ async function handleModelDelete(modelSize: WhisperModelSize) {
 
 //   try {
 //     const result = await window.electronAPI.deleteModel(modelId);
-    
+
 //     if (result.success) {
 //       console.log(`Custom model deleted: ${modelId}`);
 //       await refreshModelsList();

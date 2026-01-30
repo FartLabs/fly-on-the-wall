@@ -96,7 +96,7 @@ export const elements = {
   rightPanelTrigger: document.getElementById(
     "rightPanelTrigger"
   ) as HTMLDivElement,
-  exportNoteBtn: document.getElementById("exportNoteBtn") as HTMLButtonElement,
+  exportNoteBtn: document.getElementById("exportNoteBtn") as HTMLButtonElement
 };
 
 export function setUiLocked(locked: boolean): void {

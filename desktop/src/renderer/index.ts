@@ -36,7 +36,11 @@ import {
   resumeRecording,
   isRecordingState
 } from "./components/recorder";
-import { refreshModelsList, getSelectedTranscriptionModel, getSelectedSummaryModel } from "./components/models";
+import {
+  refreshModelsList,
+  getSelectedTranscriptionModel,
+  getSelectedSummaryModel
+} from "./components/models";
 import {
   runTranscription,
   setupTranscriptionListeners
@@ -58,15 +62,20 @@ declare global {
         text: string;
         filename: string;
       }) => Promise<{ success: boolean; path?: string; error?: string }>;
-      saveNote: (data: { transcription: string; summary?: string; filename?: string; metadata?: Record<string, any> }) => Promise<{ success: boolean; filename?: string; error?: string }>;
+      saveNote: (data: {
+        transcription: string;
+        summary?: string;
+        filename?: string;
+        metadata?: Record<string, any>;
+      }) => Promise<{ success: boolean; filename?: string; error?: string }>;
       getRecordingsDir: () => Promise<string>;
       getDesktopSources: () => Promise<Array<{ id: string; name: string }>>;
       getModelsDir: () => Promise<string>;
       checkModelExists: (modelId: string) => Promise<{ exists: boolean }>;
       deleteModel: (modelId: string) => Promise<{ success: boolean }>;
-      // selectCustomModelFolder: () => Promise<{ 
-      //   success: boolean; 
-      //   path?: string; 
+      // selectCustomModelFolder: () => Promise<{
+      //   success: boolean;
+      //   path?: string;
       //   canceled?: boolean;
       //   error?: string;
       // }>;
@@ -76,11 +85,11 @@ declare global {
       //   modelType?: string;
       //   modelName?: string;
       // }>;
-      // importCustomModel: (data: { 
-      //   sourcePath: string; 
-      //   modelName: string 
-      // }) => Promise<{ 
-      //   success: boolean; 
+      // importCustomModel: (data: {
+      //   sourcePath: string;
+      //   modelName: string
+      // }) => Promise<{
+      //   success: boolean;
       //   path?: string;
       //   modelId?: string;
       //   error?: string;
@@ -110,7 +119,10 @@ declare global {
       deleteNote: (
         filename: string
       ) => Promise<{ success: boolean; error?: string }>;
-      exportNote: (data: { filename: string; format: string }) => Promise<{ success: boolean; path?: string; error?: string }>;
+      exportNote: (data: {
+        filename: string;
+        format: string;
+      }) => Promise<{ success: boolean; path?: string; error?: string }>;
     };
   }
 }
@@ -158,33 +170,35 @@ refreshModelsList()
     const alreadyCreated = localStorage.getItem(firstRunKey) === "true";
 
     console.log("Is user's first run?", !alreadyCreated);
- 
+
     // create a introductory note if none exist yet
     // this will not run if user already has notes saved
-      try {
+    try {
       if (alreadyCreated) return;
-          const r = await window.electronAPI.listNotes();
-          if (r.success && Array.isArray(r.files) && r.files.length === 0) {
-            console.log("First run with empty notes — creating introductory note");
-            try {
-              const res = await window.electronAPI.saveNote({
-                transcription: "Welcome to Fly on the Wall! This note demonstrates the new structured notes format. Your transcriptions and summaries will be stored here.",
-                summary: "This is your introductory summary. Enjoy the app!"
-              });
-              if (res.success) {
-                localStorage.setItem(firstRunKey, "true");
-                console.log("Introductory note created:", res.filename);
-              } else {
-                console.error("Failed to create introductory note:", res.error);
-              }
-            } catch (err) {
-              console.error("Error saving introductory note:", err);
-            }
+      const r = await window.electronAPI.listNotes();
+      if (r.success && Array.isArray(r.files) && r.files.length === 0) {
+        console.log("First run with empty notes — creating introductory note");
+        try {
+          const res = await window.electronAPI.saveNote({
+            transcription:
+              "Welcome to Fly on the Wall! This note demonstrates the new structured notes format. Your transcriptions and summaries will be stored here.",
+            summary: "This is your introductory summary. Enjoy the app!"
+          });
+          if (res.success) {
+            localStorage.setItem(firstRunKey, "true");
+            console.log("Introductory note created:", res.filename);
+          } else {
+            console.error("Failed to create introductory note:", res.error);
+          }
+        } catch (err) {
+          console.error("Error saving introductory note:", err);
         }
-      } catch (err) {
-        console.error("Error checking/creating introductory note:", err);
       }
-  }).catch((err) => console.error("Error refreshing models on startup:", err));
+    } catch (err) {
+      console.error("Error checking/creating introductory note:", err);
+    }
+  })
+  .catch((err) => console.error("Error refreshing models on startup:", err));
 
 setupTranscriptionListeners();
 setupSummarizationListeners();

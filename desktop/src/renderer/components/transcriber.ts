@@ -5,7 +5,10 @@ import {
   type TranscriptionProgress
 } from "@/transcription";
 import { runSummarization, clearSummary } from "./summarizer";
-import { getSelectedTranscriptionModel, setTranscriptionInProgress } from "./models";
+import {
+  getSelectedTranscriptionModel,
+  setTranscriptionInProgress
+} from "./models";
 
 let lastTranscription: string | null = null;
 let lastTimestamp: string | null = null;

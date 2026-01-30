@@ -1,9 +1,6 @@
 // TODO: let users drop in their own onnx models for summarization
 
-import {
-  SUMMARIZATION_MODEL,
-  MODEL_SIZE,
-} from "./pipeline";
+import { SUMMARIZATION_MODEL, MODEL_SIZE } from "./pipeline";
 import { sendWorkerMessage } from "../worker-client";
 
 export interface SummarizationProgress {
@@ -181,9 +178,9 @@ export async function summarizeText(
     const result: any = await sendWorkerMessage(
       {
         type: "summarize",
-        text: prompt, 
-        modelId: actualModelId, 
-     },
+        text: prompt,
+        modelId: actualModelId
+      },
       (data) => {
         if (data.status === "downloading") {
           onProgress?.({
