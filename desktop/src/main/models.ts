@@ -1,4 +1,5 @@
 import { app, ipcMain, dialog } from "electron";
+import { BrowserWindow } from "electron";
 import path from "node:path";
 import fs from "node:fs";
 import { getProjectRoot } from "./app";
@@ -68,6 +69,50 @@ ipcMain.handle(
 
 // TODO: would it be possible to store transcriptions and summaries in browser's db instead?
 
+ipcMain.handle(
+  "save-note",
+  async (
+    _event,
+    data: {
+      transcription: string;
+      summary?: string;
+      filename?: string;
+      metadata?: Record<string, any>;
+    }
+  ) => {
+    try {
+      const projectRoot = getProjectRoot();
+      const notesDir = path.join(projectRoot, "notes");
+
+      if (!fs.existsSync(notesDir)) {
+        fs.mkdirSync(notesDir, { recursive: true });
+      }
+
+      const ts = new Date();
+      const filename =
+        data.filename ||
+        `note_${ts.getFullYear()}${String(ts.getMonth() + 1).padStart(2, "0")}${String(ts.getDate()).padStart(2, "0")}_${String(ts.getHours()).padStart(2, "0")}${String(ts.getMinutes()).padStart(2, "0")}${String(ts.getSeconds()).padStart(2, "0")}.json`;
+
+      const note = {
+        id: filename.replace(/\.[^.]+$/, ""),
+        created: ts.toISOString(),
+        transcription: data.transcription,
+        summary: data.summary || "",
+        metadata: data.metadata || {}
+      };
+
+      const filePath = path.join(notesDir, filename);
+      fs.writeFileSync(filePath, JSON.stringify(note, null, 2), "utf-8");
+
+      console.log(`Note saved: ${filePath}`);
+      return { success: true, path: filePath, filename };
+    } catch (error) {
+      console.error("Error saving note:", error);
+      return { success: false, error: String(error) };
+    }
+  }
+);
+
 ipcMain.handle("list-notes", async () => {
   try {
     const projectRoot = getProjectRoot();
@@ -79,7 +124,7 @@ ipcMain.handle("list-notes", async () => {
 
     const files = fs
       .readdirSync(notesDir)
-      .filter((file) => file.endsWith(".txt"))
+      .filter((file) => file.endsWith(".json"))
       .map((file) => {
         const filePath = path.join(notesDir, file);
         const stats = fs.statSync(filePath);
@@ -87,7 +132,8 @@ ipcMain.handle("list-notes", async () => {
           name: file,
           path: filePath,
           size: stats.size,
-          modified: stats.mtime.toISOString()
+          modified: stats.mtime.toISOString(),
+          isJson: true
         };
       })
       .sort(
@@ -109,7 +155,13 @@ ipcMain.handle("read-note", async (_event, filename: string) => {
     const filePath = path.join(notesDir, filename);
 
     const content = fs.readFileSync(filePath, "utf-8");
-    return { success: true, content };
+    try {
+      const parsed = JSON.parse(content);
+      return { success: true, content: parsed };
+    } catch (err) {
+      console.error("Error parsing JSON note:", err);
+      return { success: false, error: "Failed to parse JSON note" };
+    }
   } catch (error) {
     console.error("Error reading note:", error);
     return { success: false, error: String(error) };
@@ -130,6 +182,63 @@ ipcMain.handle("delete-note", async (_event, filename: string) => {
     return { success: false, error: String(error) };
   }
 });
+
+ipcMain.handle(
+  "export-note",
+  async (_event, data: { filename: string; format: string }) => {
+    try {
+      const projectRoot = getProjectRoot();
+      const notesDir = path.join(projectRoot, "notes");
+      const filePath = path.join(notesDir, data.filename);
+
+      if (!fs.existsSync(filePath)) {
+        return { success: false, error: "Note not found" };
+      }
+
+      const content = fs.readFileSync(filePath, "utf-8");
+      const note = JSON.parse(content);
+
+      const html = `<!doctype html><html><head><meta charset="utf-8"><title>${note.id}</title><style>body{font-family:Arial,Helvetica,sans-serif;padding:20px}h1{font-size:18px}h2{font-size:14px;margin-top:18px}pre{white-space:pre-wrap;background:#f7f7f7;padding:12px;border-radius:6px}</style></head><body><h1>${note.id}</h1><p>Created: ${note.created}</p><h2>Transcription</h2><pre>${note.transcription || ""}</pre><h2>Summary</h2><pre>${note.summary || ""}</pre></body></html>`;
+
+      // create a hidden BrowserWindow to render the HTML and print to PDF
+      const win = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          offscreen: true
+        }
+      });
+
+      await win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html));
+
+      if (data.format === "pdf") {
+        const pdfBuffer = await win.webContents.printToPDF({
+          printBackground: true,
+        });
+
+        const { canceled, filePath: savePath } = await dialog.showSaveDialog({
+          title: "Export note as PDF",
+          defaultPath: `${note.id}.pdf`,
+          filters: [{ name: "PDF", extensions: ["pdf"] }]
+        });
+
+        if (canceled || !savePath) {
+          win.destroy();
+          return { success: false, error: "Save canceled" };
+        }
+
+        fs.writeFileSync(savePath, pdfBuffer);
+        win.destroy();
+        return { success: true, path: savePath };
+      }
+
+      win.destroy();
+      return { success: false, error: "Unsupported export format" };
+    } catch (error) {
+      console.error("Error exporting note:", error);
+      return { success: false, error: String(error) };
+    }
+  }
+);
 
 // interface ModelValidationResult {
 //   valid: boolean;

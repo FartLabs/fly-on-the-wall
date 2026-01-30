@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke("save-recording", data),
   saveTranscription: (data: { text: string; filename: string }) =>
     ipcRenderer.invoke("save-transcription", data),
+  saveNote: (data: { transcription: string; summary?: string; filename?: string; metadata?: Record<string, any> }) =>
+    ipcRenderer.invoke("save-note", data),
   getRecordingsDir: () => ipcRenderer.invoke("get-recordings-dir"),
   getDesktopSources: () => ipcRenderer.invoke("get-desktop-sources"),
 
@@ -27,4 +29,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
   listNotes: () => ipcRenderer.invoke("list-notes"),
   readNote: (filename: string) => ipcRenderer.invoke("read-note", filename),
   deleteNote: (filename: string) => ipcRenderer.invoke("delete-note", filename)
+  ,
+  exportNote: (data: { filename: string; format: string }) => ipcRenderer.invoke("export-note", data)
 });

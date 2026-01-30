@@ -110,6 +110,18 @@ export async function runSummarization(
         result.summary || "(Could not generate summary)";
     }
 
+    try {
+      const trans = elements.transcriptionText?.textContent?.trim();
+      const sum = elements.summaryText?.textContent?.trim();
+      if (trans && sum) {
+        elements.saveNoteBtn?.classList.remove("hidden");
+      } else {
+        elements.saveNoteBtn?.classList.add("hidden");
+      }
+    } catch (err) {
+      console.warn("Save note button not found to show");
+    }
+
     console.log(`Summary generated in ${result.duration.toFixed(1)}s`);
   } catch (error) {
     console.error("Summarization failed:", error);
@@ -124,8 +136,8 @@ export async function runSummarization(
 }
 
 export function setupSummarizationListeners(): void {
-  if (!elements.copySummaryBtn || !elements.saveSummaryBtn) {
-    console.warn("Summary button elements not found");
+  if (!elements.copySummaryBtn) {
+    console.warn("Summary copy button not found");
     return;
   }
 
@@ -138,19 +150,6 @@ export function setupSummarizationListeners(): void {
       () => (elements.copySummaryBtn.textContent = originalText),
       2000
     );
-  });
-
-  elements.saveSummaryBtn.addEventListener("click", async () => {
-    if (!lastSummary || !lastTimestamp) return;
-    const filename = `summary_${lastTimestamp}.txt`;
-    const result = await window.electronAPI.saveTranscription({
-      text: lastSummary,
-      filename
-    });
-    if (result.success) {
-      elements.saveSummaryBtn.textContent = "✓ Saved!";
-      setTimeout(() => (elements.saveSummaryBtn.textContent = "Save"), 2000);
-    }
   });
 }
 

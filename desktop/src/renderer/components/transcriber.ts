@@ -41,6 +41,13 @@ export async function runTranscription(
   lastTimestamp = timestamp;
   clearSummary();
 
+  // hide unified save while processing
+  try {
+    elements.saveNoteBtn?.classList.add("hidden");
+  } catch (err) {
+    console.warn("Save note button not found to hide");
+  }
+
   const modelSize = getSelectedTranscriptionModel();
 
   if (!modelSize) {
@@ -133,8 +140,8 @@ export async function runTranscription(
 }
 
 export function setupTranscriptionListeners() {
-  if (!elements.copyTranscriptionBtn || !elements.saveTranscriptionBtn) {
-    console.warn("Transcription button elements not found");
+  if (!elements.copyTranscriptionBtn) {
+    console.warn("Transcription copy button not found");
     return;
   }
 
@@ -147,21 +154,5 @@ export function setupTranscriptionListeners() {
       () => (elements.copyTranscriptionBtn.textContent = originalText),
       2000
     );
-  });
-
-  elements.saveTranscriptionBtn.addEventListener("click", async () => {
-    if (!lastTranscription || !lastTimestamp) return;
-    const filename = `transcription_${lastTimestamp}.txt`;
-    const result = await window.electronAPI.saveTranscription({
-      text: lastTranscription,
-      filename
-    });
-    if (result.success) {
-      elements.saveTranscriptionBtn.textContent = "✓ Saved!";
-      setTimeout(
-        () => (elements.saveTranscriptionBtn.textContent = "Save"),
-        2000
-      );
-    }
   });
 }
