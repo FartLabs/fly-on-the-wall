@@ -33,6 +33,11 @@ const config: ForgeConfig = {
           entry: "src/preload/preload.ts",
           config: "vite.preload.config.ts",
           target: "preload"
+        },
+        {
+          entry: "src/summarization/utility-process.ts",
+          config: "vite.utility.config.ts",
+          target: "main"
         }
       ],
       renderer: [

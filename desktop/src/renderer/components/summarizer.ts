@@ -2,10 +2,10 @@ import { elements } from "./domNodes";
 import {
   summarizeText,
   checkSummarizationModelDownloaded,
-  downloadSummarizationModel,
+  getSelectedModelPath,
   type SummarizationProgress
 } from "@/summarization";
-import { getSelectedSummaryModel } from "./models";
+import { saveNote } from "./saveNote";
 
 let lastSummary: string | null = null;
 let lastTimestamp: string | null = null;
@@ -61,18 +61,28 @@ export async function runSummarization(
 ): Promise<void> {
   lastTimestamp = timestamp;
 
-  const selectedModelId = getSelectedSummaryModel();
-  console.log(`Using summarization model: ${selectedModelId || "default"}`);
+  const selectedModelPath = getSelectedModelPath();
+  console.log(`Using summarization model: ${selectedModelPath || "none"}`);
 
-  const isDownloaded = await checkSummarizationModelDownloaded();
-  console.log("Summarization model downloaded:", isDownloaded);
-
-  if (!isDownloaded) {
-    const shouldDownload = await checkAndDownloadSummarizationModel();
-    if (!shouldDownload) {
-      console.log("User declined to download summarization model");
-      return;
+  if (!selectedModelPath) {
+    console.log("No summarization model selected");
+    if (elements.summaryEmpty) {
+      elements.summaryEmpty.classList.remove("hidden");
+      elements.summaryEmpty.innerHTML = `<p style="color: #ff9800;">No summarization model selected. Please select a GGUF model in the Models section.</p>`;
     }
+    return;
+  }
+
+  const isModelValid = await checkSummarizationModelDownloaded(selectedModelPath);
+  console.log("Summarization model valid:", isModelValid);
+
+  if (!isModelValid) {
+    console.log("Selected model file not found or invalid");
+    if (elements.summaryEmpty) {
+      elements.summaryEmpty.classList.remove("hidden");
+      elements.summaryEmpty.innerHTML = `<p style="color: #ff6b81;">Selected model file not found. Please select a valid GGUF model file.</p>`;
+    }
+    return;
   }
 
   if (
@@ -94,7 +104,7 @@ export async function runSummarization(
     const result = await summarizeText(
       transcription,
       updateSummaryProgress,
-      selectedModelId
+      selectedModelPath
     );
     lastSummary = result.summary;
 
@@ -114,17 +124,8 @@ export async function runSummarization(
         result.summary || "(Could not generate summary)";
     }
 
-    try {
-      const trans = elements.transcriptionText?.textContent?.trim();
-      const sum = elements.summaryText?.textContent?.trim();
-      if (trans && sum) {
-        elements.saveNoteBtn?.classList.remove("hidden");
-      } else {
-        elements.saveNoteBtn?.classList.add("hidden");
-      }
-    } catch (err) {
-      console.warn("Save note button not found to show");
-    }
+    console.log("Auto-saving note after summarization...");
+    await saveNote();
 
     console.log(`Summary generated in ${result.duration.toFixed(1)}s`);
   } catch (error) {
@@ -155,30 +156,4 @@ export function setupSummarizationListeners(): void {
       2000
     );
   });
-}
-
-export async function checkAndDownloadSummarizationModel(): Promise<boolean> {
-  const isDownloaded = await checkSummarizationModelDownloaded();
-  if (isDownloaded) {
-    return true;
-  }
-
-  const shouldDownload = confirm(
-    "The AI summarization model needs to be downloaded.\n\n" +
-      "This only happens once and provides high-quality summaries. Download now?"
-  );
-
-  if (shouldDownload) {
-    try {
-      await downloadSummarizationModel((progress) => {
-        console.log(`Downloading summarization model: ${progress.message}`);
-      });
-      return true;
-    } catch (error) {
-      console.error("Failed to download summarization model:", error);
-      return false;
-    }
-  }
-
-  return false;
 }

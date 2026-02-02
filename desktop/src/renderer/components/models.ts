@@ -12,17 +12,12 @@ import {
   MODEL_DESCRIPTIONS
 } from "@/transcription/whisper";
 import {
-  checkSummarizationModelDownloaded,
-  downloadSummarizationModel,
   deleteSummarizationModel,
-  type SummarizationProgress
+  getSelectedModelPath,
+  saveSelectedModelPath,
 } from "@/summarization";
-import {
-  SUMMARIZATION_MODEL,
-  MODEL_SIZE as SUMMARY_MODEL_SIZE
-} from "@/summarization/pipeline";
+
 let downloadingModel: WhisperModelSize | null = null;
-let downloadingSummaryModel = false;
 let isTranscribing = false;
 
 export const STORAGE_KEY_SELECTED_TRANSCRIPTION_MODEL = "selectedWhisperModel";
@@ -106,65 +101,127 @@ function createModelItemHTML(status: ModelStatus): string {
   `;
 }
 
-function createSummaryModelHTML(downloaded: boolean): string {
-  const modelName = SUMMARIZATION_MODEL.split("/").pop();
+function createSummaryModelHTML(): string {
+  const selectedModelPath = getSelectedModelPath();
   const isRecording = isRecordingState();
-  const isButtonDisabled =
-    downloadingSummaryModel || isTranscribing || isRecording;
-  const selectedSummaryModel = getSelectedSummaryModel();
-  const isSelected =
-    downloaded &&
-    (!selectedSummaryModel || selectedSummaryModel === SUMMARIZATION_MODEL);
-  const isClickable = downloaded && !isTranscribing && !isRecording;
+  const isButtonDisabled = isTranscribing || isRecording;
 
   return `
-    <div class="model-item summary-model ${downloaded ? "downloaded" : ""} ${isSelected ? "selected" : ""} ${isClickable ? "selectable" : ""}" data-model="summary" data-model-id="${SUMMARIZATION_MODEL}">
+    <div class="model-item summary-model-section" data-model="summary">
       <div class="model-info">
-        <div class="model-name">
-          🤖 ${modelName}
-          ${isSelected ? '<span style="color: #4CAF50; margin-left: 0.5rem;">● Active</span>' : ""}
-        </div>
-        <div class="model-meta">
-          <span class="model-size">${SUMMARY_MODEL_SIZE}</span>
-          <span class="model-status ${downloaded ? "downloaded" : ""}">
-            ${downloaded ? "✓ Downloaded" : "Not downloaded"}
-          </span>
-        </div>
-        <div class="model-description" style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">
-          AI model for generating meeting summaries
-          ${downloaded && !isSelected && !isTranscribing && !isRecording ? '<span style="color: #888; font-style: italic;"> • Click to use for summarization</span>' : ""}
+       <div class="model-description" style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">
+          ${!selectedModelPath ? "Select a GGUF model from the list below, import one, or drag-and-drop into the models folder." : ""}
         </div>
       </div>
-      <div class="model-actions">
-        ${
-          downloaded
-            ? `<button class="model-btn delete-btn" data-model="summary" ${isButtonDisabled ? "disabled" : ""}>Delete</button>`
-            : `<button class="model-btn download-btn" data-model="summary" ${isButtonDisabled ? "disabled" : ""}>
-              ${downloadingSummaryModel ? "Downloading..." : "Download"}
-            </button>`
-        }
+      <div class="model-actions" style="display: flex; gap: 0.5rem;">
+        <button class="model-btn" id="openModelsFolderBtn" ${isButtonDisabled ? "disabled" : ""}>
+          📁 Open Folder
+        </button>
+        <button class="model-btn" id="importModelBtn" ${isButtonDisabled ? "disabled" : ""}>
+          Import Model
+        </button>
       </div>
-      ${
-        downloadingSummaryModel
-          ? `
-        <div class="model-download-progress">
-          <div class="model-progress-bar">
-            <div class="model-progress-fill" id="model-progress-summary"></div>
-          </div>
-          <div class="model-progress-text" id="model-progress-text-summary">Starting...</div>
-        </div>
-      `
-          : ""
-      }
+      <div id="ggufModelsList" style="margin-top: 1rem;">
+        <div style="text-align: center; padding: 1rem; color: #888;">Loading models...</div>
+      </div>
     </div>
   `;
+}
+
+async function renderGgufModelsList(): Promise<void> {
+  const container = document.getElementById("ggufModelsList");
+  if (!container) return;
+
+  try {
+    const result = await window.electronAPI.listGgufModels();
+    const selectedModelPath = getSelectedModelPath();
+    const isRecording = isRecordingState();
+    const isClickable = !isTranscribing && !isRecording;
+
+    if (!result.success) {
+      container.innerHTML = `<div style="color: #ff6b81; padding: 0.5rem; font-size: 0.8rem;">Error loading models: ${result.error}</div>`;
+      return;
+    }
+
+    if (result.models.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 1rem; color: #888; font-size: 0.85rem;">
+          No GGUF models found.<br>
+          <span style="font-size: 0.75rem;">Import a model or drag-and-drop .gguf files into the models folder.</span>
+        </div>
+      `;
+      return;
+    }
+
+    let html = '<div style="display: flex; flex-direction: column; gap: 0.5rem;">';
+    result.models.forEach((model: any) => {
+      const isSelected = selectedModelPath === model.path;
+      html += `
+        <div class="gguf-model-item ${isSelected ? "selected" : ""} ${isClickable ? "selectable" : ""}" 
+             data-model-path="${model.path}" 
+             style="padding: 0.75rem; background: rgba(102, 126, 234, ${isSelected ? '0.2' : '0.05'}); 
+                    border: 1px solid rgba(102, 126, 234, ${isSelected ? '0.4' : '0.1'}); 
+                    border-radius: 6px; cursor: ${isClickable ? 'pointer' : 'default'}; 
+                    transition: all 0.2s;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-size: 0.85rem; color: ${isSelected ? '#4CAF50' : '#fff'}; font-weight: ${isSelected ? '600' : '400'}; 
+                          display: flex; align-items: center; gap: 0.5rem;">
+                ${isSelected ? '● ' : ''}${model.name}
+              </div>
+              <div style="font-size: 0.7rem; color: #888; margin-top: 0.25rem;">
+                ${model.sizeFormatted}
+                ${!isSelected && isClickable ? ' • Click to select' : ''}
+                ${isTranscribing || isRecording ? ' • Locked during operation' : ''}
+              </div>
+            </div>
+            <button class="model-btn delete-btn gguf-delete-btn" 
+                    data-model-path="${model.path}"
+                    style="padding: 0.4rem 0.75rem; font-size: 0.75rem;"
+                    ${!isClickable ? 'disabled' : ''}>
+              Delete
+            </button>
+          </div>
+        </div>
+      `;
+    });
+    html += '</div>';
+    
+    container.innerHTML = html;
+
+    // Add click handlers for selection
+    container.querySelectorAll('.gguf-model-item.selectable').forEach(item => {
+      item.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest('.gguf-delete-btn')) return;
+        
+        const modelPath = (e.currentTarget as HTMLElement).dataset.modelPath;
+        if (modelPath) {
+          handleSelectGgufModel(modelPath);
+        }
+      });
+    });
+
+    // Add click handlers for delete buttons
+    container.querySelectorAll('.gguf-delete-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const modelPath = (e.currentTarget as HTMLElement).dataset.modelPath;
+        if (modelPath) {
+          await handleDeleteGgufModel(modelPath);
+        }
+      });
+    });
+  } catch (error) {
+    console.error("Error rendering GGUF models:", error);
+    container.innerHTML = `<div style="color: #ff6b81; padding: 0.5rem; font-size: 0.8rem;">Error: ${error}</div>`;
+  }
 }
 
 // this is used frequently, may need to be optimized in future if performance issues arise
 export async function refreshModelsList(): Promise<void> {
   try {
     const statuses = await getAllModelStatus();
-    const summaryDownloaded = await checkSummarizationModelDownloaded();
 
     // auto-select first downloaded model if none selected
     const downloadedModels = statuses.filter((s) => s.downloaded);
@@ -184,7 +241,8 @@ export async function refreshModelsList(): Promise<void> {
 
     html +=
       '<div class="model-section" style="margin-top: 1.5rem;"><h3 style="font-size: 0.9rem; color: #888; margin-bottom: 0.75rem;">Summarization Model</h3>';
-    html += createSummaryModelHTML(summaryDownloaded);
+    html += createSummaryModelHTML();
+    html += "</div>";
 
     // custom model selection disabled for now
 
@@ -232,6 +290,9 @@ export async function refreshModelsList(): Promise<void> {
 
     elements.modelsList.innerHTML = html;
 
+    // Render GGUF models list after the main HTML is set
+    await renderGgufModelsList();
+
     elements.modelsList
       .querySelectorAll(
         '.model-item.selectable[data-model]:not([data-model="summary"])'
@@ -260,13 +321,48 @@ export async function refreshModelsList(): Promise<void> {
         }
 
         const model = (e.currentTarget as HTMLButtonElement).dataset.model;
-        if (model === "summary") {
-          handleSummaryModelDownload();
-        } else {
+        // handle Whisper model downloads here
+        if (model && model !== "summary") {
           handleModelDownload(model as WhisperModelSize);
         }
       });
     });
+
+    const selectSummaryBtn = document.getElementById("selectSummaryModelBtn");
+    if (selectSummaryBtn) {
+      selectSummaryBtn.addEventListener("click", (e) => {
+        if (isRecordingState() || isTranscribing) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        handleSelectSummaryModel();
+      });
+    }
+
+    const openFolderBtn = document.getElementById("openModelsFolderBtn");
+    if (openFolderBtn) {
+      openFolderBtn.addEventListener("click", async (e) => {
+        if (isRecordingState() || isTranscribing) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        await handleOpenModelsFolder();
+      });
+    }
+
+    const importBtn = document.getElementById("importModelBtn");
+    if (importBtn) {
+      importBtn.addEventListener("click", async (e) => {
+        if (isRecordingState() || isTranscribing) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        await handleImportGgufModel();
+      });
+    }
 
     elements.modelsList.querySelectorAll(".delete-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
@@ -278,46 +374,12 @@ export async function refreshModelsList(): Promise<void> {
         }
 
         const model = (e.currentTarget as HTMLButtonElement).dataset.model;
-        const modelId = (e.currentTarget as HTMLButtonElement).dataset.modelId;
 
-        // if (modelId) {
-        // handleCustomModelDelete(modelId);
-        // }
-        if (model === "summary") {
-          handleSummaryModelDelete();
-        } else {
+        if (model && model !== "summary") {
           handleModelDelete(model as WhisperModelSize);
         }
       });
     });
-
-    elements.modelsList
-      .querySelectorAll(".summary-model.selectable")
-      .forEach((item) => {
-        item.addEventListener("click", (e) => {
-          const target = e.target as HTMLElement;
-          if (target.closest(".model-actions")) return;
-
-          const modelId = (e.currentTarget as HTMLElement).dataset.modelId;
-          if (modelId) {
-            selectSummaryModel(modelId);
-          }
-        });
-      });
-
-    // custom model selection disabled for now
-
-    // elements.modelsList.querySelectorAll(".custom-model-item.selectable").forEach((item) => {
-    //   item.addEventListener("click", (e) => {
-    //     const target = e.target as HTMLElement;
-    //     if (target.closest(".model-actions")) return;
-
-    //     const modelUrl = (e.currentTarget as HTMLElement).dataset.modelUrl;
-    //     if (modelUrl) {
-    //       selectSummaryModel(modelUrl);
-    //     }
-    //   });
-    // });
 
     // const importBtn = document.getElementById("importCustomModelBtn");
     // if (importBtn) {
@@ -343,20 +405,6 @@ function selectTranscriptionModel(modelSize: WhisperModelSize): void {
   refreshModelsList();
 }
 
-function selectSummaryModel(modelId: string): void {
-  if (isTranscribing) {
-    console.log("Cannot change model during transcription or summarization");
-    return;
-  }
-  if (isRecordingState()) {
-    console.log("Cannot change model during recording");
-    return;
-  }
-  saveSelectedSummaryModel(modelId);
-  console.log(`Selected model for summarization: ${modelId}`);
-  refreshModelsList();
-}
-
 async function handleModelDownload(modelSize: WhisperModelSize) {
   if (downloadingModel) return;
   downloadingModel = modelSize;
@@ -376,47 +424,148 @@ async function handleModelDownload(modelSize: WhisperModelSize) {
   }
 }
 
-async function handleSummaryModelDownload() {
-  if (downloadingSummaryModel) return;
-  downloadingSummaryModel = true;
-  await refreshModelsList();
-
-  try {
-    await downloadSummarizationModel((progress: SummarizationProgress) => {
-      const fill = document.getElementById("model-progress-summary");
-      const text = document.getElementById("model-progress-text-summary");
-      if (fill && progress.progress) fill.style.width = `${progress.progress}%`;
-      if (text) text.textContent = progress.message;
-    });
-  } catch (err) {
-    alert(`Download failed: ${err}`);
-  } finally {
-    downloadingSummaryModel = false;
-    await refreshModelsList();
-  }
-}
-
-async function handleSummaryModelDelete() {
-  if (
-    !confirm(
-      `Delete summarization model (${SUMMARY_MODEL_SIZE})?\n\nThis will free up disk space.`
-    )
-  )
-    return;
-
-  const success = await deleteSummarizationModel();
-  if (success) {
-    console.log("Summarization model deleted successfully");
-  } else {
-    alert("Failed to delete summarization model. Please try again.");
-  }
-  await refreshModelsList();
-}
-
 async function handleModelDelete(modelSize: WhisperModelSize) {
   if (!confirm(`Delete ${modelSize} model?`)) return;
   await deleteModelFromCache(modelSize);
   await refreshModelsList();
+}
+
+async function handleSelectSummaryModel(): Promise<void> {
+  try {
+    const result = await window.electronAPI.selectModelFile();
+    
+    if (result.canceled || !result.filePath) {
+      console.log("Model selection canceled");
+      return;
+    }
+    
+    const filePath = result.filePath;
+    
+    if (!filePath.toLowerCase().endsWith(".gguf")) {
+      alert("Please select a valid GGUF model file.");
+      return;
+    }
+
+    // Ask user if they want to import (copy) the model to the userData folder
+    const shouldImport = confirm(
+      "Would you like to import this model to your models folder?\n\n" +
+      "YES: Copy the model file to your models folder\n" +
+      "NO: Use the model from its current location\n\n" +
+      "Importing makes it easier to manage your models."
+    );
+
+    if (shouldImport) {
+      const importResult = await window.electronAPI.importGgufModel({
+        sourcePath: filePath,
+        copyMode: 'copy'
+      });
+
+      if (!importResult.success) {
+        alert(`Failed to import model: ${importResult.error}`);
+        return;
+      }
+
+      saveSelectedModelPath(importResult.path);
+      console.log(`Model imported and selected: ${importResult.path}`);
+    } else {
+      saveSelectedModelPath(filePath);
+      console.log(`Selected summarization model: ${filePath}`);
+    }
+    
+    await refreshModelsList();
+  } catch (error) {
+    console.error("Error selecting model file:", error);
+    alert(`Failed to select model file: ${error}`);
+  }
+}
+
+async function handleSelectGgufModel(modelPath: string): Promise<void> {
+  if (isTranscribing || isRecordingState()) {
+    console.log("Cannot select model during operation");
+    return;
+  }
+  
+  saveSelectedModelPath(modelPath);
+  console.log(`Selected GGUF model: ${modelPath}`);
+  await renderGgufModelsList();
+}
+
+async function handleOpenModelsFolder(): Promise<void> {
+  try {
+    const result = await window.electronAPI.openModelsFolder();
+    if (!result.success) {
+      alert(`Failed to open models folder: ${result.error}`);
+    }
+  } catch (error) {
+    console.error("Error opening models folder:", error);
+    alert(`Error: ${error}`);
+  }
+}
+
+async function handleImportGgufModel(): Promise<void> {
+  try {
+    const result = await window.electronAPI.selectModelFile();
+    
+    if (result.canceled || !result.filePath) {
+      console.log("Import canceled");
+      return;
+    }
+    
+    const filePath = result.filePath;
+    
+    if (!filePath.toLowerCase().endsWith(".gguf")) {
+      alert("Please select a valid GGUF model file.");
+      return;
+    }
+
+    const importResult = await window.electronAPI.importGgufModel({
+      sourcePath: filePath,
+      copyMode: 'copy'
+    });
+
+    if (!importResult.success) {
+      alert(`Failed to import model: ${importResult.error}`);
+      return;
+    }
+
+    console.log(`Model imported: ${importResult.fileName}`);
+    
+    // Auto-select the newly imported model
+    saveSelectedModelPath(importResult.path);
+    
+    await refreshModelsList();
+  } catch (error) {
+    console.error("Error importing model:", error);
+    alert(`Error: ${error}`);
+  }
+}
+
+async function handleDeleteGgufModel(modelPath: string): Promise<void> {
+  const modelName = modelPath.split(/[/\\]/).pop();
+  
+  if (!confirm(`Delete model "${modelName}"?\n\nThis will permanently remove the file from your models folder.`)) {
+    return;
+  }
+
+  try {
+    const result = await window.electronAPI.deleteGgufModel(modelPath);
+    
+    if (!result.success) {
+      alert(`Failed to delete model: ${result.error}`);
+      return;
+    }
+
+    // Clear selection if this was the selected model
+    if (getSelectedModelPath() === modelPath) {
+      saveSelectedModelPath("");
+    }
+
+    console.log(`Model deleted: ${modelName}`);
+    await refreshModelsList();
+  } catch (error) {
+    console.error("Error deleting model:", error);
+    alert(`Error: ${error}`);
+  }
 }
 
 // Custom models disabled for now

@@ -38,14 +38,14 @@ import {
 } from "./components/recorder";
 import {
   refreshModelsList,
-  getSelectedTranscriptionModel,
-  getSelectedSummaryModel
+  getSelectedTranscriptionModel
 } from "./components/models";
 import {
   runTranscription,
   setupTranscriptionListeners
 } from "./components/transcriber";
 import { setupSummarizationListeners } from "./components/summarizer";
+import { getSelectedModelPath } from "@/summarization";
 import { setupHistoryListeners } from "./components/history";
 import { setupPromptCustomizer } from "./components/promptCustomizer";
 import { setupSidebarListeners } from "./components/leftSideBar";
@@ -70,39 +70,40 @@ declare global {
       }) => Promise<{ success: boolean; filename?: string; error?: string }>;
       getRecordingsDir: () => Promise<string>;
       getDesktopSources: () => Promise<Array<{ id: string; name: string }>>;
+
       getModelsDir: () => Promise<string>;
+      getModelsCacheDir: () => Promise<string>;
+      selectModelFile: () => Promise<{ canceled: boolean; filePath?: string }>;
       checkModelExists: (modelId: string) => Promise<{ exists: boolean }>;
       deleteModel: (modelId: string) => Promise<{ success: boolean }>;
-      // selectCustomModelFolder: () => Promise<{
-      //   success: boolean;
-      //   path?: string;
-      //   canceled?: boolean;
-      //   error?: string;
-      // }>;
-      // validateCustomModel: (modelPath: string) => Promise<{
-      //   valid: boolean;
-      //   error?: string;
-      //   modelType?: string;
-      //   modelName?: string;
-      // }>;
-      // importCustomModel: (data: {
-      //   sourcePath: string;
-      //   modelName: string
-      // }) => Promise<{
-      //   success: boolean;
-      //   path?: string;
-      //   modelId?: string;
-      //   error?: string;
-      // }>;
-      // listCustomModels: () => Promise<{
-      //   success: boolean;
-      //   models: Array<{
-      //     id: string;
-      //     name: string;
-      //     path: string;
-      //   }>;
-      //   error?: string;
-      // }>;
+      
+      summarize: (data: {
+        text: string;
+        modelPath: string;
+        params?: {
+          maxTokens?: number;
+          temperature?: number;
+          topP?: number;
+          systemPrompt?: string;
+        };
+      }) => Promise<{ success: boolean; summary?: string; error?: string }>;
+      checkSummarizationModel: (modelPath: string) => Promise<{
+        success: boolean;
+        exists?: boolean;
+        isValid?: boolean;
+        path?: string;
+        error?: string;
+      }>;
+      disposeSummarizationModel: () => Promise<{ success: boolean; error?: string }>;
+      summarizationHealthCheck: () => Promise<{
+        success: boolean;
+        healthy?: boolean;
+        modelLoaded?: boolean;
+        currentModelPath?: string | null;
+        error?: string;
+      }>;
+      onSummarizationStatus: (callback: (status: any) => void) => void;
+      
       listNotes: () => Promise<{
         success: boolean;
         files: Array<{
@@ -162,9 +163,9 @@ elements.stopBtn.addEventListener("click", stopRecording);
 refreshModelsList()
   .then(async () => {
     const selTranscription = getSelectedTranscriptionModel();
-    const selSummary = getSelectedSummaryModel();
+    const selSummaryPath = getSelectedModelPath();
     console.log(`selected transcription model: ${selTranscription}`);
-    console.log(`selected summarization model: ${selSummary}`);
+    console.log(`selected summarization model path: ${selSummaryPath}`);
 
     const firstRunKey = "introNoteCreated";
     const alreadyCreated = localStorage.getItem(firstRunKey) === "true";
