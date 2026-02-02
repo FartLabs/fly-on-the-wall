@@ -73,6 +73,23 @@ declare global {
 
       getModelsDir: () => Promise<string>;
       getModelsCacheDir: () => Promise<string>;
+      openModelsFolder: () => Promise<{ success: boolean; path?: string; error?: string }>;
+      listGgufModels: () => Promise<{
+        success: boolean;
+        models: Array<{
+          name: string;
+          path: string;
+          size: number;
+          sizeFormatted: string;
+          modified: string;
+        }>;
+        error?: string;
+      }>;
+      importGgufModel: (data: {
+        sourcePath: string;
+        copyMode?: 'copy' | 'move';
+      }) => Promise<{ success: boolean; path?: string; fileName?: string; error?: string }>;
+      deleteGgufModel: (modelPath: string) => Promise<{ success: boolean; error?: string }>;
       selectModelFile: () => Promise<{ canceled: boolean; filePath?: string }>;
       checkModelExists: (modelId: string) => Promise<{ exists: boolean }>;
       deleteModel: (modelId: string) => Promise<{ success: boolean }>;
@@ -102,7 +119,7 @@ declare global {
         currentModelPath?: string | null;
         error?: string;
       }>;
-      onSummarizationStatus: (callback: (status: any) => void) => void;
+      onSummarizationStatus: (callback: (status: any) => void) => () => void;
       
       listNotes: () => Promise<{
         success: boolean;
