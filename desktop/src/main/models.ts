@@ -19,6 +19,14 @@ const getModelsCacheDir = (): string => {
   return cacheDir;
 };
 
+const getSummarizationModelsDir = (): string => {
+  const summarizationDir = path.join(app.getPath("userData"), "models", "summarization");
+  if (!fs.existsSync(summarizationDir)) {
+    fs.mkdirSync(summarizationDir, { recursive: true });
+  }
+  return summarizationDir;
+};
+
 const getNotesDir = (): string => {
   const notesDir = path.join(app.getPath("userData"), "notes");
   if (!fs.existsSync(notesDir)) {
@@ -37,9 +45,9 @@ ipcMain.handle("get-models-cache-dir", () => {
 
 ipcMain.handle("open-models-folder", async () => {
   try {
-    const modelsDir = getModelsDir();
-    await shell.openPath(modelsDir);
-    return { success: true, path: modelsDir };
+    const summarizationDir = getSummarizationModelsDir();
+    await shell.openPath(summarizationDir);
+    return { success: true, path: summarizationDir };
   } catch (error) {
     console.error("Error opening models folder:", error);
     return { success: false, error: String(error) };
@@ -48,12 +56,12 @@ ipcMain.handle("open-models-folder", async () => {
 
 ipcMain.handle("list-gguf-models", async () => {
   try {
-    const modelsDir = getModelsDir();
-    const files = fs.readdirSync(modelsDir);
+    const summarizationDir = getSummarizationModelsDir();
+    const files = fs.readdirSync(summarizationDir);
     const ggufFiles = files
       .filter(file => file.toLowerCase().endsWith(".gguf"))
       .map(file => {
-        const filePath = path.join(modelsDir, file);
+        const filePath = path.join(summarizationDir, file);
         const stats = fs.statSync(filePath);
         return {
           name: file,
@@ -91,9 +99,9 @@ ipcMain.handle("select-model-file", async () => {
 
 ipcMain.handle("import-gguf-model", async (_event, data: { sourcePath: string; copyMode?: 'copy' | 'move' }) => {
   try {
-    const modelsDir = getModelsDir();
+    const summarizationDir = getSummarizationModelsDir();
     const fileName = path.basename(data.sourcePath);
-    const targetPath = path.join(modelsDir, fileName);
+    const targetPath = path.join(summarizationDir, fileName);
     
     if (!data.sourcePath.toLowerCase().endsWith(".gguf")) {
       return { success: false, error: "File must be a .gguf file" };

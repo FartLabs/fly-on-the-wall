@@ -12,10 +12,10 @@ import {
   MODEL_DESCRIPTIONS
 } from "@/transcription/whisper";
 import {
-  deleteSummarizationModel,
   getSelectedModelPath,
   saveSelectedModelPath,
 } from "@/summarization";
+import { showNotification } from "./notifications";
 
 let downloadingModel: WhisperModelSize | null = null;
 let isTranscribing = false;
@@ -102,28 +102,20 @@ function createModelItemHTML(status: ModelStatus): string {
 }
 
 function createSummaryModelHTML(): string {
-  const selectedModelPath = getSelectedModelPath();
   const isRecording = isRecordingState();
   const isButtonDisabled = isTranscribing || isRecording;
 
   return `
-    <div class="model-item summary-model-section" data-model="summary">
-      <div class="model-info">
-       <div class="model-description" style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">
-          ${!selectedModelPath ? "Select a GGUF model from the list below, import one, or drag-and-drop into the models folder." : ""}
-        </div>
-      </div>
-      <div class="model-actions" style="display: flex; gap: 0.5rem;">
-        <button class="model-btn" id="openModelsFolderBtn" ${isButtonDisabled ? "disabled" : ""}>
-          📁 Open Folder
-        </button>
-        <button class="model-btn" id="importModelBtn" ${isButtonDisabled ? "disabled" : ""}>
-          Import Model
-        </button>
-      </div>
-      <div id="ggufModelsList" style="margin-top: 1rem;">
-        <div style="text-align: center; padding: 1rem; color: #888;">Loading models...</div>
-      </div>
+    <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+      <button class="model-btn" id="openModelsFolderBtn" ${isButtonDisabled ? "disabled" : ""}>
+        Open Folder
+      </button>
+      <button class="model-btn" id="importModelBtn" ${isButtonDisabled ? "disabled" : ""}>
+        Import Model
+      </button>
+    </div>
+    <div id="ggufModelsList">
+      <div style="text-align: center; padding: 1rem; color: #888;">Loading models...</div>
     </div>
   `;
 }
@@ -136,7 +128,6 @@ async function renderGgufModelsList(): Promise<void> {
     const result = await window.electronAPI.listGgufModels();
     const selectedModelPath = getSelectedModelPath();
     const isRecording = isRecordingState();
-    const isClickable = !isTranscribing && !isRecording;
 
     if (!result.success) {
       container.innerHTML = `<div style="color: #ff6b81; padding: 0.5rem; font-size: 0.8rem;">Error loading models: ${result.error}</div>`;
@@ -153,31 +144,32 @@ async function renderGgufModelsList(): Promise<void> {
       return;
     }
 
-    let html = '<div style="display: flex; flex-direction: column; gap: 0.5rem;">';
+    let html = '';
     result.models.forEach((model: any) => {
       const isSelected = selectedModelPath === model.path;
+      const isClickable = !isTranscribing && !isRecording;
       html += `
         <div class="gguf-model-item ${isSelected ? "selected" : ""} ${isClickable ? "selectable" : ""}" 
              data-model-path="${model.path}" 
-             style="padding: 0.75rem; background: rgba(102, 126, 234, ${isSelected ? '0.2' : '0.05'}); 
-                    border: 1px solid rgba(102, 126, 234, ${isSelected ? '0.4' : '0.1'}); 
-                    border-radius: 6px; cursor: ${isClickable ? 'pointer' : 'default'}; 
-                    transition: all 0.2s;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div style="flex: 1; min-width: 0;">
-              <div style="font-size: 0.85rem; color: ${isSelected ? '#4CAF50' : '#fff'}; font-weight: ${isSelected ? '600' : '400'}; 
-                          display: flex; align-items: center; gap: 0.5rem;">
-                ${isSelected ? '● ' : ''}${model.name}
-              </div>
-              <div style="font-size: 0.7rem; color: #888; margin-top: 0.25rem;">
-                ${model.sizeFormatted}
-                ${!isSelected && isClickable ? ' • Click to select' : ''}
-                ${isTranscribing || isRecording ? ' • Locked during operation' : ''}
-              </div>
+             style="padding: 0.5rem; background: rgba(102, 126, 234, ${isSelected ? '0.2' : '0.1'}); 
+                    border-radius: 6px; margin-bottom: 0.5rem; 
+                    display: flex; justify-content: space-between; align-items: center; 
+                    cursor: ${isClickable ? 'pointer' : 'default'};">
+          <div style="flex: 1; min-width: 0; overflow: hidden;">
+            <div style="font-size: 0.85rem; color: #fff;">
+              ${model.name}
+              ${isSelected ? '<span style="color: #4CAF50; margin-left: 0.5rem;">● Active</span>' : ""}
             </div>
+            <div style="font-size: 0.7rem; color: #666;">
+              ${model.sizeFormatted}
+              ${!isSelected && isClickable ? ' • Click to use for summarization' : ''}
+              ${isTranscribing || isRecording ? ' • Locked during operation' : ''}
+            </div>
+          </div>
+          <div class="model-actions">
             <button class="model-btn delete-btn gguf-delete-btn" 
                     data-model-path="${model.path}"
-                    style="padding: 0.4rem 0.75rem; font-size: 0.75rem;"
+                    style="padding: 0.25rem 0.5rem; font-size: 0.75rem;"
                     ${!isClickable ? 'disabled' : ''}>
               Delete
             </button>
@@ -185,11 +177,9 @@ async function renderGgufModelsList(): Promise<void> {
         </div>
       `;
     });
-    html += '</div>';
     
     container.innerHTML = html;
 
-    // Add click handlers for selection
     container.querySelectorAll('.gguf-model-item.selectable').forEach(item => {
       item.addEventListener('click', (e) => {
         const target = e.target as HTMLElement;
@@ -202,7 +192,6 @@ async function renderGgufModelsList(): Promise<void> {
       });
     });
 
-    // Add click handlers for delete buttons
     container.querySelectorAll('.gguf-delete-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -244,53 +233,8 @@ export async function refreshModelsList(): Promise<void> {
     html += createSummaryModelHTML();
     html += "</div>";
 
-    // custom model selection disabled for now
-
-    // const selectedSummaryModel = getSelectedSummaryModel();
-    // const isRecording = isRecordingState();
-    // try {
-    //   const customModelsResult = await window.electronAPI.listCustomModels();
-    //   if (customModelsResult.success && customModelsResult.models.length > 0) {
-    //     html += '<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">';
-    //     html += '<h4 style="font-size: 0.8rem; color: #666; margin-bottom: 0.5rem;">Custom Models</h4>';
-    //     customModelsResult.models.forEach(model => {
-    //       const isCustomSelected = selectedSummaryModel === model.url;
-    //       const isClickable = !isTranscribing && !isRecording;
-    //       html += `
-    //         <div class="custom-model-item ${isCustomSelected ? "selected" : ""} ${isClickable ? "selectable" : ""}" data-model-url="${model.url}" style="padding: 0.5rem; background: rgba(102, 126, 234, ${isCustomSelected ? '0.2' : '0.1'}); border-radius: 6px; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; cursor: ${isClickable ? 'pointer' : 'default'};">
-    //           <div style="flex: 1;">
-    //             <div style="font-size: 0.85rem; color: #fff;">
-    //               ${model.name}
-    //               ${isCustomSelected ? '<span style="color: #4CAF50; margin-left: 0.5rem;">● Active</span>' : ""}
-    //             </div>
-    //             <div style="font-size: 0.7rem; color: #666;">
-    //               Custom • ID: ${model.id}
-    //               ${!isCustomSelected && isClickable ? '<span style="color: #888; font-style: italic;"> • Click to use for summarization</span>' : ""}
-    //             </div>
-    //           </div>
-    //           <div class="model-actions">
-    //             <button class="model-btn delete-btn custom-model-delete" data-model-id="${model.id}" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" ${!isClickable ? 'disabled' : ''}>Delete</button>
-    //           </div>
-    //         </div>
-    //       `;
-    //     });
-    //     html += '</div>';
-    //   }
-    // } catch (error) {
-    //   console.error('Failed to load custom models:', error);
-    // }
-
-    // html += `
-    //   <button class="action-btn" id="importCustomModelBtn" style="width: 100%; margin-top: 1rem; background: rgba(102, 126, 234, 0.2); border: 1px solid rgba(102, 126, 234, 0.3);">
-    //     📁 Import Custom Model
-    //   </button>
-    // `;
-
-    // html += "</div>";
-
     elements.modelsList.innerHTML = html;
 
-    // Render GGUF models list after the main HTML is set
     await renderGgufModelsList();
 
     elements.modelsList
@@ -380,11 +324,6 @@ export async function refreshModelsList(): Promise<void> {
         }
       });
     });
-
-    // const importBtn = document.getElementById("importCustomModelBtn");
-    // if (importBtn) {
-    //   importBtn.addEventListener("click", handleImportCustomModel);
-    // }
   } catch (error) {
     elements.modelsList.innerHTML =
       '<p class="error-text">Failed to load models</p>';
@@ -442,40 +381,28 @@ async function handleSelectSummaryModel(): Promise<void> {
     const filePath = result.filePath;
     
     if (!filePath.toLowerCase().endsWith(".gguf")) {
-      alert("Please select a valid GGUF model file.");
+      showNotification("Please select a valid GGUF model file.", "error");
       return;
     }
 
-    // Ask user if they want to import (copy) the model to the userData folder
-    const shouldImport = confirm(
-      "Would you like to import this model to your models folder?\n\n" +
-      "YES: Copy the model file to your models folder\n" +
-      "NO: Use the model from its current location\n\n" +
-      "Importing makes it easier to manage your models."
-    );
-
-    if (shouldImport) {
       const importResult = await window.electronAPI.importGgufModel({
         sourcePath: filePath,
         copyMode: 'copy'
       });
 
       if (!importResult.success) {
-        alert(`Failed to import model: ${importResult.error}`);
+        showNotification(`Failed to import model: ${importResult.error}`, "error");
         return;
       }
 
       saveSelectedModelPath(importResult.path);
       console.log(`Model imported and selected: ${importResult.path}`);
-    } else {
-      saveSelectedModelPath(filePath);
-      console.log(`Selected summarization model: ${filePath}`);
-    }
+      showNotification(`Model "${importResult.fileName}" imported successfully`, "success");
     
     await refreshModelsList();
   } catch (error) {
     console.error("Error selecting model file:", error);
-    alert(`Failed to select model file: ${error}`);
+    showNotification(`Failed to select model file: ${error}`, "error");
   }
 }
 
@@ -514,7 +441,7 @@ async function handleImportGgufModel(): Promise<void> {
     const filePath = result.filePath;
     
     if (!filePath.toLowerCase().endsWith(".gguf")) {
-      alert("Please select a valid GGUF model file.");
+      showNotification("Please select a valid GGUF model file.", "error");
       return;
     }
 
@@ -524,11 +451,12 @@ async function handleImportGgufModel(): Promise<void> {
     });
 
     if (!importResult.success) {
-      alert(`Failed to import model: ${importResult.error}`);
+      showNotification(`Failed to import model: ${importResult.error}`, "error");
       return;
     }
 
     console.log(`Model imported: ${importResult.fileName}`);
+    showNotification(`Model "${importResult.fileName}" imported successfully`, "success");
     
     // Auto-select the newly imported model
     saveSelectedModelPath(importResult.path);
@@ -536,7 +464,7 @@ async function handleImportGgufModel(): Promise<void> {
     await refreshModelsList();
   } catch (error) {
     console.error("Error importing model:", error);
-    alert(`Error: ${error}`);
+    showNotification(`Error importing model: ${error}`, "error");
   }
 }
 
