@@ -1,6 +1,6 @@
 {
-  "name": "my-app",
-  "productName": "my-app",
+  "name": "fly-on-the-wall",
+  "productName": "Fly on the Wall",
   "version": "1.0.0",
   "description": "My Electron application description",
   "main": ".vite/build/main.js",

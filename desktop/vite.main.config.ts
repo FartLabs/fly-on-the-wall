@@ -7,6 +7,10 @@ export default defineConfig({
       entry: "src/main/main.ts",
       fileName: "main",
       formats: ["cjs"]
+    },
+    rollupOptions: {
+      external: ["electron", "node-llama-cpp"]
     }
+ 
   }
 });

@@ -9,14 +9,18 @@ import { FuseV1Options, FuseVersion } from "@electron/fuses";
 
 const config: ForgeConfig = {
   packagerConfig: {
-    asar: true
+   asar: {
+    // https://node-llama-cpp.withcat.ai/guide/electron
+      unpack: '**/node_modules/{node-llama-cpp/bins,node-llama-cpp/llama/localBuilds,@node-llama-cpp}/**/*' 
+    } 
   },
   rebuildConfig: {},
+  // TODO: configure later when app is good enough for 1.0
   makers: [
-    new MakerSquirrel({}),
-    new MakerZIP({}, ["darwin"]),
-    new MakerRpm({}),
-    new MakerDeb({})
+    // new MakerSquirrel({}),
+    new MakerZIP({}),
+    // new MakerRpm({}),
+    // new MakerDeb({})
   ],
   plugins: [
     new VitePlugin({
