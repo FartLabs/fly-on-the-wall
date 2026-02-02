@@ -1,7 +1,12 @@
 import fs from "node:fs";
 
 export type UtilityMessage =
-  | { type: "summarize"; text: string; modelPath: string; params?: SummarizeParams }
+  | {
+      type: "summarize";
+      text: string;
+      modelPath: string;
+      params?: SummarizeParams;
+    }
   | { type: "download-model"; modelId: string; targetPath: string }
   | { type: "check-model"; modelPath: string }
   | { type: "dispose" }
@@ -33,18 +38,20 @@ let currentModel: any = null;
 let currentModelPath: string | null = null;
 let currentContext: any = null;
 
-const IDLE_TIMEOUT_MS = 1 * 60 * 1000; 
+const IDLE_TIMEOUT_MS = 1 * 60 * 1000;
 let idleTimer: NodeJS.Timeout | null = null;
 
 function resetIdleTimer(): void {
   if (idleTimer) {
     clearTimeout(idleTimer);
   }
-  
+
   idleTimer = setTimeout(async () => {
-    console.log(`[UtilityProcess] Idle timeout reached, disposing model to free memory`);
+    console.log(
+      `[UtilityProcess] Idle timeout reached, disposing model to free memory`
+    );
     await disposeModel();
-    
+
     if (global.gc) {
       console.log(`[UtilityProcess] Running garbage collection`);
       global.gc();
@@ -78,12 +85,12 @@ async function disposeModel(): Promise<void> {
     clearTimeout(idleTimer);
     idleTimer = null;
   }
-  
+
   if (currentContext) {
     try {
       await currentContext.dispose();
     } catch (e) {
-      console.error('[UtilityProcess] Error disposing context:', e);
+      console.error("[UtilityProcess] Error disposing context:", e);
     }
     currentContext = null;
   }
@@ -91,16 +98,16 @@ async function disposeModel(): Promise<void> {
     try {
       await currentModel.dispose();
     } catch (e) {
-      console.error('[UtilityProcess] Error disposing model:', e);
+      console.error("[UtilityProcess] Error disposing model:", e);
     }
     currentModel = null;
   }
   currentModelPath = null;
-  
+
   if (global.gc) {
     global.gc();
   }
-  
+
   console.log(`[UtilityProcess] Model disposed`);
 }
 
@@ -113,16 +120,26 @@ async function handleSummarize(data: {
 
   console.log(`[UtilityProcess] Received summarization request`);
   console.log(`[UtilityProcess] Text length: ${text?.length || 0}`);
-  console.log(`[UtilityProcess] Text preview: ${text?.substring(0, 200) || '(empty)'}...`);
+  console.log(
+    `[UtilityProcess] Text preview: ${text?.substring(0, 200) || "(empty)"}...`
+  );
   console.log(`[UtilityProcess] Model path: ${modelPath}`);
 
-  sendResponse({ type: "status", status: "loading", message: "Loading model..." });
+  sendResponse({
+    type: "status",
+    status: "loading",
+    message: "Loading model..."
+  });
 
   await loadModel(modelPath);
-  
+
   resetIdleTimer();
 
-  sendResponse({ type: "status", status: "summarizing", message: "Generating summary..." });
+  sendResponse({
+    type: "status",
+    status: "summarizing",
+    message: "Generating summary..."
+  });
 
   const { LlamaChatSession } = await import("node-llama-cpp");
 
@@ -130,7 +147,9 @@ async function handleSummarize(data: {
     contextSequence: currentContext.getSequence()
   });
 
-  console.log(`[UtilityProcess] Sending prompt to model (length: ${text.length})`);
+  console.log(
+    `[UtilityProcess] Sending prompt to model (length: ${text.length})`
+  );
   console.log(`[UtilityProcess] Prompt preview: ${text.substring(0, 200)}...`);
 
   let summary = "";
@@ -139,19 +158,19 @@ async function handleSummarize(data: {
     summary = await session.prompt(text, {
       maxTokens: params?.maxTokens ?? 1024,
       temperature: params?.temperature ?? 0.7,
-      topP: params?.topP ?? 0.9,
+      topP: params?.topP ?? 0.9
       // TODO: maybe implement streaming text for the UI?
-    //   onTextChunk: (chunk: string) => {
-    //     // Could stream chunks back if needed
-    //   }
+      //   onTextChunk: (chunk: string) => {
+      //     // Could stream chunks back if needed
+      //   }
     });
   } finally {
     try {
-      if (session && typeof session.dispose === 'function') {
+      if (session && typeof session.dispose === "function") {
         session.dispose();
       }
     } catch (e) {
-      console.error('[UtilityProcess] Error disposing session:', e);
+      console.error("[UtilityProcess] Error disposing session:", e);
     }
   }
 
@@ -179,7 +198,7 @@ async function handleDispose(): Promise<void> {
     try {
       await llamaInstance.dispose();
     } catch (e) {
-      console.error('[UtilityProcess] Error disposing llama instance:', e);
+      console.error("[UtilityProcess] Error disposing llama instance:", e);
     }
     llamaInstance = null;
   }
@@ -238,7 +257,9 @@ process.parentPort?.on("message", async (event: { data: UtilityMessage }) => {
         handleHealthCheck();
         break;
       default:
-        console.warn(`[UtilityProcess] Unknown message type: ${(data as any).type}`);
+        console.warn(
+          `[UtilityProcess] Unknown message type: ${(data as any).type}`
+        );
     }
   } catch (err: any) {
     console.error(`[UtilityProcess] Error handling ${data.type}:`, err);

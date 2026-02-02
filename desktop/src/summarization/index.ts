@@ -167,8 +167,10 @@ export async function summarizeText(
         }
       }
     };
-    const removeListener = window.electronAPI.onSummarizationStatus(statusHandler);
-    cleanupListener = typeof removeListener === 'function' ? removeListener : undefined;
+    const removeListener =
+      window.electronAPI.onSummarizationStatus(statusHandler);
+    cleanupListener =
+      typeof removeListener === "function" ? removeListener : undefined;
   }
 
   const customPrompt = getCustomPrompt();
@@ -180,9 +182,13 @@ export async function summarizeText(
 
   console.log(`Using summarization model: ${actualModelPath}`);
   console.log(`[Summarization] Raw transcript length: ${text.length}`);
-  console.log(`[Summarization] Raw transcript preview: ${text.substring(0, 200)}...`);
+  console.log(
+    `[Summarization] Raw transcript preview: ${text.substring(0, 200)}...`
+  );
   console.log(`[Summarization] Final prompt length: ${prompt.length}`);
-  console.log(`[Summarization] Final prompt preview: ${prompt.substring(0, 300)}...`);
+  console.log(
+    `[Summarization] Final prompt preview: ${prompt.substring(0, 300)}...`
+  );
 
   try {
     const result = await window.electronAPI.summarize({

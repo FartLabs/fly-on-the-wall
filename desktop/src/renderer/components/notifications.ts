@@ -1,4 +1,3 @@
-
 let notificationContainer: HTMLDivElement | null = null;
 
 // wonder if there's a way to apply styles via CSS rather than inline styles

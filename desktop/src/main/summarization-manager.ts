@@ -1,4 +1,10 @@
-import { utilityProcess, UtilityProcess, app, ipcMain, BrowserWindow } from "electron";
+import {
+  utilityProcess,
+  UtilityProcess,
+  app,
+  ipcMain,
+  BrowserWindow
+} from "electron";
 import path from "node:path";
 import type {
   UtilityMessage,
@@ -8,9 +14,9 @@ import type {
 } from "../summarization/utility-process";
 
 // TODO: Make these configurable via a settings page
-const MEMORY_CHECK_INTERVAL_MS = 10_000; 
+const MEMORY_CHECK_INTERVAL_MS = 10_000;
 const MEMORY_THRESHOLD_MB = 4096; // restart if RSS exceeds the specified threshold
-const RESTART_DELAY_MS = 1000; 
+const RESTART_DELAY_MS = 1000;
 
 let utilityProc: UtilityProcess | null = null;
 let memoryCheckTimer: NodeJS.Timeout | null = null;
@@ -27,9 +33,22 @@ let isRestarting = false;
 
 function getUtilityProcessPath(): string {
   if (app.isPackaged) {
-    return path.join(process.resourcesPath, "app", ".vite", "build", "summarization-utility.js");
+    return path.join(
+      process.resourcesPath,
+      "app",
+      ".vite",
+      "build",
+      "summarization-utility.js"
+    );
   }
-  return path.join(__dirname, "..", "..", ".vite", "build", "summarization-utility.js");
+  return path.join(
+    __dirname,
+    "..",
+    "..",
+    ".vite",
+    "build",
+    "summarization-utility.js"
+  );
 }
 
 export function spawnSummarizationProcess(): UtilityProcess {
@@ -38,7 +57,9 @@ export function spawnSummarizationProcess(): UtilityProcess {
     return utilityProc;
   }
 
-  console.log("[SummarizationManager] Spawning summarization utility process...");
+  console.log(
+    "[SummarizationManager] Spawning summarization utility process..."
+  );
 
   const scriptPath = getUtilityProcessPath();
   console.log(`[SummarizationManager] Script path: ${scriptPath}`);
@@ -46,7 +67,7 @@ export function spawnSummarizationProcess(): UtilityProcess {
   utilityProc = utilityProcess.fork(scriptPath, [], {
     serviceName: "summarization-utility",
     // enable manual garbage collection
-    execArgv: ["--expose-gc"] 
+    execArgv: ["--expose-gc"]
   });
 
   utilityProc.on("message", (message: UtilityResponse) => {
@@ -54,7 +75,9 @@ export function spawnSummarizationProcess(): UtilityProcess {
   });
 
   utilityProc.on("exit", (code) => {
-    console.log(`[SummarizationManager] Utility process exited with code: ${code}`);
+    console.log(
+      `[SummarizationManager] Utility process exited with code: ${code}`
+    );
     handleProcessExit(code);
   });
 
@@ -129,7 +152,9 @@ function stopMemoryMonitoring(): void {
 
 function checkMemoryThreshold(usage: MemoryUsage): void {
   const rssMb = usage.rss / (1024 * 1024);
-  console.log(`[SummarizationManager] Memory usage: ${rssMb.toFixed(1)} MB RSS`);
+  console.log(
+    `[SummarizationManager] Memory usage: ${rssMb.toFixed(1)} MB RSS`
+  );
 
   if (rssMb > MEMORY_THRESHOLD_MB) {
     console.warn(
@@ -146,7 +171,9 @@ async function restartProcess(): Promise<void> {
   try {
     await sendMessageAndWait({ type: "dispose" }, 5000);
   } catch {
-    console.warn("[SummarizationManager] Dispose during restart failed, proceeding to kill process");
+    console.warn(
+      "[SummarizationManager] Dispose during restart failed, proceeding to kill process"
+    );
   }
 
   if (utilityProc) {
@@ -269,29 +296,38 @@ export function stopSummarizationProcess(): void {
   console.log("[SummarizationManager] Utility process stopped");
 }
 
-ipcMain.handle("summarize", async (_event, data: {
-  text: string;
-  modelPath: string;
-  params?: SummarizeParams;
-}) => {
-  try {
-    const result = await summarize(data.text, data.modelPath, data.params);
-    return { success: true, ...result };
-  } catch (error) {
-    console.error("[SummarizationManager] Summarization failed:", error);
-    return { success: false, error: String(error) };
+ipcMain.handle(
+  "summarize",
+  async (
+    _event,
+    data: {
+      text: string;
+      modelPath: string;
+      params?: SummarizeParams;
+    }
+  ) => {
+    try {
+      const result = await summarize(data.text, data.modelPath, data.params);
+      return { success: true, ...result };
+    } catch (error) {
+      console.error("[SummarizationManager] Summarization failed:", error);
+      return { success: false, error: String(error) };
+    }
   }
-});
+);
 
-ipcMain.handle("check-summarization-model", async (_event, modelPath: string) => {
-  try {
-    const result = await checkModel(modelPath);
-    return { success: true, ...result };
-  } catch (error) {
-    console.error("[SummarizationManager] Model check failed:", error);
-    return { success: false, error: String(error) };
+ipcMain.handle(
+  "check-summarization-model",
+  async (_event, modelPath: string) => {
+    try {
+      const result = await checkModel(modelPath);
+      return { success: true, ...result };
+    } catch (error) {
+      console.error("[SummarizationManager] Model check failed:", error);
+      return { success: false, error: String(error) };
+    }
   }
-});
+);
 
 ipcMain.handle("dispose-summarization-model", async () => {
   try {

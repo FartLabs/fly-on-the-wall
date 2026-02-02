@@ -20,7 +20,11 @@ const getModelsCacheDir = (): string => {
 };
 
 const getSummarizationModelsDir = (): string => {
-  const summarizationDir = path.join(app.getPath("userData"), "models", "summarization");
+  const summarizationDir = path.join(
+    app.getPath("userData"),
+    "models",
+    "summarization"
+  );
   if (!fs.existsSync(summarizationDir)) {
     fs.mkdirSync(summarizationDir, { recursive: true });
   }
@@ -59,8 +63,8 @@ ipcMain.handle("list-gguf-models", async () => {
     const summarizationDir = getSummarizationModelsDir();
     const files = fs.readdirSync(summarizationDir);
     const ggufFiles = files
-      .filter(file => file.toLowerCase().endsWith(".gguf"))
-      .map(file => {
+      .filter((file) => file.toLowerCase().endsWith(".gguf"))
+      .map((file) => {
         const filePath = path.join(summarizationDir, file);
         const stats = fs.statSync(filePath);
         return {
@@ -72,7 +76,7 @@ ipcMain.handle("list-gguf-models", async () => {
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name));
-    
+
     return { success: true, models: ggufFiles };
   } catch (error) {
     console.error("Error listing GGUF models:", error);
@@ -97,52 +101,58 @@ ipcMain.handle("select-model-file", async () => {
   return { canceled: false, filePath: result.filePaths[0] };
 });
 
-ipcMain.handle("import-gguf-model", async (_event, data: { sourcePath: string; copyMode?: 'copy' | 'move' }) => {
-  try {
-    const summarizationDir = getSummarizationModelsDir();
-    const fileName = path.basename(data.sourcePath);
-    const targetPath = path.join(summarizationDir, fileName);
-    
-    if (!data.sourcePath.toLowerCase().endsWith(".gguf")) {
-      return { success: false, error: "File must be a .gguf file" };
+ipcMain.handle(
+  "import-gguf-model",
+  async (_event, data: { sourcePath: string; copyMode?: "copy" | "move" }) => {
+    try {
+      const summarizationDir = getSummarizationModelsDir();
+      const fileName = path.basename(data.sourcePath);
+      const targetPath = path.join(summarizationDir, fileName);
+
+      if (!data.sourcePath.toLowerCase().endsWith(".gguf")) {
+        return { success: false, error: "File must be a .gguf file" };
+      }
+
+      if (!fs.existsSync(data.sourcePath)) {
+        return { success: false, error: "Source file does not exist" };
+      }
+
+      if (fs.existsSync(targetPath)) {
+        return {
+          success: false,
+          error: "A model with this name already exists"
+        };
+      }
+
+      const mode = data.copyMode || "copy";
+      if (mode === "move") {
+        fs.renameSync(data.sourcePath, targetPath);
+        console.log(`Model moved: ${data.sourcePath} -> ${targetPath}`);
+      } else {
+        fs.copyFileSync(data.sourcePath, targetPath);
+        console.log(`Model copied: ${data.sourcePath} -> ${targetPath}`);
+      }
+
+      return { success: true, path: targetPath, fileName };
+    } catch (error) {
+      console.error("Error importing GGUF model:", error);
+      return { success: false, error: String(error) };
     }
-    
-    if (!fs.existsSync(data.sourcePath)) {
-      return { success: false, error: "Source file does not exist" };
-    }
-    
-    if (fs.existsSync(targetPath)) {
-      return { success: false, error: "A model with this name already exists" };
-    }
-    
-    const mode = data.copyMode || 'copy';
-    if (mode === 'move') {
-      fs.renameSync(data.sourcePath, targetPath);
-      console.log(`Model moved: ${data.sourcePath} -> ${targetPath}`);
-    } else {
-      fs.copyFileSync(data.sourcePath, targetPath);
-      console.log(`Model copied: ${data.sourcePath} -> ${targetPath}`);
-    }
-    
-    return { success: true, path: targetPath, fileName };
-  } catch (error) {
-    console.error("Error importing GGUF model:", error);
-    return { success: false, error: String(error) };
   }
-});
+);
 
 ipcMain.handle("delete-gguf-model", async (_event, modelPath: string) => {
   try {
     if (!modelPath.toLowerCase().endsWith(".gguf")) {
       return { success: false, error: "File is not a .gguf file" };
     }
-    
+
     if (fs.existsSync(modelPath)) {
       fs.unlinkSync(modelPath);
       console.log(`GGUF model deleted: ${modelPath}`);
       return { success: true };
     }
-    
+
     return { success: false, error: "Model file not found" };
   } catch (error) {
     console.error("Error deleting GGUF model:", error);
@@ -151,11 +161,11 @@ ipcMain.handle("delete-gguf-model", async (_event, modelPath: string) => {
 });
 
 function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) return "0 Bytes";
   const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const sizes = ["Bytes", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
 }
 
 ipcMain.handle("check-model-exists", async (_event, modelId: string) => {

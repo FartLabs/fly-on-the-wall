@@ -73,7 +73,8 @@ export async function runSummarization(
     return;
   }
 
-  const isModelValid = await checkSummarizationModelDownloaded(selectedModelPath);
+  const isModelValid =
+    await checkSummarizationModelDownloaded(selectedModelPath);
   console.log("Summarization model valid:", isModelValid);
 
   if (!isModelValid) {

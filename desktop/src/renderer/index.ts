@@ -73,7 +73,11 @@ declare global {
 
       getModelsDir: () => Promise<string>;
       getModelsCacheDir: () => Promise<string>;
-      openModelsFolder: () => Promise<{ success: boolean; path?: string; error?: string }>;
+      openModelsFolder: () => Promise<{
+        success: boolean;
+        path?: string;
+        error?: string;
+      }>;
       listGgufModels: () => Promise<{
         success: boolean;
         models: Array<{
@@ -87,13 +91,20 @@ declare global {
       }>;
       importGgufModel: (data: {
         sourcePath: string;
-        copyMode?: 'copy' | 'move';
-      }) => Promise<{ success: boolean; path?: string; fileName?: string; error?: string }>;
-      deleteGgufModel: (modelPath: string) => Promise<{ success: boolean; error?: string }>;
+        copyMode?: "copy" | "move";
+      }) => Promise<{
+        success: boolean;
+        path?: string;
+        fileName?: string;
+        error?: string;
+      }>;
+      deleteGgufModel: (
+        modelPath: string
+      ) => Promise<{ success: boolean; error?: string }>;
       selectModelFile: () => Promise<{ canceled: boolean; filePath?: string }>;
       checkModelExists: (modelId: string) => Promise<{ exists: boolean }>;
       deleteModel: (modelId: string) => Promise<{ success: boolean }>;
-      
+
       summarize: (data: {
         text: string;
         modelPath: string;
@@ -111,7 +122,10 @@ declare global {
         path?: string;
         error?: string;
       }>;
-      disposeSummarizationModel: () => Promise<{ success: boolean; error?: string }>;
+      disposeSummarizationModel: () => Promise<{
+        success: boolean;
+        error?: string;
+      }>;
       summarizationHealthCheck: () => Promise<{
         success: boolean;
         healthy?: boolean;
@@ -120,7 +134,7 @@ declare global {
         error?: string;
       }>;
       onSummarizationStatus: (callback: (status: any) => void) => () => void;
-      
+
       listNotes: () => Promise<{
         success: boolean;
         files: Array<{

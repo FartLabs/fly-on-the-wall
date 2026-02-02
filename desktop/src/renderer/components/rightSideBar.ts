@@ -49,7 +49,7 @@ export function setupRightPanelListeners() {
         saveBtn.disabled = true;
         const original = saveBtn.textContent;
         saveBtn.textContent = "Saving...";
-        
+
         try {
           await saveNote();
         } finally {

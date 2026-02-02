@@ -28,17 +28,20 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getModelsCacheDir: () => ipcRenderer.invoke("get-models-cache-dir"),
   openModelsFolder: () => ipcRenderer.invoke("open-models-folder"),
   listGgufModels: () => ipcRenderer.invoke("list-gguf-models"),
-  importGgufModel: (data: { sourcePath: string; copyMode?: 'copy' | 'move' }) => 
+  importGgufModel: (data: { sourcePath: string; copyMode?: "copy" | "move" }) =>
     ipcRenderer.invoke("import-gguf-model", data),
-  deleteGgufModel: (modelPath: string) => 
+  deleteGgufModel: (modelPath: string) =>
     ipcRenderer.invoke("delete-gguf-model", modelPath),
   selectModelFile: () => ipcRenderer.invoke("select-model-file"),
   checkModelExists: (modelId: string) =>
     ipcRenderer.invoke("check-model-exists", modelId),
   deleteModel: (modelId: string) => ipcRenderer.invoke("delete-model", modelId),
 
-  summarize: (data: { text: string; modelPath: string; params?: SummarizeParams }) =>
-    ipcRenderer.invoke("summarize", data),
+  summarize: (data: {
+    text: string;
+    modelPath: string;
+    params?: SummarizeParams;
+  }) => ipcRenderer.invoke("summarize", data),
   checkSummarizationModel: (modelPath: string) =>
     ipcRenderer.invoke("check-summarization-model", modelPath),
   disposeSummarizationModel: () =>

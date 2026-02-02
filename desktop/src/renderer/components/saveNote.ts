@@ -16,7 +16,7 @@ export async function saveNote(): Promise<void> {
   try {
     const res = await window.electronAPI.saveNote({
       transcription,
-      summary,
+      summary
     });
 
     if (res && res.success) {
