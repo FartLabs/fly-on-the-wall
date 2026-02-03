@@ -3,6 +3,7 @@ import { BrowserWindow } from "electron";
 import path from "node:path";
 import fs from "node:fs";
 import { formatBytes } from "../utils";
+import { exportNoteHtml } from "@/renderer/components/exportedNote";
 
 const getModelsDir = (): string => {
   const modelsDir = path.join(app.getPath("userData"), "models");
@@ -334,7 +335,7 @@ ipcMain.handle(
       const content = fs.readFileSync(filePath, "utf-8");
       const note = JSON.parse(content);
 
-      const html = `<!doctype html><html><head><meta charset="utf-8"><title>${note.id}</title><style>body{font-family:Arial,Helvetica,sans-serif;padding:20px}h1{font-size:18px}h2{font-size:14px;margin-top:18px}pre{white-space:pre-wrap;background:#f7f7f7;padding:12px;border-radius:6px}</style></head><body><h1>${note.id}</h1><p>Created: ${note.created}</p><h2>Transcription</h2><pre>${note.transcription || ""}</pre><h2>Summary</h2><pre>${note.summary || ""}</pre></body></html>`;
+      const html = exportNoteHtml(note);
 
       // create a hidden BrowserWindow to render the HTML and print to PDF
       const win = new BrowserWindow({
