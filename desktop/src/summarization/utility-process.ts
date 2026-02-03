@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { SummarizeParams } from ".";
 
 export type SummarizationProcessMessage =
   | {
@@ -18,15 +19,6 @@ export type SummarizationProcessResponse =
   | { type: "result"; result: any }
   | { type: "error"; error: string }
   | { type: "memory"; usage: MemoryUsage };
-
-export interface SummarizeParams {
-  maxTokens?: number;
-  temperature?: number;
-  topP?: number;
-  topK?: number;
-  repeatPenalty?: number;
-  systemPrompt?: string;
-}
 
 export interface MemoryUsage {
   heapUsed: number;

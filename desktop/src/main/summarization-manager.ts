@@ -9,9 +9,9 @@ import path from "node:path";
 import type {
   SummarizationProcessMessage,
   SummarizationProcessResponse,
-  SummarizeParams,
   MemoryUsage
 } from "../summarization/utility-process";
+import { SummarizeParams } from "@/summarization";
 
 // TODO: Make these configurable via a settings page
 const MEMORY_CHECK_INTERVAL_MS = 10_000;
