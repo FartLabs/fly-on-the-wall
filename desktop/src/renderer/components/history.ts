@@ -5,6 +5,7 @@ import {
   getBaseName
 } from "@/utils";
 import { navigateToPage } from "./navigation";
+import { elements } from "./domNodes";
 
 interface NoteFile {
   name: string;
@@ -15,9 +16,11 @@ interface NoteFile {
 }
 
 let currentNoteFilename: string | null = null;
+let selectedNotes: Set<string> = new Set();
 
 export function showHistoryPage(): void {
   navigateToPage("history");
+  selectedNotes.clear();
   loadHistory();
 }
 
@@ -47,6 +50,8 @@ export async function loadHistory(): Promise<void> {
       const item = createHistoryItem(file);
       historyList.appendChild(item);
     });
+
+    updateBatchOperationsUI();
   } catch (error) {
     console.error("Error loading history:", error);
     historyList.innerHTML =
@@ -57,6 +62,7 @@ export async function loadHistory(): Promise<void> {
 function createHistoryItem(file: NoteFile): HTMLElement {
   const item = document.createElement("div");
   item.className = "history-item";
+  item.dataset.filename = file.name;
 
   const filenameLabel = getBaseName(file.name);
 
@@ -64,13 +70,24 @@ function createHistoryItem(file: NoteFile): HTMLElement {
   const formattedDate = generateDateLabel(date);
   const formattedTime = convertToLocaleTime(date);
 
+  const isSelected = selectedNotes.has(file.name);
+
   item.innerHTML = `
+    <label class="history-item-checkbox">
+      <input type="checkbox" class="note-checkbox" data-filename="${escapeHtml(file.name)}" ${isSelected ? "checked" : ""} />
+    </label>
     <div class="history-item-info">
       <div class="history-item-type">${filenameLabel}</div>
       <div class="history-item-date">${formattedDate} at ${formattedTime}</div>
     </div>
     <button class="history-item-btn" title="View">👁️</button>
   `;
+
+  const checkbox = item.querySelector(".note-checkbox") as HTMLInputElement;
+  checkbox?.addEventListener("change", (e) => {
+    e.stopPropagation();
+    handleNoteCheckboxChange(file.name, checkbox.checked);
+  });
 
   const viewBtn = item.querySelector(".history-item-btn");
   viewBtn?.addEventListener("click", () => openNote(file.name));
@@ -301,4 +318,104 @@ export function setupHistoryListeners(): void {
 
   closeNoteBtn?.addEventListener("click", closeNoteViewer);
   deleteNoteBtn?.addEventListener("click", deleteCurrentNote);
+
+  elements.selectAllNotesCheckbox?.addEventListener("change", handleSelectAll);
+  elements.deleteSelectedBtn?.addEventListener("click", deleteSelectedNotes);
+}
+
+function handleNoteCheckboxChange(filename: string, checked: boolean): void {
+  if (checked) {
+    selectedNotes.add(filename);
+  } else {
+    selectedNotes.delete(filename);
+  }
+  updateBatchOperationsUI();
+}
+
+function handleSelectAll(e: Event): void {
+  const target = e.target as HTMLInputElement;
+  const checkboxes = document.querySelectorAll(
+    ".note-checkbox"
+  ) as NodeListOf<HTMLInputElement>;
+
+  checkboxes.forEach((checkbox) => {
+    checkbox.checked = target.checked;
+    const filename = checkbox.dataset.filename;
+    if (filename) {
+      if (target.checked) {
+        selectedNotes.add(filename);
+      } else {
+        selectedNotes.delete(filename);
+      }
+    }
+  });
+
+  updateBatchOperationsUI();
+}
+
+function updateBatchOperationsUI(): void {
+  const count = selectedNotes.size;
+  const hasNotes = document.querySelectorAll(".history-item").length > 0;
+
+  if (hasNotes && elements.batchOperationsToolbar) {
+    elements.batchOperationsToolbar.classList.remove("hidden");
+  } else if (elements.batchOperationsToolbar) {
+    elements.batchOperationsToolbar.classList.add("hidden");
+  }
+
+  if (elements.selectedCount) {
+    elements.selectedCount.textContent = `${count} selected`;
+  }
+
+  if (elements.selectAllNotesCheckbox) {
+    const totalCheckboxes = document.querySelectorAll(".note-checkbox").length;
+    const allSelected = count > 0 && count === totalCheckboxes;
+    const someSelected = count > 0 && count < totalCheckboxes;
+
+    elements.selectAllNotesCheckbox.checked = allSelected;
+    elements.selectAllNotesCheckbox.indeterminate = someSelected;
+  }
+
+  if (elements.deleteSelectedBtn) {
+    elements.deleteSelectedBtn.disabled = count === 0;
+  }
+}
+
+async function deleteSelectedNotes(): Promise<void> {
+  const count = selectedNotes.size;
+
+  if (count === 0) {
+    return;
+  }
+
+  const confirmed = confirm(
+    `Are you sure you want to delete ${count} note${count > 1 ? "s" : ""}? This cannot be undone.`
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    const deletePromises = Array.from(selectedNotes).map((filename) =>
+      window.electronAPI.deleteNote(filename)
+    );
+
+    const results = await Promise.all(deletePromises);
+
+    const failed = results.filter((r) => !r.success);
+
+    if (failed.length > 0) {
+      alert(
+        `Failed to delete ${failed.length} note${failed.length > 1 ? "s" : ""}`
+      );
+    }
+
+    selectedNotes.clear();
+    closeNoteViewer();
+    loadHistory();
+  } catch (error) {
+    console.error("Error deleting notes:", error);
+    alert("Failed to delete notes");
+  }
 }

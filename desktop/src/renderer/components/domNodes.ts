@@ -109,6 +109,17 @@ export const elements = {
     "backToMainFromSettings"
   ) as HTMLButtonElement,
 
+  batchOperationsToolbar: document.getElementById(
+    "batchOperationsToolbar"
+  ) as HTMLDivElement,
+  selectAllNotesCheckbox: document.getElementById(
+    "selectAllNotesCheckbox"
+  ) as HTMLInputElement,
+  selectedCount: document.getElementById("selectedCount") as HTMLSpanElement,
+  deleteSelectedBtn: document.getElementById(
+    "deleteSelectedBtn"
+  ) as HTMLButtonElement,
+
   minSummaryLengthInput: document.getElementById(
     "minSummaryLengthInput"
   ) as HTMLInputElement,

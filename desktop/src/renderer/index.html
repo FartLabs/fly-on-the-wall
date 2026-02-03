@@ -236,13 +236,37 @@
       <div class="history-card">
         <div class="card-header">
           <h2>Saved Notes</h2>
-          <button
-            class="refresh-btn"
-            id="refreshHistoryBtn"
-            title="Refresh list"
-          >
-            ↻
-          </button>
+          <div class="history-header-actions">
+            <button
+              class="refresh-btn"
+              id="refreshHistoryBtn"
+              title="Refresh list"
+            >
+              ↻
+            </button>
+          </div>
+        </div>
+
+        <div
+          class="batch-operations-toolbar hidden"
+          id="batchOperationsToolbar"
+        >
+          <div class="batch-selection-info">
+            <label class="batch-select-all">
+              <input type="checkbox" id="selectAllNotesCheckbox" />
+              <span>Select All</span>
+            </label>
+            <span class="selected-count" id="selectedCount">0 selected</span>
+          </div>
+          <div class="batch-actions">
+            <button
+              class="action-btn danger"
+              id="deleteSelectedBtn"
+              title="Delete selected notes"
+            >
+              Delete Selected
+            </button>
+          </div>
         </div>
 
         <div class="history-list" id="historyList">
