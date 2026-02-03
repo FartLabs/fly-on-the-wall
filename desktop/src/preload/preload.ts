@@ -54,6 +54,26 @@ contextBridge.exposeInMainWorld("electronAPI", {
     return () => ipcRenderer.removeListener("summarization-status", handler);
   },
 
+  transcribe: (data: {
+    audioData: number[];
+    modelId: string;
+    language?: string;
+  }) => ipcRenderer.invoke("transcribe", data),
+  downloadWhisperModel: (modelId: string) =>
+    ipcRenderer.invoke("download-whisper-model", modelId),
+  checkWhisperModel: (modelId: string) =>
+    ipcRenderer.invoke("check-whisper-model", modelId),
+  disposeWhisperModel: () => ipcRenderer.invoke("dispose-whisper-model"),
+  deleteWhisperModelFiles: (modelId: string) =>
+    ipcRenderer.invoke("delete-whisper-model-files", modelId),
+  transcriptionHealthCheck: () =>
+    ipcRenderer.invoke("transcription-health-check"),
+  onTranscriptionStatus: (callback: (status: any) => void) => {
+    const handler = (_event: any, status: any) => callback(status);
+    ipcRenderer.on("transcription-status", handler);
+    return () => ipcRenderer.removeListener("transcription-status", handler);
+  },
+
   listNotes: () => ipcRenderer.invoke("list-notes"),
   readNote: (filename: string) => ipcRenderer.invoke("read-note", filename),
   deleteNote: (filename: string) => ipcRenderer.invoke("delete-note", filename),

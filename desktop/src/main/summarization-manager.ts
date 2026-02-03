@@ -349,10 +349,6 @@ ipcMain.handle("summarization-health-check", async () => {
   }
 });
 
-app.whenReady().then(() => {
-  spawnSummarizationProcess();
-});
-
 app.on("before-quit", () => {
   stopSummarizationProcess();
 });
