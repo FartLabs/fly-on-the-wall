@@ -308,6 +308,9 @@ export async function transcribe(
   });
 }
 
+// 10 minutes
+const timeoutMs = 600000;
+
 export async function downloadModel(
   modelId: string
 ): Promise<{ success: boolean; modelId: string }> {
@@ -320,8 +323,8 @@ export async function downloadModel(
   );
   const result = await sendMessageAndWait(
     { type: "download-model", modelId },
-    600000
-  ); // 10 min timeout
+    timeoutMs
+  );
   console.log(
     `[TranscriptionManager] downloadModel completed with result:`,
     result
@@ -350,7 +353,6 @@ export async function deleteModelFiles(
   const modelsDir = getTranscriptionModelsDir();
 
   try {
-    // First dispose from memory if loaded
     await disposeModel();
 
     // transformers.js stores models as Xenova/whisper-tiny, etc.
