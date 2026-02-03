@@ -24,7 +24,7 @@ const createWindow = () => {
     width: 800,
     height: 600,
     webPreferences: {
-      preload: path.join(__dirname, "preload.js")
+      preload: path.join(__dirname, "preload.js"),
     }
   });
 
@@ -36,6 +36,9 @@ const createWindow = () => {
       path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)
     );
   }
+
+  // TODO: add content security policy
+  // https://www.electronjs.org/docs/latest/tutorial/security#7-define-a-content-security-policy
 
   mainWindow.maximize();
 

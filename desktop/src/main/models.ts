@@ -3,7 +3,7 @@ import { BrowserWindow } from "electron";
 import path from "node:path";
 import fs from "node:fs";
 import { formatBytes } from "../utils";
-import { exportNoteHtml } from "@/renderer/components/exportedNote";
+import { exportNoteHtml } from "./exportedNote";
 
 const getModelsDir = (): string => {
   const modelsDir = path.join(app.getPath("userData"), "models");

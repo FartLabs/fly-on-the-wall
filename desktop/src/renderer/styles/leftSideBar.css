@@ -94,3 +94,16 @@
 .sidebar-container::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+
+.prompt-section-title {
+  font-size: 0.9rem;
+  color: #888;
+  margin-bottom: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.prompt-section-description {
+  font-size: 0.75rem;
+  color: #666;
+  margin-bottom: 0.75rem;
+}

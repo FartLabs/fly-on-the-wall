@@ -18,6 +18,7 @@ export interface SummarizeParams {
 
 type ProgressCallback = (progress: SummarizationProgress) => void;
 
+// TODO: set this in settings for users in future
 const MIN_LENGTH_FOR_SUMMARIZATION = 20;
 const STORAGE_KEY_CUSTOM_PROMPT = "customSummarizationPrompt";
 const STORAGE_KEY_MODEL_PATH = "selectedSummarizationModelPath";
