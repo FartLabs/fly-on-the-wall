@@ -1,6 +1,6 @@
 /**
  * Transcription module - now using Electron IPC to communicate with utility process
- * 
+ *
  * Audio preprocessing still happens in the renderer (which has access to Web APIs),
  * then the preprocessed audio data is sent to the utility process for inference.
  */
@@ -9,7 +9,7 @@ import {
   WHISPER_MODELS,
   type WhisperModelSize,
   MODEL_SIZES,
-  preprocessAudioWhisper,
+  preprocessAudioWhisper
 } from "./whisper";
 
 export interface TranscriptionProgress {
@@ -39,7 +39,9 @@ export async function checkModelDownloaded(
   const modelId = WHISPER_MODELS[modelSize];
 
   try {
-    console.log(`[Transcription] Checking if model ${modelId} (${modelSize}) is downloaded...`);
+    console.log(
+      `[Transcription] Checking if model ${modelId} (${modelSize}) is downloaded...`
+    );
     const result = await window.electronAPI.checkWhisperModel(modelId);
     console.log(`[Transcription] Check result:`, result.exists);
     return result.success && result.exists;
@@ -103,7 +105,7 @@ export async function downloadModel(
 
   try {
     const result = await window.electronAPI.downloadWhisperModel(modelId);
-    
+
     if (!result.success) {
       throw new Error(result.error || "Download failed");
     }
@@ -128,12 +130,12 @@ export async function deleteModel(
 
     // note: this deletes the files but doesn't free memory
     const result = await window.electronAPI.deleteWhisperModelFiles(modelId);
-    
+
     if (!result.success) {
       console.error(`Failed to delete model files: ${result.error}`);
       return false;
     }
-    
+
     console.log(`Model ${modelId} deleted successfully`);
     return true;
   } catch (error) {
@@ -199,10 +201,15 @@ export async function transcribeAudio(
     const resultText: unknown = result.text;
     if (Array.isArray(resultText)) {
       const first = resultText[0];
-      transcription = (first && typeof first === "object" && "text" in first) 
-        ? String(first.text) 
-        : String(first || "");
-    } else if (resultText && typeof resultText === "object" && "text" in resultText) {
+      transcription =
+        first && typeof first === "object" && "text" in first
+          ? String(first.text)
+          : String(first || "");
+    } else if (
+      resultText &&
+      typeof resultText === "object" &&
+      "text" in resultText
+    ) {
       transcription = String((resultText as { text: string }).text);
     } else {
       transcription = String(resultText || "");

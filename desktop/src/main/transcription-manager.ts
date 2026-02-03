@@ -58,7 +58,9 @@ export async function spawnTranscriptionProcess(): Promise<UtilityProcess> {
     return utilityProc;
   }
 
-  console.log("[TranscriptionManager] Spawning transcription utility process...");
+  console.log(
+    "[TranscriptionManager] Spawning transcription utility process..."
+  );
 
   const scriptPath = getUtilityProcessPath();
   console.log(`[TranscriptionManager] Script path: ${scriptPath}`);
@@ -73,7 +75,9 @@ export async function spawnTranscriptionProcess(): Promise<UtilityProcess> {
   });
 
   utilityProc.on("exit", (code) => {
-    console.log(`[TranscriptionManager] Utility process exited with code: ${code}`);
+    console.log(
+      `[TranscriptionManager] Utility process exited with code: ${code}`
+    );
     handleProcessExit(code);
   });
 
@@ -87,22 +91,28 @@ export async function spawnTranscriptionProcess(): Promise<UtilityProcess> {
 
 async function initializeModelsPath(): Promise<void> {
   if (modelsPathInitialized) return;
-  
+
   const modelsDir = getTranscriptionModelsDir();
-  
+
   try {
-    await sendMessageAndWait({ type: "set-models-path", modelsPath: modelsDir }, 5000);
+    await sendMessageAndWait(
+      { type: "set-models-path", modelsPath: modelsDir },
+      5000
+    );
     modelsPathInitialized = true;
     console.log(`[TranscriptionManager] Models path initialized: ${modelsDir}`);
   } catch (error) {
-    console.error(`[TranscriptionManager] Failed to initialize models path:`, error);
+    console.error(
+      `[TranscriptionManager] Failed to initialize models path:`,
+      error
+    );
     throw error;
   }
 }
 
 function handleUtilityMessage(message: TranscriptionResponse): void {
   // console.log(`[TranscriptionManager] Received message:`, message);
-  
+
   if (message.type === "memory") {
     checkMemoryThreshold(message.usage);
     return;
@@ -112,11 +122,17 @@ function handleUtilityMessage(message: TranscriptionResponse): void {
     if (message.type === "status") {
       handler.onStatus?.(message);
     } else if (message.type === "result") {
-      console.log(`[TranscriptionManager] Resolving request ${id} with result:`, message.result);
+      console.log(
+        `[TranscriptionManager] Resolving request ${id} with result:`,
+        message.result
+      );
       handler.resolve(message.result);
       pendingRequests.delete(id);
     } else if (message.type === "error") {
-      console.log(`[TranscriptionManager] Rejecting request ${id} with error:`, message.error);
+      console.log(
+        `[TranscriptionManager] Rejecting request ${id} with error:`,
+        message.error
+      );
       handler.reject(new Error(message.error));
       pendingRequests.delete(id);
     }
@@ -167,7 +183,9 @@ function stopMemoryMonitoring(): void {
 
 function checkMemoryThreshold(usage: MemoryUsage): void {
   const rssMb = usage.rss / (1024 * 1024);
-  console.log(`[TranscriptionManager] Memory usage: ${rssMb.toFixed(1)} MB RSS`);
+  console.log(
+    `[TranscriptionManager] Memory usage: ${rssMb.toFixed(1)} MB RSS`
+  );
 
   if (rssMb > MEMORY_THRESHOLD_MB) {
     console.warn(
@@ -184,7 +202,9 @@ async function restartProcess(): Promise<void> {
   try {
     await sendMessageAndWait({ type: "dispose" }, 5000);
   } catch {
-    console.warn("[TranscriptionManager] Dispose during restart failed, proceeding to kill process");
+    console.warn(
+      "[TranscriptionManager] Dispose during restart failed, proceeding to kill process"
+    );
   }
 
   if (utilityProc) {
@@ -210,7 +230,7 @@ function sendToUtility(message: TranscriptionMessage): void {
 
 function sendMessageAndWait(
   message: TranscriptionMessage,
-  timeoutMs: number = 300000 
+  timeoutMs: number = 300000
 ): Promise<any> {
   return new Promise((resolve, reject) => {
     (async () => {
@@ -220,11 +240,16 @@ function sendMessageAndWait(
       }
 
       const requestId = String(++requestIdCounter);
-      console.log(`[TranscriptionManager] Sending message (request ${requestId}):`, message);
+      console.log(
+        `[TranscriptionManager] Sending message (request ${requestId}):`,
+        message
+      );
 
       const timeout = setTimeout(() => {
         pendingRequests.delete(requestId);
-        console.log(`[TranscriptionManager] Request ${requestId} timed out after ${timeoutMs}ms`);
+        console.log(
+          `[TranscriptionManager] Request ${requestId} timed out after ${timeoutMs}ms`
+        );
         reject(new Error("Request timed out"));
       }, timeoutMs);
 
@@ -274,22 +299,39 @@ export async function transcribe(
 
     // IPC accepts normal arrays
     const audioArray = Array.from(audioData);
-    sendToUtility({ type: "transcribe", audioData: audioArray, modelId, language });
+    sendToUtility({
+      type: "transcribe",
+      audioData: audioArray,
+      modelId,
+      language
+    });
   });
 }
 
-export async function downloadModel(modelId: string): Promise<{ success: boolean; modelId: string }> {
+export async function downloadModel(
+  modelId: string
+): Promise<{ success: boolean; modelId: string }> {
   console.log(`[TranscriptionManager] downloadModel called for: ${modelId}`);
   if (!utilityProc) {
     await spawnTranscriptionProcess();
   }
-  console.log(`[TranscriptionManager] Sending download-model message to utility process`);
-  const result = await sendMessageAndWait({ type: "download-model", modelId }, 600000); // 10 min timeout
-  console.log(`[TranscriptionManager] downloadModel completed with result:`, result);
+  console.log(
+    `[TranscriptionManager] Sending download-model message to utility process`
+  );
+  const result = await sendMessageAndWait(
+    { type: "download-model", modelId },
+    600000
+  ); // 10 min timeout
+  console.log(
+    `[TranscriptionManager] downloadModel completed with result:`,
+    result
+  );
   return result;
 }
 
-export async function checkModel(modelId: string): Promise<{ exists: boolean; modelId: string; path?: string }> {
+export async function checkModel(
+  modelId: string
+): Promise<{ exists: boolean; modelId: string; path?: string }> {
   if (!utilityProc) {
     await spawnTranscriptionProcess();
   }
@@ -301,29 +343,38 @@ export async function disposeModel(): Promise<void> {
   await sendMessageAndWait({ type: "dispose" });
 }
 
-export async function deleteModelFiles(modelId: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteModelFiles(
+  modelId: string
+): Promise<{ success: boolean; error?: string }> {
   const fs = await import("node:fs");
   const modelsDir = getTranscriptionModelsDir();
-  
+
   try {
     // First dispose from memory if loaded
     await disposeModel();
-    
+
     // transformers.js stores models as Xenova/whisper-tiny, etc.
     const modelPath = path.join(modelsDir, modelId);
-    
+
     console.log(`[TranscriptionManager] Deleting model files at: ${modelPath}`);
-    
+
     if (fs.existsSync(modelPath)) {
       fs.rmSync(modelPath, { recursive: true, force: true });
-      console.log(`[TranscriptionManager] Successfully deleted model: ${modelId}`);
+      console.log(
+        `[TranscriptionManager] Successfully deleted model: ${modelId}`
+      );
       return { success: true };
     } else {
-      console.log(`[TranscriptionManager] Model path does not exist: ${modelPath}`);
+      console.log(
+        `[TranscriptionManager] Model path does not exist: ${modelPath}`
+      );
       return { success: false, error: "Model files not found" };
     }
   } catch (error) {
-    console.error(`[TranscriptionManager] Failed to delete model files:`, error);
+    console.error(
+      `[TranscriptionManager] Failed to delete model files:`,
+      error
+    );
     return { success: false, error: String(error) };
   }
 }
@@ -362,7 +413,11 @@ ipcMain.handle(
   ) => {
     try {
       const audioFloat32 = new Float32Array(data.audioData);
-      const result = await transcribe(audioFloat32, data.modelId, data.language);
+      const result = await transcribe(
+        audioFloat32,
+        data.modelId,
+        data.language
+      );
       return { success: true, ...result };
     } catch (error) {
       console.error("[TranscriptionManager] Transcription failed:", error);
@@ -371,31 +426,25 @@ ipcMain.handle(
   }
 );
 
-ipcMain.handle(
-  "download-whisper-model",
-  async (_event, modelId: string) => {
-    try {
-      const result = await downloadModel(modelId);
-      return { success: true, ...result };
-    } catch (error) {
-      console.error("[TranscriptionManager] Model download failed:", error);
-      return { success: false, error: String(error) };
-    }
+ipcMain.handle("download-whisper-model", async (_event, modelId: string) => {
+  try {
+    const result = await downloadModel(modelId);
+    return { success: true, ...result };
+  } catch (error) {
+    console.error("[TranscriptionManager] Model download failed:", error);
+    return { success: false, error: String(error) };
   }
-);
+});
 
-ipcMain.handle(
-  "check-whisper-model",
-  async (_event, modelId: string) => {
-    try {
-      const result = await checkModel(modelId);
-      return { success: true, ...result };
-    } catch (error) {
-      console.error("[TranscriptionManager] Model check failed:", error);
-      return { success: false, error: String(error) };
-    }
+ipcMain.handle("check-whisper-model", async (_event, modelId: string) => {
+  try {
+    const result = await checkModel(modelId);
+    return { success: true, ...result };
+  } catch (error) {
+    console.error("[TranscriptionManager] Model check failed:", error);
+    return { success: false, error: String(error) };
   }
-);
+});
 
 ipcMain.handle("dispose-whisper-model", async () => {
   try {
@@ -407,15 +456,21 @@ ipcMain.handle("dispose-whisper-model", async () => {
   }
 });
 
-ipcMain.handle("delete-whisper-model-files", async (_event, modelId: string) => {
-  try {
-    const result = await deleteModelFiles(modelId);
-    return result;
-  } catch (error) {
-    console.error("[TranscriptionManager] Model file deletion failed:", error);
-    return { success: false, error: String(error) };
+ipcMain.handle(
+  "delete-whisper-model-files",
+  async (_event, modelId: string) => {
+    try {
+      const result = await deleteModelFiles(modelId);
+      return result;
+    } catch (error) {
+      console.error(
+        "[TranscriptionManager] Model file deletion failed:",
+        error
+      );
+      return { success: false, error: String(error) };
+    }
   }
-});
+);
 
 ipcMain.handle("transcription-health-check", async () => {
   try {

@@ -21,7 +21,13 @@ export type TranscriptionMessage =
   | { type: "set-models-path"; modelsPath: string };
 
 export type TranscriptionResponse =
-  | { type: "status"; status: string; progress?: number; message?: string; file?: string }
+  | {
+      type: "status";
+      status: string;
+      progress?: number;
+      message?: string;
+      file?: string;
+    }
   | { type: "result"; result: any }
   | { type: "error"; error: string }
   | { type: "memory"; usage: MemoryUsage };
@@ -37,14 +43,19 @@ let transcriber: any = null;
 let currentModelId: string | null = null;
 let modelsPath: string | null = null;
 
-const IDLE_TIMEOUT_MS = 5 * 60 * 1000; 
+const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 let idleTimer: NodeJS.Timeout | null = null;
 
 function sendMessage(message: TranscriptionResponse): void {
   process.parentPort?.postMessage(message);
 }
 
-function sendStatus(status: string, message?: string, progress?: number, file?: string): void {
+function sendStatus(
+  status: string,
+  message?: string,
+  progress?: number,
+  file?: string
+): void {
   sendMessage({ type: "status", status, message, progress, file });
 }
 
@@ -94,8 +105,16 @@ async function loadModel(modelId: string): Promise<void> {
   transcriber = await pipeline("automatic-speech-recognition", modelId, {
     progress_callback: (progress: any) => {
       console.log(`[TranscriptionUtility] Progress:`, progress);
-      if (progress.status === "progress" || typeof progress.progress === "number") {
-        sendStatus("downloading", `Downloading ${progress.file || "model"}...`, progress.progress, progress.file);
+      if (
+        progress.status === "progress" ||
+        typeof progress.progress === "number"
+      ) {
+        sendStatus(
+          "downloading",
+          `Downloading ${progress.file || "model"}...`,
+          progress.progress,
+          progress.file
+        );
       } else if (progress.status === "done") {
         sendStatus("loading", "Loading model...");
       }
@@ -145,7 +164,9 @@ async function handleTranscribe(data: {
 
     const audioFloat32 = new Float32Array(audioData);
 
-    console.log(`[TranscriptionUtility] Running inference on ${audioFloat32.length} samples...`);
+    console.log(
+      `[TranscriptionUtility] Running inference on ${audioFloat32.length} samples...`
+    );
 
     const result = await transcriber(audioFloat32, {
       language: language || "en",
@@ -165,12 +186,16 @@ async function handleTranscribe(data: {
 
 async function handleDownloadModel(data: { modelId: string }): Promise<void> {
   try {
-    console.log(`[TranscriptionUtility] Starting download for model: ${data.modelId}`);
+    console.log(
+      `[TranscriptionUtility] Starting download for model: ${data.modelId}`
+    );
     sendStatus("downloading", `Downloading model ${data.modelId}...`, 0);
-    
+
     await loadModel(data.modelId);
-    
-    console.log(`[TranscriptionUtility] Download complete, sending result for: ${data.modelId}`);
+
+    console.log(
+      `[TranscriptionUtility] Download complete, sending result for: ${data.modelId}`
+    );
     sendResult({ success: true, modelId: data.modelId });
   } catch (error: any) {
     console.error("[TranscriptionUtility] Download failed:", error);
@@ -181,7 +206,9 @@ async function handleDownloadModel(data: { modelId: string }): Promise<void> {
 async function handleCheckModel(data: { modelId: string }): Promise<void> {
   try {
     if (!modelsPath) {
-      console.log(`[TranscriptionUtility] Models path not set, model ${data.modelId} not downloaded`);
+      console.log(
+        `[TranscriptionUtility] Models path not set, model ${data.modelId} not downloaded`
+      );
       sendResult({ exists: false, modelId: data.modelId });
       return;
     }
@@ -195,38 +222,50 @@ async function handleCheckModel(data: { modelId: string }): Promise<void> {
       // In models subdir: models/Xenova/whisper-base
       path.join(modelsPath, "models", data.modelId),
       // Flattened: Xenova--whisper-base
-      path.join(modelsPath, data.modelId.replace("/", "--")), 
+      path.join(modelsPath, data.modelId.replace("/", "--")),
       // Flattened in models: models/Xenova--whisper-base
-      path.join(modelsPath, "models", data.modelId.replace("/", "--")) 
+      path.join(modelsPath, "models", data.modelId.replace("/", "--"))
     ];
-    
+
     let exists = false;
     let foundPath = "";
-    
+
     for (const modelDir of possiblePaths) {
       console.log(`[TranscriptionUtility] Checking path: ${modelDir}`);
       if (!fs.existsSync(modelDir)) continue;
-      
+
       const onnxDir = path.join(modelDir, "onnx");
-      const hasOnnxFiles = fs.existsSync(onnxDir) && fs.readdirSync(onnxDir).some(f => f.endsWith(".onnx"));
+      const hasOnnxFiles =
+        fs.existsSync(onnxDir) &&
+        fs.readdirSync(onnxDir).some((f) => f.endsWith(".onnx"));
       const hasConfig = fs.existsSync(path.join(modelDir, "config.json"));
-      
-      console.log(`[TranscriptionUtility] Path ${modelDir} - hasOnnx: ${hasOnnxFiles}, hasConfig: ${hasConfig}`);
-      
+
+      console.log(
+        `[TranscriptionUtility] Path ${modelDir} - hasOnnx: ${hasOnnxFiles}, hasConfig: ${hasConfig}`
+      );
+
       if (hasOnnxFiles || hasConfig) {
         exists = true;
         foundPath = modelDir;
-        console.log(`[TranscriptionUtility] Found model ${data.modelId} at ${foundPath}`);
+        console.log(
+          `[TranscriptionUtility] Found model ${data.modelId} at ${foundPath}`
+        );
         break;
       }
     }
-    
+
     if (!exists) {
-      console.log(`[TranscriptionUtility] Model ${data.modelId} not found in any expected location`);
+      console.log(
+        `[TranscriptionUtility] Model ${data.modelId} not found in any expected location`
+      );
       console.log(`[TranscriptionUtility] Checked paths:`, possiblePaths);
     }
 
-    sendResult({ exists, modelId: data.modelId, path: foundPath || possiblePaths[0] });
+    sendResult({
+      exists,
+      modelId: data.modelId,
+      path: foundPath || possiblePaths[0]
+    });
   } catch (error: any) {
     console.error("[TranscriptionUtility] Check model failed:", error);
     sendError(error.message || String(error));
@@ -259,10 +298,12 @@ function handleHealthCheck(): void {
   });
 }
 
-async function handleSetModelsPath(data: { modelsPath: string }): Promise<void> {
+async function handleSetModelsPath(data: {
+  modelsPath: string;
+}): Promise<void> {
   modelsPath = data.modelsPath;
   console.log(`[TranscriptionUtility] Models path set to: ${modelsPath}`);
-  
+
   if (!fs.existsSync(modelsPath)) {
     fs.mkdirSync(modelsPath, { recursive: true });
   }
@@ -273,48 +314,61 @@ async function handleSetModelsPath(data: { modelsPath: string }): Promise<void> 
     env.allowRemoteModels = true;
     env.cacheDir = modelsPath;
     transformersModule = { env };
-    console.log(`[TranscriptionUtility] Transformers.js configured with cache dir: ${modelsPath}`);
+    console.log(
+      `[TranscriptionUtility] Transformers.js configured with cache dir: ${modelsPath}`
+    );
   } catch (error) {
-    console.error("[TranscriptionUtility] Failed to initialize transformers.js:", error);
+    console.error(
+      "[TranscriptionUtility] Failed to initialize transformers.js:",
+      error
+    );
   }
-  
+
   sendResult({ success: true, modelsPath });
 }
 
-process.parentPort?.on("message", async (event: { data: TranscriptionMessage }) => {
-  const message = event.data;
-  console.log(`[TranscriptionUtility] Received message: ${message.type}`);
+process.parentPort?.on(
+  "message",
+  async (event: { data: TranscriptionMessage }) => {
+    const message = event.data;
+    console.log(`[TranscriptionUtility] Received message: ${message.type}`);
 
-  try {
-    switch (message.type) {
-      case "transcribe":
-        await handleTranscribe(message);
-        break;
-      case "download-model":
-        await handleDownloadModel(message);
-        break;
-      case "check-model":
-        await handleCheckModel(message);
-        break;
-      case "dispose":
-        await handleDispose();
-        break;
-      case "get-memory-usage":
-        handleGetMemoryUsage();
-        break;
-      case "health-check":
-        handleHealthCheck();
-        break;
-      case "set-models-path":
-        await handleSetModelsPath(message);
-        break;
-      default:
-        console.warn(`[TranscriptionUtility] Unknown message type: ${(message as any).type}`);
+    try {
+      switch (message.type) {
+        case "transcribe":
+          await handleTranscribe(message);
+          break;
+        case "download-model":
+          await handleDownloadModel(message);
+          break;
+        case "check-model":
+          await handleCheckModel(message);
+          break;
+        case "dispose":
+          await handleDispose();
+          break;
+        case "get-memory-usage":
+          handleGetMemoryUsage();
+          break;
+        case "health-check":
+          handleHealthCheck();
+          break;
+        case "set-models-path":
+          await handleSetModelsPath(message);
+          break;
+        default:
+          console.warn(
+            `[TranscriptionUtility] Unknown message type: ${(message as any).type}`
+          );
+      }
+    } catch (error: any) {
+      console.error(
+        `[TranscriptionUtility] Error handling ${message.type}:`,
+        error
+      );
+      sendError(error.message || String(error));
     }
-  } catch (error: any) {
-    console.error(`[TranscriptionUtility] Error handling ${message.type}:`, error);
-    sendError(error.message || String(error));
   }
-});
+);
 
 console.log("[TranscriptionUtility] Utility process started");

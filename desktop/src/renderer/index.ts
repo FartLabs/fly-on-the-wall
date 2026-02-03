@@ -51,7 +51,6 @@ import { setupPromptCustomizer } from "./components/promptCustomizer";
 import { setupSidebarListeners } from "./components/leftSideBar";
 import { setupRightPanelListeners } from "./components/rightSideBar";
 
-
 // TODO: keep this in sync with preload/preload.ts with a shared types file
 declare global {
   interface Window {

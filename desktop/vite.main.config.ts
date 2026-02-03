@@ -11,6 +11,5 @@ export default defineConfig({
     rollupOptions: {
       external: ["electron", "node-llama-cpp"]
     }
- 
   }
 });
