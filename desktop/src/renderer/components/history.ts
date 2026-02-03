@@ -4,6 +4,7 @@ import {
   escapeHtml,
   getBaseName
 } from "@/utils";
+import { navigateToPage } from "./navigation";
 
 interface NoteFile {
   name: string;
@@ -16,25 +17,13 @@ interface NoteFile {
 let currentNoteFilename: string | null = null;
 
 export function showHistoryPage(): void {
-  const mainPage = document.getElementById("mainPage");
-  const historyPage = document.getElementById("historyPage");
-
-  if (mainPage && historyPage) {
-    mainPage.classList.add("hidden");
-    historyPage.classList.remove("hidden");
-    loadHistory();
-  }
+  navigateToPage("history");
+  loadHistory();
 }
 
 export function showMainPage(): void {
-  const mainPage = document.getElementById("mainPage");
-  const historyPage = document.getElementById("historyPage");
-
-  if (mainPage && historyPage) {
-    historyPage.classList.add("hidden");
-    mainPage.classList.remove("hidden");
-    closeNoteViewer();
-  }
+  navigateToPage("main");
+  closeNoteViewer();
 }
 
 export async function loadHistory(): Promise<void> {

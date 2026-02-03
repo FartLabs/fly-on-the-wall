@@ -96,7 +96,37 @@ export const elements = {
   rightPanelTrigger: document.getElementById(
     "rightPanelTrigger"
   ) as HTMLDivElement,
-  exportNoteBtn: document.getElementById("exportNoteBtn") as HTMLButtonElement
+  exportNoteBtn: document.getElementById("exportNoteBtn") as HTMLButtonElement,
+
+  mainPage: document.getElementById("mainPage") as HTMLDivElement,
+  historyPage: document.getElementById("historyPage") as HTMLDivElement,
+  settingsPage: document.getElementById("settingsPage") as HTMLDivElement,
+
+  viewSettingsBtn: document.getElementById(
+    "viewSettingsBtn"
+  ) as HTMLButtonElement,
+  backToMainFromSettings: document.getElementById(
+    "backToMainFromSettings"
+  ) as HTMLButtonElement,
+
+  minSummaryLengthInput: document.getElementById(
+    "minSummaryLengthInput"
+  ) as HTMLInputElement,
+  maxTokensInput: document.getElementById("maxTokensInput") as HTMLInputElement,
+  temperatureInput: document.getElementById(
+    "temperatureInput"
+  ) as HTMLInputElement,
+  topPInput: document.getElementById("topPInput") as HTMLInputElement,
+  topKInput: document.getElementById("topKInput") as HTMLInputElement,
+  repeatPenaltyInput: document.getElementById(
+    "repeatPenaltyInput"
+  ) as HTMLInputElement,
+  saveSettingsBtn: document.getElementById(
+    "saveSettingsBtn"
+  ) as HTMLButtonElement,
+  resetSettingsBtn: document.getElementById(
+    "resetSettingsBtn"
+  ) as HTMLButtonElement
 };
 
 export function setUiLocked(locked: boolean): void {

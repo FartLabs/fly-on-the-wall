@@ -23,6 +23,8 @@ export interface SummarizeParams {
   maxTokens?: number;
   temperature?: number;
   topP?: number;
+  topK?: number;
+  repeatPenalty?: number;
   systemPrompt?: string;
 }
 
@@ -157,15 +159,22 @@ async function handleSummarize(data: {
   let summary = "";
 
   try {
-    summary = await session.prompt(text, {
+    const promptOptions: Record<string, unknown> = {
       maxTokens: params?.maxTokens ?? 1024,
       temperature: params?.temperature ?? 0.7,
-      topP: params?.topP ?? 0.9
-      // TODO: maybe implement streaming text for the UI?
-      //   onTextChunk: (chunk: string) => {
-      //     // Could stream chunks back if needed
-      //   }
-    });
+      topP: params?.topP ?? 0.9,
+      topK: params?.topK ?? 40
+    };
+
+    // repeatPenalty in node-llama-cpp expects an object or false
+    if (params?.repeatPenalty && params.repeatPenalty > 1) {
+      promptOptions.repeatPenalty = {
+        penalty: params.repeatPenalty,
+        frequencyPenalty: 0,
+        presencePenalty: 0
+      };
+    }
+    summary = await session.prompt(text, promptOptions as any);
   } finally {
     try {
       if (session && typeof session.dispose === "function") {

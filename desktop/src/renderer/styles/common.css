@@ -4,7 +4,8 @@
 .transcription-card,
 .summary-card,
 .history-card,
-.note-viewer-card {
+.note-viewer-card,
+.settings-page-card {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 16px;
   padding: 1.5rem;
@@ -40,6 +41,12 @@
   max-width: 800px;
 }
 
+.settings-page-card {
+  margin-top: 1.5rem;
+  min-width: 500px;
+  max-width: 700px;
+}
+
 .card-header {
   display: flex;
   align-items: center;
@@ -52,6 +59,11 @@
 .card-header h2 {
   font-size: 1rem;
   font-weight: 600;
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 0.75rem;
 }
 
 .nav-btn {

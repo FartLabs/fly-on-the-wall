@@ -13,13 +13,23 @@ export interface SummarizeParams {
   maxTokens?: number;
   temperature?: number;
   topP?: number;
+  topK?: number;
+  repeatPenalty?: number;
   systemPrompt?: string;
 }
 
 type ProgressCallback = (progress: SummarizationProgress) => void;
 
-// TODO: set this in settings for users in future
-const MIN_LENGTH_FOR_SUMMARIZATION = 20;
+const DEFAULT_MIN_SUMMARY_LENGTH = 20;
+
+function getMinLengthForSummarization(): number {
+  const stored = localStorage.getItem("minSummaryLength");
+  if (stored) {
+    const parsed = parseInt(stored, 10);
+    if (!isNaN(parsed) && parsed >= 0) return parsed;
+  }
+  return DEFAULT_MIN_SUMMARY_LENGTH;
+}
 const STORAGE_KEY_CUSTOM_PROMPT = "customSummarizationPrompt";
 const STORAGE_KEY_MODEL_PATH = "selectedSummarizationModelPath";
 
@@ -132,7 +142,7 @@ export async function summarizeText(
 ): Promise<SummarizationResult> {
   const startTime = Date.now();
 
-  if (text.trim().length < MIN_LENGTH_FOR_SUMMARIZATION) {
+  if (text.trim().length < getMinLengthForSummarization()) {
     return {
       summary: "This meeting concluded with no substantive discussion.",
       duration: 0
@@ -192,13 +202,32 @@ export async function summarizeText(
   );
 
   try {
+    // Load summarization parameters from settings
+    const maxTokens = parseInt(
+      localStorage.getItem("summarizationMaxTokens") || "1024",
+      10
+    );
+    const temperature = parseFloat(
+      localStorage.getItem("summarizationTemperature") || "0.7"
+    );
+    const topP = parseFloat(localStorage.getItem("summarizationTopP") || "0.9");
+    const topK = parseInt(
+      localStorage.getItem("summarizationTopK") || "40",
+      10
+    );
+    const repeatPenalty = parseFloat(
+      localStorage.getItem("summarizationRepeatPenalty") || "1.1"
+    );
+
     const result = await window.electronAPI.summarize({
       text: prompt,
       modelPath: actualModelPath,
       params: {
-        maxTokens: 1024,
-        temperature: 0.7,
-        topP: 0.9
+        maxTokens,
+        temperature,
+        topP,
+        topK,
+        repeatPenalty
       }
     });
 

@@ -58,6 +58,8 @@ export default interface IElectronAPI {
       maxTokens?: number;
       temperature?: number;
       topP?: number;
+      topK?: number;
+      repeatPenalty?: number;
       systemPrompt?: string;
     };
   }) => Promise<{ success: boolean; summary?: string; error?: string }>;
