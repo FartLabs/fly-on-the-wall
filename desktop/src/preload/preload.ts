@@ -2,15 +2,9 @@
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 
 import { contextBridge, ipcRenderer } from "electron";
+import IElectronAPI from "@/shared/electronAPI";
 
-export interface SummarizeParams {
-  maxTokens?: number;
-  temperature?: number;
-  topP?: number;
-  systemPrompt?: string;
-}
-
-contextBridge.exposeInMainWorld("electronAPI", {
+const electronAPI: IElectronAPI = {
   saveRecording: (data: { buffer: ArrayBuffer; filename: string }) =>
     ipcRenderer.invoke("save-recording", data),
   saveTranscription: (data: { text: string; filename: string }) =>
@@ -40,7 +34,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
   summarize: (data: {
     text: string;
     modelPath: string;
-    params?: SummarizeParams;
+    params?: {
+      maxTokens?: number;
+      temperature?: number;
+      topP?: number;
+      systemPrompt?: string;
+    };
   }) => ipcRenderer.invoke("summarize", data),
   checkSummarizationModel: (modelPath: string) =>
     ipcRenderer.invoke("check-summarization-model", modelPath),
@@ -79,4 +78,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
   deleteNote: (filename: string) => ipcRenderer.invoke("delete-note", filename),
   exportNote: (data: { filename: string; format: string }) =>
     ipcRenderer.invoke("export-note", data)
-});
+};
+
+contextBridge.exposeInMainWorld("electronAPI", electronAPI);
