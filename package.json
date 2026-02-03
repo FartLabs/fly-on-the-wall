@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "start": "cd desktop && npm run start",
+    "fmt": "prettier --write .",
+    "fmt:check": "prettier --check ."
+  },
+  "dependencies": {
+    "prettier": "^3.8.1"
+  }
+}

@@ -1,0 +1,52 @@
+.model-select {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  color: #fff;
+  font-size: 0.8rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.model-select:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.model-select option {
+  background: #1a1a2e;
+  color: #fff;
+}
+
+.transcription-progress {
+  margin: 1rem 0;
+}
+
+.transcription-result {
+  margin-top: 1rem;
+}
+
+.transcription-text {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  padding: 1rem;
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.transcription-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.transcription-empty {
+  text-align: center;
+  color: #666;
+  padding: 1.5rem;
+  font-size: 0.9rem;
+}

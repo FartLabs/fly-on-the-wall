@@ -1,0 +1,96 @@
+.sidebar-container {
+  position: fixed;
+  top: 0;
+  left: -350px; /* Hide off-screen initially */
+  width: 350px;
+  height: 100vh;
+  background: rgba(22, 33, 62, 0.95);
+  backdrop-filter: blur(15px);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+  padding: 1.5rem;
+  overflow-y: auto;
+  box-shadow: 5px 0 15px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-container.open {
+  left: 0;
+}
+
+/* Invisible trigger area on the left edge */
+.sidebar-trigger {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 15vw; /* Trigger width */
+  height: 100vh;
+  z-index: 999;
+  background: transparent;
+}
+
+/* Sidebar handle/indicator */
+.sidebar-handle {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+  padding: 12px 6px;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: -1px;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-trigger:hover .sidebar-handle {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding-left: 8px; /* Slight nudge */
+}
+
+/* Ensure the model card fits well in the sidebar */
+.sidebar-container .model-management-card {
+  background: transparent;
+  backdrop-filter: none;
+  border: none;
+  padding: 0;
+  width: 100%;
+}
+
+.sidebar-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* Scrollbar styling */
+.sidebar-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.sidebar-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

@@ -1,0 +1,325 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Fly on the Wall</title>
+  </head>
+  <body>
+    <div class="sidebar-trigger" id="sidebarTrigger">
+      <div class="sidebar-handle">||</div>
+    </div>
+    <div class="sidebar-container" id="sidebar">
+      <h2 class="sidebar-title">Settings & Models</h2>
+      <div class="model-management-card" id="modelManagementCard">
+        <div class="card-header">
+          <h2>AI Models</h2>
+        </div>
+
+        <div class="models-list" id="modelsList"></div>
+
+        <div class="prompt-customization-section">
+          <h3
+            style="
+              font-size: 0.9rem;
+              color: #888;
+              margin-bottom: 0.5rem;
+              margin-top: 1.5rem;
+            "
+          >
+            Summarization Prompt
+          </h3>
+          <p style="font-size: 0.75rem; color: #666; margin-bottom: 0.75rem">
+            Customize how AI summarizes your meetings. Leave empty to use
+            default.
+          </p>
+          <textarea
+            id="customPromptInput"
+            class="custom-prompt-input"
+            placeholder="Enter custom prompt or leave empty for default..."
+            rows="6"
+          ></textarea>
+          <div class="prompt-actions">
+            <button class="action-btn" id="savePromptBtn">Save Prompt</button>
+            <button class="action-btn secondary" id="resetPromptBtn">
+              Reset to Default
+            </button>
+            <button class="action-btn secondary" id="viewDefaultPromptBtn">
+              View Default
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="right-panel-trigger" id="rightPanelTrigger">
+      <div class="right-panel-handle">||</div>
+    </div>
+    <div class="right-panel-container" id="rightPanel">
+      <h2 class="right-panel-title">Transcription & Summary</h2>
+
+      <div
+        class="right-panel-transcription-card hidden"
+        id="rightPanelTranscriptionCard"
+      >
+        <div class="card-header">
+          <h2>Transcription</h2>
+        </div>
+
+        <div
+          class="transcription-progress hidden"
+          id="rightPanelTranscriptionProgress"
+        >
+          <div class="progress-bar">
+            <div class="progress-fill" id="rightPanelProgressFill"></div>
+          </div>
+          <p class="progress-text" id="rightPanelProgressText">
+            Loading model...
+          </p>
+        </div>
+
+        <div
+          class="transcription-result hidden"
+          id="rightPanelTranscriptionResult"
+        >
+          <div
+            class="transcription-text"
+            id="rightPanelTranscriptionText"
+          ></div>
+          <div class="transcription-actions">
+            <button
+              class="action-btn"
+              id="rightPanelCopyTranscription"
+              title="Copy to clipboard"
+            >
+              Copy
+            </button>
+          </div>
+        </div>
+
+        <div class="transcription-empty" id="rightPanelTranscriptionEmpty">
+          <p>Record a meeting to see the transcription here.</p>
+        </div>
+      </div>
+
+      <div class="right-panel-summary-card hidden" id="rightPanelSummaryCard">
+        <div class="card-header">
+          <h2>Summary</h2>
+        </div>
+
+        <div class="summary-progress hidden" id="rightPanelSummaryProgress">
+          <div class="progress-bar">
+            <div class="progress-fill" id="rightPanelSummaryProgressFill"></div>
+          </div>
+          <p class="progress-text" id="rightPanelSummaryProgressText">
+            Generating summary...
+          </p>
+        </div>
+
+        <div class="summary-result hidden" id="rightPanelSummaryResult">
+          <div class="summary-text" id="rightPanelSummaryText"></div>
+          <div class="summary-actions">
+            <button
+              class="action-btn"
+              id="rightPanelCopySummary"
+              title="Copy summary"
+            >
+              Copy
+            </button>
+          </div>
+        </div>
+
+        <div class="summary-empty hidden" id="rightPanelSummaryEmpty">
+          <p>Summary will appear here after transcription.</p>
+        </div>
+      </div>
+      <div class="right-panel-save-wrapper">
+        <button
+          class="action-btn primary hidden"
+          id="rightPanelSaveNote"
+          title="Save transcription + summary as note"
+        >
+          Save Note
+        </button>
+      </div>
+    </div>
+    <div class="container" id="mainPage">
+      <div class="header-with-nav">
+        <div>
+          <h1>Fly on the Wall</h1>
+          <p class="subtitle">Meeting Recorder</p>
+        </div>
+        <button
+          class="nav-btn"
+          id="viewHistoryBtn"
+          title="View past recordings"
+        >
+          <span>History</span>
+        </button>
+      </div>
+
+      <div class="recorder-card">
+        <div class="status-indicator" id="statusIndicator">
+          <span class="status-dot"></span>
+          <span class="status-text" id="statusText">Ready to record</span>
+        </div>
+
+        <div class="timer" id="timer">00:00:00</div>
+
+        <button class="record-btn" id="recordBtn">
+          <span class="btn-icon" id="btnIcon">⏺</span>
+          <span class="btn-text" id="btnText">Start Recording</span>
+        </button>
+
+        <div class="recording-controls hidden" id="recordingControls">
+          <button class="control-btn pause-btn" id="pauseBtn">
+            <span class="btn-icon">⏸</span>
+            <span>Pause</span>
+          </button>
+          <button class="control-btn resume-btn hidden" id="resumeBtn">
+            <span class="btn-icon">▶</span>
+            <span>Resume</span>
+          </button>
+          <button class="control-btn stop-btn" id="stopBtn">
+            <span class="btn-icon">⏹</span>
+            <span>Stop</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="audio-devices-card">
+        <div class="card-header">
+          <h2>Audio Sources</h2>
+          <button
+            class="refresh-btn"
+            id="refreshDevices"
+            title="Refresh devices"
+          >
+            ↻
+          </button>
+        </div>
+
+        <div class="system-audio-section">
+          <div class="device-item system-audio" id="systemAudioItem">
+            <div class="device-info">
+              <span class="device-icon">🖥️</span>
+              <div class="device-details">
+                <div class="device-name">System Audio</div>
+                <div class="device-type">Desktop / Meeting Audio</div>
+              </div>
+            </div>
+            <label class="mute-toggle" title="Enable system audio">
+              <input type="checkbox" id="systemAudioToggle" checked />
+              <span class="mute-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="section-divider">Microphones (Optional)</div>
+
+        <div class="devices-list" id="devicesList">
+          <p class="loading-text">Loading audio devices...</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="container hidden" id="historyPage">
+      <div class="header-with-nav">
+        <div>
+          <h1>History</h1>
+          <p class="subtitle">Past Transcriptions & Summaries</p>
+        </div>
+        <button class="nav-btn" id="backToMainBtn" title="Back to recorder">
+          <span>🏠</span>
+          <span>Recorder</span>
+        </button>
+      </div>
+
+      <div class="history-card">
+        <div class="card-header">
+          <h2>Saved Notes</h2>
+          <button
+            class="refresh-btn"
+            id="refreshHistoryBtn"
+            title="Refresh list"
+          >
+            ↻
+          </button>
+        </div>
+
+        <div class="history-list" id="historyList">
+          <p class="loading-text">Loading history...</p>
+        </div>
+      </div>
+
+      <div class="note-viewer-card hidden" id="noteViewerCard">
+        <div class="card-header">
+          <h2 id="noteViewerTitle">Note</h2>
+          <div class="viewer-actions">
+            <button
+              class="action-btn"
+              id="exportNoteBtn"
+              title="Export this note"
+            >
+              Export
+            </button>
+            <button
+              class="action-btn delete-btn"
+              id="deleteNoteBtn"
+              title="Delete this note"
+            >
+              Delete
+            </button>
+            <button class="close-btn" id="closeNoteBtn" title="Close">✕</button>
+          </div>
+        </div>
+        <div class="note-content" id="noteContent">
+          <div class="note-sections" id="noteSections">
+            <section class="note-section transcription-section">
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                "
+              >
+                <h3 class="note-section-title">Transcription</h3>
+                <div class="section-actions">
+                  <button
+                    class="action-btn"
+                    id="copyTranscriptionBtn"
+                    title="Copy transcription"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+              <div class="note-section-body" id="noteTranscription"></div>
+            </section>
+            <section class="note-section summary-section">
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                "
+              >
+                <h3 class="note-section-title">Summary</h3>
+                <div class="section-actions">
+                  <button
+                    class="action-btn"
+                    id="copySummaryBtn"
+                    title="Copy summary"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+              <div class="note-section-body" id="noteSummary"></div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="./index.ts"></script>
+  </body>
+</html>
