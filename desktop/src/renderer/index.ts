@@ -51,6 +51,8 @@ import { setupPromptCustomizer } from "./components/promptCustomizer";
 import { setupSidebarListeners } from "./components/leftSideBar";
 import { setupRightPanelListeners } from "./components/rightSideBar";
 
+
+// TODO: keep this in sync with preload/preload.ts with a shared types file
 declare global {
   interface Window {
     electronAPI: {
@@ -134,6 +136,44 @@ declare global {
         error?: string;
       }>;
       onSummarizationStatus: (callback: (status: any) => void) => () => void;
+
+      transcribe: (data: {
+        audioData: number[];
+        modelId: string;
+        language?: string;
+      }) => Promise<{
+        success: boolean;
+        text?: string;
+        error?: string;
+      }>;
+      downloadWhisperModel: (modelId: string) => Promise<{
+        success: boolean;
+        modelId?: string;
+        error?: string;
+      }>;
+      checkWhisperModel: (modelId: string) => Promise<{
+        success: boolean;
+        exists?: boolean;
+        modelId?: string;
+        path?: string;
+        error?: string;
+      }>;
+      disposeWhisperModel: () => Promise<{
+        success: boolean;
+        error?: string;
+      }>;
+      deleteWhisperModelFiles: (modelId: string) => Promise<{
+        success: boolean;
+        error?: string;
+      }>;
+      transcriptionHealthCheck: () => Promise<{
+        success: boolean;
+        healthy?: boolean;
+        modelLoaded?: boolean;
+        currentModelId?: string | null;
+        error?: string;
+      }>;
+      onTranscriptionStatus: (callback: (status: any) => void) => () => void;
 
       listNotes: () => Promise<{
         success: boolean;

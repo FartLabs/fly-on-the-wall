@@ -1,12 +1,16 @@
-// TODO: let users drop in their own transcription models, onnx compatible with transformers.js
+/**
+ * Transcription module - now using Electron IPC to communicate with utility process
+ * 
+ * Audio preprocessing still happens in the renderer (which has access to Web APIs),
+ * then the preprocessed audio data is sent to the utility process for inference.
+ */
 
 import {
   WHISPER_MODELS,
   type WhisperModelSize,
   MODEL_SIZES,
-  preprocessAudioWhisper
+  preprocessAudioWhisper,
 } from "./whisper";
-import { sendWorkerMessage } from "../worker-client";
 
 export interface TranscriptionProgress {
   status: "loading" | "downloading" | "transcribing" | "complete" | "error";
@@ -29,29 +33,20 @@ export interface ModelStatus {
 
 type ProgressCallback = (progress: TranscriptionProgress) => void;
 
-export async function initModelsDir(): Promise<string> {
-  console.log("Models stored in browser Cache API");
-  return "browser-cache";
-}
-
 export async function checkModelDownloaded(
   modelSize: WhisperModelSize
 ): Promise<boolean> {
   const modelId = WHISPER_MODELS[modelSize];
 
-  // check the browser's Cache API
   try {
-    const cache = await caches.open("transformers-cache");
-    const testUrl = `https://huggingface.co/${modelId}/resolve/main/config.json`;
-    const cached = await cache.match(testUrl);
-    if (cached) {
-      return true;
-    }
+    console.log(`[Transcription] Checking if model ${modelId} (${modelSize}) is downloaded...`);
+    const result = await window.electronAPI.checkWhisperModel(modelId);
+    console.log(`[Transcription] Check result:`, result.exists);
+    return result.success && result.exists;
   } catch (e) {
-    console.log("Could not check cache:", e);
+    console.error("Error checking model status:", e);
+    return false;
   }
-
-  return false;
 }
 
 export async function getAllModelStatus(): Promise<ModelStatus[]> {
@@ -85,30 +80,42 @@ export async function downloadModel(
 
   console.log(`Downloading model: ${modelId}`);
 
-  await sendWorkerMessage(
-    { type: "download-whisper", model: modelId },
-    (data) => {
-      if (data.status === "downloading") {
-        onProgress?.({
-          status: "downloading",
-          progress: data.progress,
-          message: `Downloading: ${data.progress}%${data.file ? ` (${data.file})` : ""}`
-        });
-      } else if (data.status === "loading") {
-        onProgress?.({
-          status: "loading",
-          progress: 0,
-          message: data.message || "Loading..."
-        });
+  let unsubscribe: (() => void) | undefined;
+  if (onProgress) {
+    unsubscribe = window.electronAPI.onTranscriptionStatus((status: any) => {
+      if (status.type === "status") {
+        if (status.status === "downloading") {
+          onProgress({
+            status: "downloading",
+            progress: status.progress,
+            message: `Downloading: ${Math.round(status.progress || 0)}%${status.file ? ` (${status.file})` : ""}`
+          });
+        } else if (status.status === "loading") {
+          onProgress({
+            status: "loading",
+            progress: 0,
+            message: status.message || "Loading..."
+          });
+        }
       }
-    }
-  );
+    });
+  }
 
-  onProgress?.({
-    status: "complete",
-    progress: 100,
-    message: "Model downloaded successfully!"
-  });
+  try {
+    const result = await window.electronAPI.downloadWhisperModel(modelId);
+    
+    if (!result.success) {
+      throw new Error(result.error || "Download failed");
+    }
+
+    onProgress?.({
+      status: "complete",
+      progress: 100,
+      message: "Model downloaded successfully!"
+    });
+  } finally {
+    unsubscribe?.();
+  }
 }
 
 export async function deleteModel(
@@ -116,39 +123,25 @@ export async function deleteModel(
 ): Promise<boolean> {
   const modelId = WHISPER_MODELS[modelSize];
 
-  // Delete from browser Cache API
   try {
-    const cache = await caches.open("transformers-cache");
-    const keys = await cache.keys();
+    console.log(`Deleting model ${modelId} (${modelSize})...`);
 
-    let deletedCount = 0;
-    for (const request of keys) {
-      // delete all cached files for the selected model
-      if (
-        request.url.includes(modelId.replace("/", "%2F")) ||
-        request.url.includes(modelId)
-      ) {
-        await cache.delete(request);
-        deletedCount++;
-      }
+    // note: this deletes the files but doesn't free memory
+    const result = await window.electronAPI.deleteWhisperModelFiles(modelId);
+    
+    if (!result.success) {
+      console.error(`Failed to delete model files: ${result.error}`);
+      return false;
     }
-
-    console.log(`Deleted ${deletedCount} cached files for model ${modelId}`);
-
-    // Also dispose from worker memory
-    await sendWorkerMessage({ type: "dispose-whisper" });
-    console.log("Disposed Whisper model from worker memory");
-
-    return deletedCount > 0;
+    
+    console.log(`Model ${modelId} deleted successfully`);
+    return true;
   } catch (error) {
     console.error("Error deleting model:", error);
     return false;
   }
 }
 
-/**
- * Transcribe audio using Whisper worker
- */
 export async function transcribeAudio(
   audioData: ArrayBuffer,
   options: {
@@ -161,25 +154,59 @@ export async function transcribeAudio(
   const startTime = Date.now();
   const modelId = WHISPER_MODELS[modelSize];
 
-  try {
-    console.log("Preparing audio...");
-    const audioArray = await preprocessAudioWhisper(audioData);
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result: any = await sendWorkerMessage(
-      { type: "transcribe", audioData: audioArray, model: modelId, language },
-      (data) => {
-        onProgress?.({
-          status: data.status as any,
-          message: data.message || "",
-          progress: data.progress
+  let unsubscribe: (() => void) | undefined;
+  if (onProgress) {
+    unsubscribe = window.electronAPI.onTranscriptionStatus((status: any) => {
+      if (status.type === "status") {
+        onProgress({
+          status: status.status as TranscriptionProgress["status"],
+          message: status.message || "",
+          progress: status.progress
         });
       }
-    );
+    });
+  }
 
-    const transcription = Array.isArray(result)
-      ? (result[0] as any).text
-      : (result as any).text;
+  try {
+    onProgress?.({
+      status: "loading",
+      message: "Preparing audio..."
+    });
+
+    // preprocess audio in the renderer (which has access to OfflineAudioContext)
+    console.log("Preprocessing audio...");
+    const audioArray = await preprocessAudioWhisper(audioData);
+    console.log(`Audio preprocessed: ${audioArray.length} samples`);
+
+    onProgress?.({
+      status: "transcribing",
+      message: "Starting transcription..."
+    });
+
+    const audioDataArray = Array.from(audioArray);
+    const result = await window.electronAPI.transcribe({
+      audioData: audioDataArray,
+      modelId,
+      language
+    });
+
+    if (!result.success) {
+      throw new Error(result.error || "Transcription failed");
+    }
+
+    // result can be: { text: "..." } or { text: { text: "..." } } or { text: [{ text: "..." }] }
+    let transcription: string;
+    const resultText: unknown = result.text;
+    if (Array.isArray(resultText)) {
+      const first = resultText[0];
+      transcription = (first && typeof first === "object" && "text" in first) 
+        ? String(first.text) 
+        : String(first || "");
+    } else if (resultText && typeof resultText === "object" && "text" in resultText) {
+      transcription = String((resultText as { text: string }).text);
+    } else {
+      transcription = String(resultText || "");
+    }
 
     const duration = (Date.now() - startTime) / 1000;
 
@@ -189,7 +216,7 @@ export async function transcribeAudio(
     });
 
     return {
-      text: transcription.trim(),
+      text: String(transcription).trim(),
       duration,
       model: modelId
     };
@@ -199,5 +226,7 @@ export async function transcribeAudio(
       message: `Transcription failed: ${error.message || error}`
     });
     throw error;
+  } finally {
+    unsubscribe?.();
   }
 }

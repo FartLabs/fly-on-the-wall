@@ -42,6 +42,11 @@ const config: ForgeConfig = {
           entry: "src/summarization/utility-process.ts",
           config: "vite.utility.config.ts",
           target: "main"
+        },
+        {
+          entry: "src/transcription/utility-process.ts",
+          config: "vite.utility.config.ts",
+          target: "main"
         }
       ],
       renderer: [

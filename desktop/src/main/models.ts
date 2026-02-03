@@ -31,6 +31,18 @@ const getSummarizationModelsDir = (): string => {
   return summarizationDir;
 };
 
+export const getTranscriptionModelsDir = (): string => {
+  const transcriptionDir = path.join(
+    app.getPath("userData"),
+    "models",
+    "transcription"
+  );
+  if (!fs.existsSync(transcriptionDir)) {
+    fs.mkdirSync(transcriptionDir, { recursive: true });
+  }
+  return transcriptionDir;
+};
+
 const getNotesDir = (): string => {
   const notesDir = path.join(app.getPath("userData"), "notes");
   if (!fs.existsSync(notesDir)) {

@@ -355,10 +355,15 @@ async function handleModelDownload(modelSize: WhisperModelSize) {
       if (fill && progress.progress) fill.style.width = `${progress.progress}%`;
       if (text) text.textContent = progress.message;
     });
+    
+    console.log(`Model ${modelSize} downloaded successfully, refreshing list...`);
+    await refreshModelsList();
   } catch (err) {
+    console.error(`Download failed for ${modelSize}:`, err);
     alert(`Download failed: ${err}`);
   } finally {
     downloadingModel = null;
+    await refreshModelsList();
   }
 }
 
