@@ -7,8 +7,8 @@ import {
 } from "electron";
 import path from "node:path";
 import type {
-  UtilityMessage,
-  UtilityResponse,
+  SummarizationProcessMessage,
+  SummarizationProcessResponse,
   SummarizeParams,
   MemoryUsage
 } from "../summarization/utility-process";
@@ -70,7 +70,7 @@ export function spawnSummarizationProcess(): UtilityProcess {
     execArgv: ["--expose-gc"]
   });
 
-  utilityProc.on("message", (message: UtilityResponse) => {
+  utilityProc.on("message", (message: SummarizationProcessResponse) => {
     handleUtilityMessage(message);
   });
 
@@ -87,7 +87,7 @@ export function spawnSummarizationProcess(): UtilityProcess {
   return utilityProc;
 }
 
-function handleUtilityMessage(message: UtilityResponse): void {
+function handleUtilityMessage(message: SummarizationProcessResponse): void {
   // handle memory response separately for monitoring
   if (message.type === "memory") {
     checkMemoryThreshold(message.usage);
@@ -187,7 +187,7 @@ async function restartProcess(): Promise<void> {
   }, RESTART_DELAY_MS);
 }
 
-function sendToUtility(message: UtilityMessage): void {
+function sendToUtility(message: SummarizationProcessMessage): void {
   if (!utilityProc) {
     console.warn("[SummarizationManager] No utility process running");
     return;
@@ -196,7 +196,7 @@ function sendToUtility(message: UtilityMessage): void {
 }
 
 function sendMessageAndWait(
-  message: UtilityMessage,
+  message: SummarizationProcessMessage,
   timeoutMs: number = 30000
 ): Promise<any> {
   return new Promise((resolve, reject) => {

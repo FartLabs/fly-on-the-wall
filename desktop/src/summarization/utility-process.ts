@@ -1,6 +1,6 @@
 import fs from "node:fs";
 
-export type UtilityMessage =
+export type SummarizationProcessMessage =
   | {
       type: "summarize";
       text: string;
@@ -13,7 +13,7 @@ export type UtilityMessage =
   | { type: "get-memory-usage" }
   | { type: "health-check" };
 
-export type UtilityResponse =
+export type SummarizationProcessResponse =
   | { type: "status"; status: string; progress?: number; message?: string }
   | { type: "result"; result: any }
   | { type: "error"; error: string }
@@ -48,12 +48,12 @@ function resetIdleTimer(): void {
 
   idleTimer = setTimeout(async () => {
     console.log(
-      `[UtilityProcess] Idle timeout reached, disposing model to free memory`
+      `[SummarizationProcess] Idle timeout reached, disposing model to free memory`
     );
     await disposeModel();
 
     if (global.gc) {
-      console.log(`[UtilityProcess] Running garbage collection`);
+      console.log(`[SummarizationProcess] Running garbage collection`);
       global.gc();
     }
   }, IDLE_TIMEOUT_MS);
@@ -68,7 +68,7 @@ async function loadModel(modelPath: string): Promise<void> {
     return;
   }
 
-  console.log(`[UtilityProcess] Loading model from: ${modelPath}`);
+  console.log(`[SummarizationProcess] Loading model from: ${modelPath}`);
 
   const { getLlama } = await import("node-llama-cpp");
 
@@ -77,7 +77,7 @@ async function loadModel(modelPath: string): Promise<void> {
   currentContext = await currentModel.createContext();
   currentModelPath = modelPath;
 
-  console.log(`[UtilityProcess] Model loaded successfully`);
+  console.log(`[SummarizationProcess] Model loaded successfully`);
 }
 
 async function disposeModel(): Promise<void> {
@@ -90,7 +90,7 @@ async function disposeModel(): Promise<void> {
     try {
       await currentContext.dispose();
     } catch (e) {
-      console.error("[UtilityProcess] Error disposing context:", e);
+      console.error("[SummarizationProcess] Error disposing context:", e);
     }
     currentContext = null;
   }
@@ -98,7 +98,7 @@ async function disposeModel(): Promise<void> {
     try {
       await currentModel.dispose();
     } catch (e) {
-      console.error("[UtilityProcess] Error disposing model:", e);
+      console.error("[SummarizationProcess] Error disposing model:", e);
     }
     currentModel = null;
   }
@@ -108,7 +108,7 @@ async function disposeModel(): Promise<void> {
     global.gc();
   }
 
-  console.log(`[UtilityProcess] Model disposed`);
+  console.log(`[SummarizationProcess] Model disposed`);
 }
 
 async function handleSummarize(data: {
@@ -118,12 +118,12 @@ async function handleSummarize(data: {
 }): Promise<void> {
   const { text, modelPath, params } = data;
 
-  console.log(`[UtilityProcess] Received summarization request`);
-  console.log(`[UtilityProcess] Text length: ${text?.length || 0}`);
+  console.log(`[SummarizationProcess] Received summarization request`);
+  console.log(`[SummarizationProcess] Text length: ${text?.length || 0}`);
   console.log(
-    `[UtilityProcess] Text preview: ${text?.substring(0, 200) || "(empty)"}...`
+    `[SummarizationProcess] Text preview: ${text?.substring(0, 200) || "(empty)"}...`
   );
-  console.log(`[UtilityProcess] Model path: ${modelPath}`);
+  console.log(`[SummarizationProcess] Model path: ${modelPath}`);
 
   sendResponse({
     type: "status",
@@ -148,9 +148,11 @@ async function handleSummarize(data: {
   });
 
   console.log(
-    `[UtilityProcess] Sending prompt to model (length: ${text.length})`
+    `[SummarizationProcess] Sending prompt to model (length: ${text.length})`
   );
-  console.log(`[UtilityProcess] Prompt preview: ${text.substring(0, 200)}...`);
+  console.log(
+    `[SummarizationProcess] Prompt preview: ${text.substring(0, 200)}...`
+  );
 
   let summary = "";
 
@@ -170,7 +172,7 @@ async function handleSummarize(data: {
         session.dispose();
       }
     } catch (e) {
-      console.error("[UtilityProcess] Error disposing session:", e);
+      console.error("[SummarizationProcess] Error disposing session:", e);
     }
   }
 
@@ -198,7 +200,10 @@ async function handleDispose(): Promise<void> {
     try {
       await llamaInstance.dispose();
     } catch (e) {
-      console.error("[UtilityProcess] Error disposing llama instance:", e);
+      console.error(
+        "[SummarizationProcess] Error disposing llama instance:",
+        e
+      );
     }
     llamaInstance = null;
   }
@@ -229,42 +234,45 @@ function handleHealthCheck(): void {
   });
 }
 
-function sendResponse(response: UtilityResponse): void {
+function sendResponse(response: SummarizationProcessResponse): void {
   if (process.parentPort) {
     process.parentPort.postMessage(response);
   }
 }
 
-process.parentPort?.on("message", async (event: { data: UtilityMessage }) => {
-  const data = event.data;
-  console.log(`[UtilityProcess] Received message: ${data.type}`);
+process.parentPort?.on(
+  "message",
+  async (event: { data: SummarizationProcessMessage }) => {
+    const data = event.data;
+    console.log(`[SummarizationProcess] Received message: ${data.type}`);
 
-  try {
-    switch (data.type) {
-      case "summarize":
-        await handleSummarize(data);
-        break;
-      case "check-model":
-        await handleCheckModel(data);
-        break;
-      case "dispose":
-        await handleDispose();
-        break;
-      case "get-memory-usage":
-        handleGetMemoryUsage();
-        break;
-      case "health-check":
-        handleHealthCheck();
-        break;
-      default:
-        console.warn(
-          `[UtilityProcess] Unknown message type: ${(data as any).type}`
-        );
+    try {
+      switch (data.type) {
+        case "summarize":
+          await handleSummarize(data);
+          break;
+        case "check-model":
+          await handleCheckModel(data);
+          break;
+        case "dispose":
+          await handleDispose();
+          break;
+        case "get-memory-usage":
+          handleGetMemoryUsage();
+          break;
+        case "health-check":
+          handleHealthCheck();
+          break;
+        default:
+          console.warn(
+            `[SummarizationProcess] Unknown message type: ${(data as any).type}`
+          );
+      }
+    } catch (err: any) {
+      console.error(`[SummarizationProcess] Error handling ${data.type}:`, err);
+      sendResponse({ type: "error", error: err.message || String(err) });
     }
-  } catch (err: any) {
-    console.error(`[UtilityProcess] Error handling ${data.type}:`, err);
-    sendResponse({ type: "error", error: err.message || String(err) });
   }
-});
+);
 
-console.log("[UtilityProcess] Summarization utility process started");
+console.log("[SummarizationProcess] Summarization utility process started");

@@ -60,12 +60,12 @@ function sendStatus(
 }
 
 function sendResult(result: any): void {
-  console.log(`[TranscriptionUtility] Sending result:`, result);
+  console.log(`[TranscriptionProcess] Sending result:`, result);
   sendMessage({ type: "result", result });
 }
 
 function sendError(error: string): void {
-  console.log(`[TranscriptionUtility] Sending error:`, error);
+  console.log(`[TranscriptionProcess] Sending error:`, error);
   sendMessage({ type: "error", error });
 }
 
@@ -75,11 +75,11 @@ function resetIdleTimer(): void {
   }
 
   idleTimer = setTimeout(async () => {
-    console.log(`[TranscriptionUtility] Idle timeout reached, disposing model`);
+    console.log(`[TranscriptionProcess] Idle timeout reached, disposing model`);
     await disposeModel();
 
     if (global.gc) {
-      console.log(`[TranscriptionUtility] Running garbage collection`);
+      console.log(`[TranscriptionProcess] Running garbage collection`);
       global.gc();
     }
   }, IDLE_TIMEOUT_MS);
@@ -87,7 +87,7 @@ function resetIdleTimer(): void {
 
 async function loadModel(modelId: string): Promise<void> {
   if (transcriber && currentModelId === modelId) {
-    console.log(`[TranscriptionUtility] Model ${modelId} already loaded`);
+    console.log(`[TranscriptionProcess] Model ${modelId} already loaded`);
     return;
   }
 
@@ -95,16 +95,16 @@ async function loadModel(modelId: string): Promise<void> {
     await disposeModel();
   }
 
-  console.log(`[TranscriptionUtility] Loading model: ${modelId}`);
+  console.log(`[TranscriptionProcess] Loading model: ${modelId}`);
   sendStatus("loading", `Loading model ${modelId}...`);
 
   // import transformers.js, env should already be configured from handleSetModelsPath
   const { pipeline } = await import("@huggingface/transformers");
 
-  console.log(`[TranscriptionUtility] Creating pipeline for ${modelId}...`);
+  console.log(`[TranscriptionProcess] Creating pipeline for ${modelId}...`);
   transcriber = await pipeline("automatic-speech-recognition", modelId, {
     progress_callback: (progress: any) => {
-      console.log(`[TranscriptionUtility] Progress:`, progress);
+      console.log(`[TranscriptionProcess] Progress:`, progress);
       if (
         progress.status === "progress" ||
         typeof progress.progress === "number"
@@ -122,7 +122,7 @@ async function loadModel(modelId: string): Promise<void> {
   });
 
   currentModelId = modelId;
-  console.log(`[TranscriptionUtility] Model loaded successfully: ${modelId}`);
+  console.log(`[TranscriptionProcess] Model loaded successfully: ${modelId}`);
   sendStatus("complete", `Model ${modelId} loaded successfully`);
 }
 
@@ -137,9 +137,9 @@ async function disposeModel(): Promise<void> {
       // transformers.js pipelines don't have explicit dispose, but we can null them
       transcriber = null;
       currentModelId = null;
-      console.log(`[TranscriptionUtility] Model disposed`);
+      console.log(`[TranscriptionProcess] Model disposed`);
     } catch (e) {
-      console.error("[TranscriptionUtility] Error disposing model:", e);
+      console.error("[TranscriptionProcess] Error disposing model:", e);
     }
   }
 
@@ -165,7 +165,7 @@ async function handleTranscribe(data: {
     const audioFloat32 = new Float32Array(audioData);
 
     console.log(
-      `[TranscriptionUtility] Running inference on ${audioFloat32.length} samples...`
+      `[TranscriptionProcess] Running inference on ${audioFloat32.length} samples...`
     );
 
     const result = await transcriber(audioFloat32, {
@@ -176,10 +176,10 @@ async function handleTranscribe(data: {
       return_timestamps: false
     });
 
-    console.log(`[TranscriptionUtility] Transcription complete`);
+    console.log(`[TranscriptionProcess] Transcription complete`);
     sendResult(result);
   } catch (error: any) {
-    console.error("[TranscriptionUtility] Transcription failed:", error);
+    console.error("[TranscriptionProcess] Transcription failed:", error);
     sendError(error.message || String(error));
   }
 }
@@ -187,18 +187,18 @@ async function handleTranscribe(data: {
 async function handleDownloadModel(data: { modelId: string }): Promise<void> {
   try {
     console.log(
-      `[TranscriptionUtility] Starting download for model: ${data.modelId}`
+      `[TranscriptionProcess] Starting download for model: ${data.modelId}`
     );
     sendStatus("downloading", `Downloading model ${data.modelId}...`, 0);
 
     await loadModel(data.modelId);
 
     console.log(
-      `[TranscriptionUtility] Download complete, sending result for: ${data.modelId}`
+      `[TranscriptionProcess] Download complete, sending result for: ${data.modelId}`
     );
     sendResult({ success: true, modelId: data.modelId });
   } catch (error: any) {
-    console.error("[TranscriptionUtility] Download failed:", error);
+    console.error("[TranscriptionProcess] Download failed:", error);
     sendError(error.message || String(error));
   }
 }
@@ -207,7 +207,7 @@ async function handleCheckModel(data: { modelId: string }): Promise<void> {
   try {
     if (!modelsPath) {
       console.log(
-        `[TranscriptionUtility] Models path not set, model ${data.modelId} not downloaded`
+        `[TranscriptionProcess] Models path not set, model ${data.modelId} not downloaded`
       );
       sendResult({ exists: false, modelId: data.modelId });
       return;
@@ -231,7 +231,7 @@ async function handleCheckModel(data: { modelId: string }): Promise<void> {
     let foundPath = "";
 
     for (const modelDir of possiblePaths) {
-      console.log(`[TranscriptionUtility] Checking path: ${modelDir}`);
+      console.log(`[TranscriptionProcess] Checking path: ${modelDir}`);
       if (!fs.existsSync(modelDir)) continue;
 
       const onnxDir = path.join(modelDir, "onnx");
@@ -241,14 +241,14 @@ async function handleCheckModel(data: { modelId: string }): Promise<void> {
       const hasConfig = fs.existsSync(path.join(modelDir, "config.json"));
 
       console.log(
-        `[TranscriptionUtility] Path ${modelDir} - hasOnnx: ${hasOnnxFiles}, hasConfig: ${hasConfig}`
+        `[TranscriptionProcess] Path ${modelDir} - hasOnnx: ${hasOnnxFiles}, hasConfig: ${hasConfig}`
       );
 
       if (hasOnnxFiles || hasConfig) {
         exists = true;
         foundPath = modelDir;
         console.log(
-          `[TranscriptionUtility] Found model ${data.modelId} at ${foundPath}`
+          `[TranscriptionProcess] Found model ${data.modelId} at ${foundPath}`
         );
         break;
       }
@@ -256,9 +256,9 @@ async function handleCheckModel(data: { modelId: string }): Promise<void> {
 
     if (!exists) {
       console.log(
-        `[TranscriptionUtility] Model ${data.modelId} not found in any expected location`
+        `[TranscriptionProcess] Model ${data.modelId} not found in any expected location`
       );
-      console.log(`[TranscriptionUtility] Checked paths:`, possiblePaths);
+      console.log(`[TranscriptionProcess] Checked paths:`, possiblePaths);
     }
 
     sendResult({
@@ -267,7 +267,7 @@ async function handleCheckModel(data: { modelId: string }): Promise<void> {
       path: foundPath || possiblePaths[0]
     });
   } catch (error: any) {
-    console.error("[TranscriptionUtility] Check model failed:", error);
+    console.error("[TranscriptionProcess] Check model failed:", error);
     sendError(error.message || String(error));
   }
 }
@@ -302,7 +302,7 @@ async function handleSetModelsPath(data: {
   modelsPath: string;
 }): Promise<void> {
   modelsPath = data.modelsPath;
-  console.log(`[TranscriptionUtility] Models path set to: ${modelsPath}`);
+  console.log(`[TranscriptionProcess] Models path set to: ${modelsPath}`);
 
   if (!fs.existsSync(modelsPath)) {
     fs.mkdirSync(modelsPath, { recursive: true });
@@ -315,11 +315,11 @@ async function handleSetModelsPath(data: {
     env.cacheDir = modelsPath;
     transformersModule = { env };
     console.log(
-      `[TranscriptionUtility] Transformers.js configured with cache dir: ${modelsPath}`
+      `[TranscriptionProcess] Transformers.js configured with cache dir: ${modelsPath}`
     );
   } catch (error) {
     console.error(
-      "[TranscriptionUtility] Failed to initialize transformers.js:",
+      "[TranscriptionProcess] Failed to initialize transformers.js:",
       error
     );
   }
@@ -331,7 +331,7 @@ process.parentPort?.on(
   "message",
   async (event: { data: TranscriptionMessage }) => {
     const message = event.data;
-    console.log(`[TranscriptionUtility] Received message: ${message.type}`);
+    console.log(`[TranscriptionProcess] Received message: ${message.type}`);
 
     try {
       switch (message.type) {
@@ -358,12 +358,12 @@ process.parentPort?.on(
           break;
         default:
           console.warn(
-            `[TranscriptionUtility] Unknown message type: ${(message as any).type}`
+            `[TranscriptionProcess] Unknown message type: ${(message as any).type}`
           );
       }
     } catch (error: any) {
       console.error(
-        `[TranscriptionUtility] Error handling ${message.type}:`,
+        `[TranscriptionProcess] Error handling ${message.type}:`,
         error
       );
       sendError(error.message || String(error));
@@ -371,4 +371,4 @@ process.parentPort?.on(
   }
 );
 
-console.log("[TranscriptionUtility] Utility process started");
+console.log("[TranscriptionProcess] Utility process started");
