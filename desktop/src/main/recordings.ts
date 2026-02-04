@@ -47,3 +47,23 @@ ipcMain.handle(
     }
   }
 );
+
+ipcMain.handle("get-recording-buffer", async (_event, filename: string) => {
+  try {
+    const recordingsDir = getRecordingsDir();
+    const filePath = path.join(recordingsDir, filename);
+
+    if (fs.existsSync(filePath)) {
+      const buffer = fs.readFileSync(filePath);
+      return { success: true, buffer: buffer.buffer };
+    } else {
+      return {
+        success: false,
+        error: `Recording file not found: ${filename}`
+      };
+    }
+  } catch (error) {
+    console.error("Error reading recording file:", error);
+    return { success: false, error: String(error) };
+  }
+});

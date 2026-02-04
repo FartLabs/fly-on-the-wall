@@ -12,6 +12,7 @@ import {
 
 let lastTranscription: string | null = null;
 let lastTimestamp: string | null = null;
+let lastRecordingFilename: string | null = null;
 
 function updateProgress(progress: TranscriptionProgress): void {
   if (
@@ -39,9 +40,19 @@ function updateProgress(progress: TranscriptionProgress): void {
 
 export async function runTranscription(
   buffer: ArrayBuffer,
-  timestamp: string
+  timestamp: string,
+  recordingFilename?: string
 ): Promise<void> {
+  console.log(
+    "[runTranscription] Recording filename received:",
+    recordingFilename
+  );
   lastTimestamp = timestamp;
+  lastRecordingFilename = recordingFilename || null;
+  console.log(
+    "[runTranscription] Set lastRecordingFilename to:",
+    lastRecordingFilename
+  );
   clearSummary();
 
   // hide unified save while processing
@@ -158,4 +169,8 @@ export function setupTranscriptionListeners() {
       2000
     );
   });
+}
+
+export function getLastRecordingFilename(): string | null {
+  return lastRecordingFilename;
 }

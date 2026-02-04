@@ -12,7 +12,11 @@ let timerInterval: number | null = null;
 let elapsedSeconds = 0;
 
 // allow the main renderer to receive the buffer when recording stops
-type OnRecordingComplete = (buffer: ArrayBuffer, timestamp: string) => void;
+type OnRecordingComplete = (
+  buffer: ArrayBuffer,
+  timestamp: string,
+  filename?: string
+) => void;
 
 function updateTimer(): void {
   elapsedSeconds++;
@@ -202,7 +206,7 @@ async function processRecording(onComplete: OnRecordingComplete) {
 
   if (result.success) {
     elements.statusText.textContent = "Recording saved!";
-    onComplete(arrayBuffer, timestamp);
+    onComplete(arrayBuffer, timestamp, filename);
   } else {
     elements.statusText.textContent = "Failed to save recording";
   }

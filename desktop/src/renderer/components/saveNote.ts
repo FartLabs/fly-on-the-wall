@@ -1,5 +1,6 @@
 import { elements } from "./domNodes";
 import { showNotification } from "./notifications";
+import { getLastRecordingFilename } from "./transcriber";
 
 export async function saveNote(): Promise<void> {
   const transcription = elements.transcriptionText?.textContent || "";
@@ -14,12 +15,27 @@ export async function saveNote(): Promise<void> {
   }
 
   try {
+    const recordingFilename = getLastRecordingFilename();
+    console.log("[saveNote] Recording filename:", recordingFilename);
+
+    const metadata: Record<string, any> = {};
+
+    if (recordingFilename) {
+      metadata.recordingFilename = recordingFilename;
+      console.log("[saveNote] Adding recording to metadata:", metadata);
+    }
+
     const res = await window.electronAPI.saveNote({
       transcription,
-      summary
+      summary,
+      metadata
     });
 
     if (res && res.success) {
+      console.log(
+        "[saveNote] Note saved successfully with metadata:",
+        metadata
+      );
       showNotification("Note saved successfully", "success");
     } else {
       const errorMsg = res && res.error ? res.error : "Unknown error";

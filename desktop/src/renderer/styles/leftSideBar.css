@@ -68,15 +68,6 @@
   width: 100%;
 }
 
-.sidebar-title {
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin-bottom: 1.5rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  color: #fff;
-}
-
 /* Scrollbar styling */
 .sidebar-container::-webkit-scrollbar {
   width: 6px;

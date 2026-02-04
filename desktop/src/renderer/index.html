@@ -9,8 +9,6 @@
       <div class="sidebar-handle">||</div>
     </div>
     <div class="sidebar-container" id="sidebar">
-      <h2 class="sidebar-title">AI Models</h2>
-
       <div class="model-management-card" id="modelManagementCard">
         <div class="card-header">
           <h2>AI Models</h2>
@@ -296,6 +294,14 @@
           </div>
         </div>
         <div class="note-content" id="noteContent">
+          <div class="note-recording-player hidden" id="noteRecordingPlayer">
+            <div class="recording-header">
+              <h4>Original Recording</h4>
+            </div>
+            <audio controls id="noteAudioPlayer" class="note-audio">
+              Your browser does not support the audio element.
+            </audio>
+          </div>
           <div class="note-sections" id="noteSections">
             <section class="note-section transcription-section">
               <div class="section-header">

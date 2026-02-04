@@ -135,6 +135,11 @@ async function openNote(filename: string): Promise<void> {
       noteTranscription.classList.remove("editable-body");
       noteSummary.classList.remove("editable-body");
 
+      if (result.content) {
+        const content = result.content as any;
+        await handleRecordingPlayback(content.metadata);
+      }
+
       const copyTransBtn = document.getElementById("copyTranscriptionBtn");
       const copySummaryBtn = document.getElementById("copySummaryBtn");
 
@@ -144,15 +149,16 @@ async function openNote(filename: string): Promise<void> {
       noteSummary.classList.add("editable-body");
 
       const exportNoteBtn = document.getElementById("exportNoteBtn");
+      let autoSaveTimeout: ReturnType<typeof setTimeout> | null = null;
 
-      async function saveEdits() {
+      async function saveEdits(silent = false) {
         try {
           const newTitle = (noteViewerTitle.textContent || "").trim();
           const newTrans = noteTranscription.textContent || "";
           const newSum = noteSummary.textContent || "";
 
           if (!newTrans && !newSum) {
-            alert("Cannot save empty note.");
+            if (!silent) alert("Cannot save empty note.");
             return;
           }
 
@@ -173,15 +179,26 @@ async function openNote(filename: string): Promise<void> {
               await window.electronAPI.deleteNote(filename);
               currentNoteFilename = newFilename;
             }
-            alert("Note saved");
             loadHistory();
           } else {
-            alert("Failed to save note: " + (res && res.error));
+            if (!silent) alert("Failed to save note: " + (res && res.error));
           }
         } catch (err) {
           console.error("Error saving note from viewer:", err);
-          alert("Error saving note");
+          if (!silent) alert("Error saving note");
         }
+      }
+
+      const autoSaveDelayMs = 1500; 
+
+      function scheduleAutoSave() {
+        if (autoSaveTimeout) {
+          clearTimeout(autoSaveTimeout);
+        }
+        autoSaveTimeout = setTimeout(() => {
+          // autosave silently
+          saveEdits(true);
+        }, autoSaveDelayMs);
       }
 
       noteViewerTitle.onclick = () => {
@@ -202,13 +219,9 @@ async function openNote(filename: string): Promise<void> {
         }
       };
 
-      // auto-save when transcription/summary lose focus
-      noteTranscription.onblur = () => {
-        saveEdits();
-      };
-      noteSummary.onblur = () => {
-        saveEdits();
-      };
+      noteTranscription.addEventListener("input", scheduleAutoSave);
+      noteSummary.addEventListener("input", scheduleAutoSave);
+      noteViewerTitle.addEventListener("input", scheduleAutoSave);
 
       if (copyTransBtn) {
         copyTransBtn.onclick = async () => {
@@ -268,11 +281,69 @@ async function openNote(filename: string): Promise<void> {
   }
 }
 
+async function handleRecordingPlayback(
+  metadata?: Record<string, any>
+): Promise<void> {
+  console.log("[handleRecordingPlayback] Called with metadata:", metadata);
+
+  if (!elements.noteRecordingPlayer || !elements.noteAudioPlayer) {
+    console.log("[handleRecordingPlayback] Player elements not found");
+    return;
+  }
+
+  elements.noteRecordingPlayer.classList.add("hidden");
+  elements.noteAudioPlayer.src = "";
+
+  if (!metadata || !metadata.recordingFilename) {
+    console.log("[handleRecordingPlayback] No recording filename in metadata");
+    return;
+  }
+
+  const recordingFilename = metadata.recordingFilename;
+  console.log(
+    "[handleRecordingPlayback] Found recording filename:",
+    recordingFilename
+  );
+
+  try {
+    const result =
+      await window.electronAPI.getRecordingBuffer(recordingFilename);
+    console.log(
+      "[handleRecordingPlayback] getRecordingBuffer result:",
+      result.success
+    );
+
+    if (result.success && result.buffer) {
+      const blob = new Blob([result.buffer], { type: "audio/webm" });
+      const blobUrl = URL.createObjectURL(blob);
+      elements.noteAudioPlayer.src = blobUrl;
+      elements.noteRecordingPlayer.classList.remove("hidden");
+      console.log(`Loaded recording: ${recordingFilename}`);
+    } else {
+      console.warn(
+        `Recording file not found: ${recordingFilename}`,
+        result.error
+      );
+    }
+  } catch (error) {
+    console.error("Error loading recording:", error);
+  }
+}
+
 function closeNoteViewer(): void {
   const noteViewerCard = document.getElementById("noteViewerCard");
   if (noteViewerCard) {
     noteViewerCard.classList.add("hidden");
   }
+
+  if (elements.noteAudioPlayer) {
+    elements.noteAudioPlayer.pause();
+    elements.noteAudioPlayer.src = "";
+  }
+  if (elements.noteRecordingPlayer) {
+    elements.noteRecordingPlayer.classList.add("hidden");
+  }
+
   currentNoteFilename = null;
 }
 

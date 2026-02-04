@@ -82,8 +82,8 @@ elements.recordBtn.addEventListener("click", () => {
   if (isRecordingState()) {
     stopRecording();
   } else {
-    startRecording((buffer, timestamp) => {
-      runTranscription(buffer, timestamp);
+    startRecording((buffer, timestamp, filename) => {
+      runTranscription(buffer, timestamp, filename);
     });
   }
 });

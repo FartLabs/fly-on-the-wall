@@ -77,7 +77,9 @@ const electronAPI: IElectronAPI = {
   readNote: (filename: string) => ipcRenderer.invoke("read-note", filename),
   deleteNote: (filename: string) => ipcRenderer.invoke("delete-note", filename),
   exportNote: (data: { filename: string; format: string }) =>
-    ipcRenderer.invoke("export-note", data)
+    ipcRenderer.invoke("export-note", data),
+  getRecordingBuffer: (filename: string) =>
+    ipcRenderer.invoke("get-recording-buffer", filename)
 };
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);

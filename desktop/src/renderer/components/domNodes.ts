@@ -120,6 +120,13 @@ export const elements = {
     "deleteSelectedBtn"
   ) as HTMLButtonElement,
 
+  noteRecordingPlayer: document.getElementById(
+    "noteRecordingPlayer"
+  ) as HTMLDivElement,
+  noteAudioPlayer: document.getElementById(
+    "noteAudioPlayer"
+  ) as HTMLAudioElement,
+
   minSummaryLengthInput: document.getElementById(
     "minSummaryLengthInput"
   ) as HTMLInputElement,

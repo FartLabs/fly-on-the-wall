@@ -141,4 +141,7 @@ export default interface IElectronAPI {
     filename: string;
     format: string;
   }) => Promise<{ success: boolean; path?: string; error?: string }>;
+  getRecordingBuffer: (
+    filename: string
+  ) => Promise<{ success: boolean; buffer?: ArrayBuffer; error?: string }>;
 }
