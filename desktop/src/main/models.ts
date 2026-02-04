@@ -366,6 +366,40 @@ ipcMain.handle(
         }
 
         fs.writeFileSync(savePath, pdfBuffer);
+
+        // save the recording file if it exists
+        if (note.metadata && note.metadata.recordingFilename) {
+          try {
+            const recordingsDir = path.join(
+              app.getPath("userData"),
+              "recordings"
+            );
+            const recordingPath = path.join(
+              recordingsDir,
+              note.metadata.recordingFilename
+            );
+
+            if (fs.existsSync(recordingPath)) {
+              const pdfDir = path.dirname(savePath);
+              const pdfBaseName = path.basename(savePath, ".pdf");
+              const recordingExt = path.extname(
+                note.metadata.recordingFilename
+              );
+              const audioSavePath = path.join(
+                pdfDir,
+                `${pdfBaseName}${recordingExt}`
+              );
+
+              fs.copyFileSync(recordingPath, audioSavePath);
+              console.log(`Exported recording to: ${audioSavePath}`);
+            }
+          } catch (audioError) {
+            console.error("Error copying recording:", audioError);
+          }
+        } else {
+          console.log("No recording associated with this note.");
+        }
+
         win.destroy();
         return { success: true, path: savePath };
       }

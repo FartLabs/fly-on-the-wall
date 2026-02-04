@@ -78,6 +78,8 @@ const electronAPI: IElectronAPI = {
   deleteNote: (filename: string) => ipcRenderer.invoke("delete-note", filename),
   exportNote: (data: { filename: string; format: string }) =>
     ipcRenderer.invoke("export-note", data),
+  getRecordingPath: (filename: string) =>
+    ipcRenderer.invoke("get-recording-path", filename),
   getRecordingBuffer: (filename: string) =>
     ipcRenderer.invoke("get-recording-buffer", filename)
 };

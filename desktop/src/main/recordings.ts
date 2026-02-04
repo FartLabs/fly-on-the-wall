@@ -48,6 +48,25 @@ ipcMain.handle(
   }
 );
 
+ipcMain.handle("get-recording-path", async (_event, filename: string) => {
+  try {
+    const recordingsDir = getRecordingsDir();
+    const filePath = path.join(recordingsDir, filename);
+
+    if (fs.existsSync(filePath)) {
+      return { success: true, path: filePath };
+    } else {
+      return {
+        success: false,
+        error: `Recording file not found: ${filename}`
+      };
+    }
+  } catch (error) {
+    console.error("Error getting recording path:", error);
+    return { success: false, error: String(error) };
+  }
+});
+
 ipcMain.handle("get-recording-buffer", async (_event, filename: string) => {
   try {
     const recordingsDir = getRecordingsDir();

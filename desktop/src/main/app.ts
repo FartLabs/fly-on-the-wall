@@ -1,11 +1,25 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, protocol, net } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
+import fs from "node:fs";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
   app.quit();
 }
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: "recording",
+    privileges: {
+      // standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+      stream: true
+    }
+  }
+]);
 
 // Get the project root (parent of desktop folder)
 export const getProjectRoot = (): string => {
@@ -49,7 +63,21 @@ const createWindow = () => {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on("ready", createWindow);
+app.on("ready", () => {
+  protocol.handle("recording", (request) => {
+    const url = request.url.replace("recording://", "");
+    const filePath = decodeURIComponent(url);
+
+    // ensure the file exists and is in the recordings directory
+    if (!fs.existsSync(filePath)) {
+      return new Response("File not found", { status: 404 });
+    }
+
+    return net.fetch(`file://${filePath}`);
+  });
+
+  createWindow();
+});
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits

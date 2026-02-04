@@ -189,7 +189,7 @@ async function openNote(filename: string): Promise<void> {
         }
       }
 
-      const autoSaveDelayMs = 1500; 
+      const autoSaveDelayMs = 1500;
 
       function scheduleAutoSave() {
         if (autoSaveTimeout) {
@@ -259,7 +259,15 @@ async function openNote(filename: string): Promise<void> {
               format: "pdf"
             });
             if (res && res.success) {
-              alert(`Exported to ${res.path}`);
+              const hasRecording =
+                result.content &&
+                (result.content as any).metadata &&
+                (result.content as any).metadata.recordingFilename;
+
+              const message = hasRecording
+                ? `Exported PDF and audio recording to ${res.path}`
+                : `Exported to ${res.path}`;
+              alert(message);
             } else {
               alert(`Export failed: ${res && res.error}`);
             }
@@ -306,17 +314,14 @@ async function handleRecordingPlayback(
   );
 
   try {
-    const result =
-      await window.electronAPI.getRecordingBuffer(recordingFilename);
+    const result = await window.electronAPI.getRecordingPath(recordingFilename);
     console.log(
-      "[handleRecordingPlayback] getRecordingBuffer result:",
+      "[handleRecordingPlayback] getRecordingPath result:",
       result.success
     );
 
-    if (result.success && result.buffer) {
-      const blob = new Blob([result.buffer], { type: "audio/webm" });
-      const blobUrl = URL.createObjectURL(blob);
-      elements.noteAudioPlayer.src = blobUrl;
+    if (result.success && result.path) {
+      elements.noteAudioPlayer.src = `recording://${encodeURIComponent(result.path)}`;
       elements.noteRecordingPlayer.classList.remove("hidden");
       console.log(`Loaded recording: ${recordingFilename}`);
     } else {
