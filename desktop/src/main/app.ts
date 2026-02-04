@@ -1,7 +1,11 @@
-import { app, BrowserWindow, protocol, net } from "electron";
+import { app, BrowserWindow, protocol, net, Menu } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
 import fs from "node:fs";
+
+if (!app.isPackaged) {
+  app.setName("Fly on the Wall-dev");
+}
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -47,7 +51,7 @@ const createWindow = () => {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
   } else {
     mainWindow.loadFile(
-      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)
+      path.join(__dirname, "..", "renderer", MAIN_WINDOW_VITE_NAME, "index.html")
     );
   }
 

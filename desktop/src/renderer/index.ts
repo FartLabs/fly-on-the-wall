@@ -115,7 +115,8 @@ refreshModelsList()
           const res = await window.electronAPI.saveNote({
             transcription:
               "Welcome to Fly on the Wall! This note demonstrates the new structured notes format. Your transcriptions and summaries will be stored here.",
-            summary: "This is your introductory summary. Enjoy the app!"
+            summary: "This is your introductory summary. Enjoy the app!",
+            filename: "hello_world.json"
           });
           if (res.success) {
             localStorage.setItem(firstRunKey, "true");
