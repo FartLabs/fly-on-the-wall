@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      Fly on the Wall - Meeting Recorder | Transcribe & Summarize Locally
+    </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+      body {
+        font-family: 'Inter', sans-serif;
+      }
+
+      .feature-section {
+        transition: all 0.3s ease;
+      }
+
+      .feature-section:hover {
+        background-color: #f9fafb;
+      }
+    </style>
+    <meta
+      name="description"
+      content="Record meetings, get transcription and AI summaries on your machine. No cloud, just privacy-first local AI."
+    />
+    <!-- Open Graph -->
+    <meta property="og:title" content="Fly on the Wall - Meeting Recorder" />
+    <meta
+      property="og:description"
+      content="Record meetings, get transcription and AI summaries on your machine. No cloud, just privacy-first local AI."
+    />
+    <meta
+      property="og:image"
+      content="https://github.com/FartLabs/fly-on-the-wall/raw/main/assets/icon.png"
+    >
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Fly on the Wall - Meeting Recorder">
+    <meta
+      name="twitter:description"
+      content="Record meetings, get transcription and AI summaries on your machine. No cloud, just privacy-first local AI."
+    >
+    <!-- <meta name="twitter:image" content="..."> -->
+  </head>
+  <body class="bg-white text-gray-900">
+    <!-- Navigation -->
+    <nav
+      class="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50"
+    >
+      <div class="max-w-7xl mx-auto px-6 py-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-8">
+            <a href="/" class="flex items-center gap-2 text-xl font-bold text-gray-900">
+              <img src="/favicon.svg" alt="Fly on the Wall Logo" class="w-8 h-8" />
+              <span>Fly on the Wall</span>
+            </a>
+            <div class="hidden md:flex items-center space-x-6">
+              <a
+                href="https://github.com/FartLabs/fly-on-the-wall"
+                class="text-sm text-gray-600 hover:text-gray-900"
+              >GitHub</a>
+              <a
+                href="https://github.com/FartLabs/fly-on-the-wall/releases"
+                class="text-sm text-gray-600 hover:text-gray-900"
+              >Changelog</a>
+              <a
+                href="https://github.com/FartLabs/fly-on-the-wall/blob/main/README.md"
+                class="text-sm text-gray-600 hover:text-gray-900"
+              >FAQ</a>
+              <a
+                href="https://github.com/FartLabs/fly-on-the-wall/issues"
+                class="text-sm text-gray-600 hover:text-gray-900"
+              >Issues</a>
+            </div>
+          </div>
+          <a
+            href="https://github.com/FartLabs/fly-on-the-wall/releases"
+            class="bg-gray-900 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition"
+          >
+            Download
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="pt-32 pb-20 px-6">
+      <div class="max-w-4xl mx-auto text-center">
+        <h1
+          class="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight"
+        >
+          Record. Transcribe. Summarize. Save.
+        </h1>
+        <p
+          class="text-xl text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed"
+        >
+          The private, local-first meeting recorder. Transcribe system audio with Whisper and generate summaries with a local LLM. No cloud, no subscription.
+        </p>
+        <div
+          class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4"
+        >
+          <a
+            id="hero-download-btn"
+            href="https://github.com/FartLabs/fly-on-the-wall/releases"
+            class="bg-gray-900 text-white px-8 py-4 rounded-lg text-base font-medium hover:bg-gray-800 transition"
+          >
+            Download for Windows & macOS
+          </a>
+          <a
+            href="https://github.com/FartLabs/fly-on-the-wall"
+            class="text-gray-600 hover:text-gray-900 text-base font-medium"
+          >
+            View on GitHub →
+          </a>
+        </div>
+        <p id="hero-platform-text" class="text-sm text-gray-500">Available for Windows and macOS</p>
+      </div>
+    </section>
+
+    <!-- Hero Image/Demo -->
+    <section class="pb-20 px-6">
+      <div class="max-w-6xl mx-auto">
+        <div
+          class="bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl p-12 aspect-video flex items-center justify-center border border-gray-300"
+        >
+          <div class="text-center">
+            <svg
+              class="w-24 h-24 mx-auto mb-4 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z"
+              >
+              </path>
+            </svg>
+            <p class="text-gray-500 font-medium">
+              Record → Transcribe → Summarize → Save
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-20 px-6 bg-white">
+      <div class="max-w-5xl mx-auto">
+        <h2
+          class="text-3xl md:text-4xl font-bold text-gray-900 mb-16 text-center"
+        >
+          Your meetings, on your terms
+        </h2>
+
+        <!-- Feature 1 -->
+        <div
+          class="feature-section mb-12 p-8 rounded-xl border border-gray-200"
+        >
+          <div class="flex items-start gap-4 mb-4">
+            <div
+              class="bg-gray-900 text-white w-10 h-10 rounded-lg flex items-center justify-center font-bold flex-shrink-0"
+            >
+              1
+            </div>
+            <div class="flex-1">
+              <h3 class="text-2xl font-bold text-gray-900 mb-3">
+                Record Anything
+              </h3>
+              <p class="text-gray-600 leading-relaxed mb-4">
+                Capture system audio and microphone input simultaneously. Perfect for Zoom, Google Meet, Teams, or any other audio source on your computer.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature 2 -->
+        <div
+          class="feature-section mb-12 p-8 rounded-xl border border-gray-200"
+        >
+          <div class="flex items-start gap-4 mb-4">
+            <div
+              class="bg-gray-900 text-white w-10 h-10 rounded-lg flex items-center justify-center font-bold flex-shrink-0"
+            >
+              2
+            </div>
+            <div class="flex-1">
+              <h3 class="text-2xl font-bold text-gray-900 mb-3">
+                Local Transcription with Whisper
+              </h3>
+              <p class="text-gray-600 leading-relaxed mb-4">
+                High-accuracy transcription running entirely on your device using OpenAI's Whisper models. Choose the model size that fits your hardware.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature 3 -->
+        <div
+          class="feature-section mb-12 p-8 rounded-xl border border-gray-200"
+        >
+          <div class="flex items-start gap-4 mb-4">
+            <div
+              class="bg-gray-900 text-white w-10 h-10 rounded-lg flex items-center justify-center font-bold flex-shrink-0"
+            >
+              3
+            </div>
+            <div class="flex-1">
+              <h3 class="text-2xl font-bold text-gray-900 mb-3">
+                Local AI Summaries
+              </h3>
+              <p class="text-gray-600 leading-relaxed mb-4">
+                Generate concise summaries, action items, and notes using local LLMs (via node-llama-cpp). Your data never leaves your computer.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature 4 -->
+        <div
+          class="feature-section mb-12 p-8 rounded-xl border border-gray-200"
+        >
+          <div class="flex items-start gap-4 mb-4">
+            <div
+              class="bg-gray-900 text-white w-10 h-10 rounded-lg flex items-center justify-center font-bold flex-shrink-0"
+            >
+              4
+            </div>
+            <div class="flex-1">
+              <h3 class="text-2xl font-bold text-gray-900 mb-3">
+                Customizable Prompts
+              </h3>
+              <p class="text-gray-600 leading-relaxed mb-4">
+                Tailor the summarization to your needs. Ask for bullet points, detailed minutes, or specific formats by editing the prompt.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature 5 -->
+        <div
+          class="feature-section mb-12 p-8 rounded-xl border border-gray-200"
+        >
+          <div class="flex items-start gap-4 mb-4">
+            <div
+              class="bg-gray-900 text-white w-10 h-10 rounded-lg flex items-center justify-center font-bold flex-shrink-0"
+            >
+              5
+            </div>
+            <div class="flex-1">
+              <h3 class="text-2xl font-bold text-gray-900 mb-3">
+                Save & Export
+              </h3>
+              <p class="text-gray-600 leading-relaxed mb-4">
+                Everything is saved to your local machine. Export transcripts and summaries to Markdown, text, or keep them organized within the app.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature 6 -->
+        <div
+          class="feature-section mb-12 p-8 rounded-xl border border-gray-200"
+        >
+          <div class="flex items-start gap-4 mb-4">
+            <div
+              class="bg-gray-900 text-white w-10 h-10 rounded-lg flex items-center justify-center font-bold flex-shrink-0"
+            >
+              6
+            </div>
+            <div class="flex-1">
+              <h3 class="text-2xl font-bold text-gray-900 mb-3">
+                History
+              </h3>
+              <p class="text-gray-600 leading-relaxed mb-4">
+                Keep a searchable history of all your past meetings. Never lose track of what was discussed.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 px-6 bg-gray-50">
+      <div class="max-w-4xl mx-auto text-center">
+        <h2 class="text-4xl font-bold text-gray-900 mb-6">
+          Ready to try Fly on the Wall?
+        </h2>
+        <p class="text-xl text-gray-600 mb-10">
+          Record meetings and get clear notes without sending data to the cloud.
+        </p>
+        <div
+          class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8"
+        >
+          <a
+            href="https://github.com/FartLabs/fly-on-the-wall/releases"
+            class="bg-gray-900 text-white px-8 py-4 rounded-lg text-base font-medium hover:bg-gray-800 transition"
+          >
+            Download for Windows
+          </a>
+          <a
+            href="https://github.com/FartLabs/fly-on-the-wall/releases"
+            class="bg-gray-200 text-gray-900 px-8 py-4 rounded-lg text-base font-medium hover:bg-gray-300 transition"
+          >
+            Download for macOS
+          </a>
+        </div>
+        <a
+          href="https://github.com/FartLabs/fly-on-the-wall"
+          class="text-gray-600 hover:text-gray-900 text-base font-medium"
+        >
+          View on GitHub →
+        </a>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 py-16 px-6">
+      <div class="max-w-6xl mx-auto">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
+          <!-- Product Column -->
+          <div>
+            <h3 class="font-bold text-gray-900 mb-4">Product</h3>
+            <ul class="space-y-3">
+              <li>
+                <a
+                  href="https://github.com/FartLabs/fly-on-the-wall/releases"
+                  class="text-gray-600 hover:text-gray-900 text-sm"
+                >Download</a>
+              </li>
+              <li>
+                <a
+                  href="https://github.com/FartLabs/fly-on-the-wall/releases"
+                  class="text-gray-600 hover:text-gray-900 text-sm"
+                >Changelog</a>
+              </li>
+              <li>
+                <a href="https://github.com/FartLabs/fly-on-the-wall/blob/main/README.md" class="text-gray-600 hover:text-gray-900 text-sm"
+                >FAQ</a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Community Column -->
+          <div>
+            <h3 class="font-bold text-gray-900 mb-4">Community</h3>
+            <ul class="space-y-3">
+              <li>
+                <a
+                  href="https://github.com/FartLabs/fly-on-the-wall"
+                  class="text-gray-600 hover:text-gray-900 text-sm"
+                >GitHub</a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Contact Column -->
+          <div>
+            <h3 class="font-bold text-gray-900 mb-4">Contact</h3>
+            <ul class="space-y-3">
+              <li>
+                <a
+                  href="https://github.com/FartLabs/fly-on-the-wall/issues"
+                  class="text-gray-600 hover:text-gray-900 text-sm"
+                >Issues</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="pt-8 border-t border-gray-200">
+          <p class="text-sm text-gray-500 text-center">
+            Fly on the Wall – Meeting Recorder
+          </p>
+        </div>
+      </div>
+    </footer>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const heroBtn = document.getElementById('hero-download-btn');
+        const heroPlatformText = document.getElementById('hero-platform-text');
+        const isMac = /Mac/i.test(navigator.userAgent);
+        const isWin = /Win/i.test(navigator.userAgent);
+
+        if (heroBtn && heroPlatformText) {
+          if (isMac) {
+            heroBtn.textContent = 'Download for macOS';
+            heroPlatformText.textContent = 'Available for macOS';
+          } else if (isWin) {
+            heroBtn.textContent = 'Download for Windows';
+            heroPlatformText.textContent = 'Available for Windows';
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
