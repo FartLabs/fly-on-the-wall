@@ -28,10 +28,6 @@ export function navigateToPage(page: Page): void {
   console.log(`Navigated to ${page} page`);
 }
 
-export function getCurrentPage(): Page {
-  return currentPage;
-}
-
 export function setupNavigationListeners(): void {
   if (elements.viewSettingsBtn) {
     elements.viewSettingsBtn.addEventListener("click", () => {

@@ -1,12 +1,23 @@
 import { elements } from "./domNodes";
+import { clamp } from "@/utils";
 
-const STORAGE_KEYS = {
+export const LOCAL_STORAGE_KEYS = {
   MIN_SUMMARY_LENGTH: "minSummaryLength",
   MAX_TOKENS: "summarizationMaxTokens",
   TEMPERATURE: "summarizationTemperature",
   TOP_P: "summarizationTopP",
   TOP_K: "summarizationTopK",
-  REPEAT_PENALTY: "summarizationRepeatPenalty"
+  REPEAT_PENALTY: "summarizationRepeatPenalty",
+
+  // not from settings, but they can still be customized else where
+  CUSTOM_SUMMARIZATION_PROMPT: "customSummarizationPrompt",
+  SELECTED_SUMMARIZATION_MODEL_PATH: "selectedSummarizationModelPath",
+
+  // not used for settings
+  FIRST_RUN_KEY: "introNoteCreated",
+
+  SELECTED_TRANSCRIPTION_MODEL: "selectedWhisperModel",
+  SELECTED_SUMMARY_MODEL: "selectedSummaryModel"
 } as const;
 
 export const DEFAULT_SETTINGS = {
@@ -44,10 +55,6 @@ export interface SummarizationSettings {
   repeatPenalty: number;
 }
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
-
 function parseNumericSetting(
   value: string | null,
   defaultValue: number,
@@ -62,32 +69,32 @@ function parseNumericSetting(
 export function getSettings(): AppSettings {
   return {
     minSummaryLength: parseNumericSetting(
-      localStorage.getItem(STORAGE_KEYS.MIN_SUMMARY_LENGTH),
+      localStorage.getItem(LOCAL_STORAGE_KEYS.MIN_SUMMARY_LENGTH),
       DEFAULT_SETTINGS.minSummaryLength,
       LIMITS.minSummaryLength
     ),
     maxTokens: parseNumericSetting(
-      localStorage.getItem(STORAGE_KEYS.MAX_TOKENS),
+      localStorage.getItem(LOCAL_STORAGE_KEYS.MAX_TOKENS),
       DEFAULT_SETTINGS.maxTokens,
       LIMITS.maxTokens
     ),
     temperature: parseNumericSetting(
-      localStorage.getItem(STORAGE_KEYS.TEMPERATURE),
+      localStorage.getItem(LOCAL_STORAGE_KEYS.TEMPERATURE),
       DEFAULT_SETTINGS.temperature,
       LIMITS.temperature
     ),
     topP: parseNumericSetting(
-      localStorage.getItem(STORAGE_KEYS.TOP_P),
+      localStorage.getItem(LOCAL_STORAGE_KEYS.TOP_P),
       DEFAULT_SETTINGS.topP,
       LIMITS.topP
     ),
     topK: parseNumericSetting(
-      localStorage.getItem(STORAGE_KEYS.TOP_K),
+      localStorage.getItem(LOCAL_STORAGE_KEYS.TOP_K),
       DEFAULT_SETTINGS.topK,
       LIMITS.topK
     ),
     repeatPenalty: parseNumericSetting(
-      localStorage.getItem(STORAGE_KEYS.REPEAT_PENALTY),
+      localStorage.getItem(LOCAL_STORAGE_KEYS.REPEAT_PENALTY),
       DEFAULT_SETTINGS.repeatPenalty,
       LIMITS.repeatPenalty
     )
@@ -116,7 +123,10 @@ export function saveSettings(settings: Partial<AppSettings>): void {
       LIMITS.minSummaryLength.min,
       LIMITS.minSummaryLength.max
     );
-    localStorage.setItem(STORAGE_KEYS.MIN_SUMMARY_LENGTH, String(clamped));
+    localStorage.setItem(
+      LOCAL_STORAGE_KEYS.MIN_SUMMARY_LENGTH,
+      String(clamped)
+    );
   }
   if (settings.maxTokens !== undefined) {
     const clamped = clamp(
@@ -124,7 +134,7 @@ export function saveSettings(settings: Partial<AppSettings>): void {
       LIMITS.maxTokens.min,
       LIMITS.maxTokens.max
     );
-    localStorage.setItem(STORAGE_KEYS.MAX_TOKENS, String(clamped));
+    localStorage.setItem(LOCAL_STORAGE_KEYS.MAX_TOKENS, String(clamped));
   }
   if (settings.temperature !== undefined) {
     const clamped = clamp(
@@ -132,15 +142,15 @@ export function saveSettings(settings: Partial<AppSettings>): void {
       LIMITS.temperature.min,
       LIMITS.temperature.max
     );
-    localStorage.setItem(STORAGE_KEYS.TEMPERATURE, String(clamped));
+    localStorage.setItem(LOCAL_STORAGE_KEYS.TEMPERATURE, String(clamped));
   }
   if (settings.topP !== undefined) {
     const clamped = clamp(settings.topP, LIMITS.topP.min, LIMITS.topP.max);
-    localStorage.setItem(STORAGE_KEYS.TOP_P, String(clamped));
+    localStorage.setItem(LOCAL_STORAGE_KEYS.TOP_P, String(clamped));
   }
   if (settings.topK !== undefined) {
     const clamped = clamp(settings.topK, LIMITS.topK.min, LIMITS.topK.max);
-    localStorage.setItem(STORAGE_KEYS.TOP_K, String(clamped));
+    localStorage.setItem(LOCAL_STORAGE_KEYS.TOP_K, String(clamped));
   }
   if (settings.repeatPenalty !== undefined) {
     const clamped = clamp(
@@ -148,12 +158,12 @@ export function saveSettings(settings: Partial<AppSettings>): void {
       LIMITS.repeatPenalty.min,
       LIMITS.repeatPenalty.max
     );
-    localStorage.setItem(STORAGE_KEYS.REPEAT_PENALTY, String(clamped));
+    localStorage.setItem(LOCAL_STORAGE_KEYS.REPEAT_PENALTY, String(clamped));
   }
 }
 
 export function resetSettings(): void {
-  Object.values(STORAGE_KEYS).forEach((key) => {
+  Object.values(LOCAL_STORAGE_KEYS).forEach((key) => {
     localStorage.removeItem(key);
   });
 }

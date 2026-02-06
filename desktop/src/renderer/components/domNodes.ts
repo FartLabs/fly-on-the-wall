@@ -148,9 +148,9 @@ export const elements = {
 
   importQueue: document.getElementById("importQueue") as HTMLDivElement,
   importQueueList: document.getElementById("importQueueList") as HTMLDivElement,
-  importQueueCount: document.getElementById("importQueueCount") as HTMLSpanElement,
-
-
+  importQueueCount: document.getElementById(
+    "importQueueCount"
+  ) as HTMLSpanElement
 };
 
 export function setUiLocked(locked: boolean): void {

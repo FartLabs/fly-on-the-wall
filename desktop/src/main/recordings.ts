@@ -172,7 +172,9 @@ ipcMain.handle(
         fs.copyFileSync(data.sourcePath, destPath);
       }
 
-      console.log(`Imported audio: ${data.sourcePath} → ${destPath} (${data.mode})`);
+      console.log(
+        `Imported audio: ${data.sourcePath} → ${destPath} (${data.mode})`
+      );
       return { success: true, filename: destName };
     } catch (error) {
       console.error("Error importing audio file:", error);

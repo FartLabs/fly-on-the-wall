@@ -1,3 +1,5 @@
+import { LOCAL_STORAGE_KEYS } from "@/renderer/components/settings";
+
 export interface SummarizationProgress {
   status: "loading" | "downloading" | "summarizing" | "complete" | "error";
   progress?: number;
@@ -23,15 +25,17 @@ type ProgressCallback = (progress: SummarizationProgress) => void;
 const DEFAULT_MIN_SUMMARY_LENGTH = 20;
 
 export function getMinLengthForSummarization(): number {
-  const stored = localStorage.getItem("minSummaryLength");
+  const stored = localStorage.getItem(LOCAL_STORAGE_KEYS.MIN_SUMMARY_LENGTH);
   if (stored) {
     const parsed = parseInt(stored, 10);
     if (!isNaN(parsed) && parsed >= 0) return parsed;
   }
   return DEFAULT_MIN_SUMMARY_LENGTH;
 }
-const STORAGE_KEY_CUSTOM_PROMPT = "customSummarizationPrompt";
-const STORAGE_KEY_MODEL_PATH = "selectedSummarizationModelPath";
+const STORAGE_KEY_CUSTOM_PROMPT =
+  LOCAL_STORAGE_KEYS.CUSTOM_SUMMARIZATION_PROMPT;
+const STORAGE_KEY_MODEL_PATH =
+  LOCAL_STORAGE_KEYS.SELECTED_SUMMARIZATION_MODEL_PATH;
 
 export function getCustomPrompt(): string | null {
   return localStorage.getItem(STORAGE_KEY_CUSTOM_PROMPT);

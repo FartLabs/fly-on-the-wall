@@ -278,7 +278,10 @@ async function processQueue(): Promise<void> {
 
       // summarize if long enough
       let summary = "";
-      if (transcription && transcription.trim().length > getMinLengthForSummarization()) {
+      if (
+        transcription &&
+        transcription.trim().length > getMinLengthForSummarization()
+      ) {
         item.status = "summarizing";
         renderQueue();
 

@@ -13,31 +13,25 @@ import {
 } from "@/transcription/whisper";
 import { getSelectedModelPath, saveSelectedModelPath } from "@/summarization";
 import { showNotification } from "./notifications";
+import { LOCAL_STORAGE_KEYS } from "./settings";
 
 let downloadingModel: WhisperModelSize | null = null;
 let isTranscribing = false;
 
-export const STORAGE_KEY_SELECTED_TRANSCRIPTION_MODEL = "selectedWhisperModel";
-export const STORAGE_KEY_SELECTED_SUMMARY_MODEL = "selectedSummaryModel";
+const SELECTED_TRANSCRIPTION_MODEL =
+  LOCAL_STORAGE_KEYS.SELECTED_TRANSCRIPTION_MODEL;
+// const STORAGE_KEY_SELECTED_SUMMARY_MODEL = LOCAL_STORAGE_KEYS.SELECTED_SUMMARY_MODEL;
 
 export function saveSelectedTranscriptionModel(
   modelSize: WhisperModelSize
 ): void {
-  localStorage.setItem(STORAGE_KEY_SELECTED_TRANSCRIPTION_MODEL, modelSize);
+  localStorage.setItem(SELECTED_TRANSCRIPTION_MODEL, modelSize);
 }
 
 export function getSelectedTranscriptionModel(): WhisperModelSize | null {
   return localStorage.getItem(
-    STORAGE_KEY_SELECTED_TRANSCRIPTION_MODEL
+    SELECTED_TRANSCRIPTION_MODEL
   ) as WhisperModelSize | null;
-}
-
-export function saveSelectedSummaryModel(modelId: string): void {
-  localStorage.setItem(STORAGE_KEY_SELECTED_SUMMARY_MODEL, modelId);
-}
-
-export function getSelectedSummaryModel(): string | null {
-  return localStorage.getItem(STORAGE_KEY_SELECTED_SUMMARY_MODEL);
 }
 
 export function setTranscriptionInProgress(inProgress: boolean): void {
