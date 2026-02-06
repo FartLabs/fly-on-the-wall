@@ -4,6 +4,7 @@ import {
   saveCustomPrompt,
   getDefaultPromptTemplate
 } from "@/summarization";
+import { escapeHtml } from "@/utils";
 
 export function setupPromptCustomizer(): void {
   loadSavedPrompt();
@@ -72,10 +73,4 @@ function handleViewDefault(): void {
   modal.addEventListener("click", (e) => {
     if (e.target === modal) closeModal();
   });
-}
-
-function escapeHtml(text: string): string {
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
 }

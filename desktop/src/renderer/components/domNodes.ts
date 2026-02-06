@@ -152,20 +152,3 @@ export const elements = {
     "importQueueCount"
   ) as HTMLSpanElement
 };
-
-export function setUiLocked(locked: boolean): void {
-  elements.systemAudioToggle.disabled = locked;
-  elements.systemAudioItem.classList.toggle("disabled", locked);
-
-  // lock all microphone toggles
-  const micToggles = elements.devicesList.querySelectorAll(
-    ".mute-toggle input"
-  ) as NodeListOf<HTMLInputElement>;
-  micToggles.forEach((toggle) => {
-    toggle.disabled = locked;
-  });
-  elements.devicesList.classList.toggle("disabled", locked);
-
-  elements.refreshDevicesBtn.disabled = locked;
-  elements.refreshDevicesBtn.classList.toggle("disabled", locked);
-}

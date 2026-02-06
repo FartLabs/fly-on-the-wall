@@ -1,4 +1,4 @@
-import { elements, setUiLocked } from "./domNodes";
+import { elements } from "./domNodes";
 import { getActiveInputDeviceIds } from "./devices";
 import { formatSecondsToTime, isScreenSource } from "@/utils";
 import { refreshModelsList } from "./models";
@@ -21,6 +21,23 @@ type OnRecordingComplete = (
 function updateTimer(): void {
   elapsedSeconds++;
   elements.timerDisplay.textContent = formatSecondsToTime(elapsedSeconds);
+}
+
+function setUiLocked(locked: boolean): void {
+  elements.systemAudioToggle.disabled = locked;
+  elements.systemAudioItem.classList.toggle("disabled", locked);
+
+  // lock all microphone toggles
+  const micToggles = elements.devicesList.querySelectorAll(
+    ".mute-toggle input"
+  ) as NodeListOf<HTMLInputElement>;
+  micToggles.forEach((toggle) => {
+    toggle.disabled = locked;
+  });
+  elements.devicesList.classList.toggle("disabled", locked);
+
+  elements.refreshDevicesBtn.disabled = locked;
+  elements.refreshDevicesBtn.classList.toggle("disabled", locked);
 }
 
 export async function startRecording(
