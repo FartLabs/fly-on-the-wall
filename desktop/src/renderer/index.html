@@ -182,6 +182,22 @@
             <span>Stop</span>
           </button>
         </div>
+
+        <div class="import-divider">
+          <span class="import-divider-text">or</span>
+        </div>
+
+        <button class="import-btn" id="importAudioBtn">
+          <span class="btn-text">Import Audio Files</span>
+        </button>
+
+        <div class="import-queue hidden" id="importQueue">
+          <div class="import-queue-header">
+            <h3>Import Queue</h3>
+            <span class="import-queue-count" id="importQueueCount"></span>
+          </div>
+          <div class="import-queue-list" id="importQueueList"></div>
+        </div>
       </div>
 
       <div class="audio-devices-card">
@@ -298,6 +314,7 @@
             <div class="recording-header">
               <h4>Original Recording</h4>
             </div>
+            <div class="note-original-filename hidden" id="noteOriginalFilename"></div>
             <audio controls id="noteAudioPlayer" class="note-audio">
               Your browser does not support the audio element.
             </audio>

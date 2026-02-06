@@ -147,4 +147,13 @@ export default interface IElectronAPI {
   getRecordingBuffer: (
     filename: string
   ) => Promise<{ success: boolean; buffer?: ArrayBuffer; error?: string }>;
+
+  selectAudioFiles: () => Promise<{
+    canceled: boolean;
+    files: Array<{ path: string; name: string; size: number }>;
+  }>;
+  importAudioFile: (data: {
+    sourcePath: string;
+    mode: "copy" | "move";
+  }) => Promise<{ success: boolean; filename?: string; error?: string }>;
 }

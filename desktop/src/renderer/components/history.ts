@@ -138,6 +138,7 @@ async function openNote(filename: string): Promise<void> {
       if (result.content) {
         const content = result.content as any;
         await handleRecordingPlayback(content.metadata);
+        displayOriginalFilename(content.metadata);
       }
 
       const copyTransBtn = document.getElementById("copyTranscriptionBtn");
@@ -332,6 +333,19 @@ async function handleRecordingPlayback(
     }
   } catch (error) {
     console.error("Error loading recording:", error);
+  }
+}
+
+function displayOriginalFilename(metadata?: Record<string, any>): void {
+  const el = document.getElementById("noteOriginalFilename");
+  if (!el) return;
+
+  if (metadata && metadata.originalFilename) {
+    el.textContent = `Imported from: ${metadata.originalFilename}`;
+    el.classList.remove("hidden");
+  } else {
+    el.textContent = "";
+    el.classList.add("hidden");
   }
 }
 

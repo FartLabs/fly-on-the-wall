@@ -1,4 +1,4 @@
-import { app, ipcMain, desktopCapturer } from "electron";
+import { app, ipcMain, desktopCapturer, dialog, BrowserWindow } from "electron";
 import path from "node:path";
 import fs from "node:fs";
 
@@ -86,3 +86,97 @@ ipcMain.handle("get-recording-buffer", async (_event, filename: string) => {
     return { success: false, error: String(error) };
   }
 });
+
+const AUDIO_EXTENSIONS = [
+  "mp3",
+  "wav",
+  "ogg",
+  "flac",
+  "aac",
+  "m4a",
+  "wma",
+  "webm",
+  "opus",
+  "aiff",
+  "aif",
+  "amr",
+  "ape",
+  "mp4",
+  "mkv"
+];
+
+ipcMain.handle("select-audio-files", async () => {
+  const win = BrowserWindow.getFocusedWindow();
+  const result = await dialog.showOpenDialog(win!, {
+    title: "Import Audio Files",
+    properties: ["openFile", "multiSelections"],
+    filters: [
+      {
+        name: "Audio Files",
+        extensions: AUDIO_EXTENSIONS
+      },
+      { name: "All Files", extensions: ["*"] }
+    ]
+  });
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return { canceled: true, files: [] };
+  }
+
+  const files = result.filePaths.map((filePath) => {
+    const stat = fs.statSync(filePath);
+    return {
+      path: filePath,
+      name: path.basename(filePath),
+      size: stat.size
+    };
+  });
+
+  return { canceled: false, files };
+});
+
+function getUniqueFilename(dir: string, originalName: string): string {
+  const ext = path.extname(originalName);
+  const base = path.basename(originalName, ext);
+  let candidate = originalName;
+  let counter = 1;
+
+  while (fs.existsSync(path.join(dir, candidate))) {
+    candidate = `${base}_${counter}${ext}`;
+    counter++;
+  }
+
+  return candidate;
+}
+
+ipcMain.handle(
+  "import-audio-file",
+  async (
+    _event,
+    data: { sourcePath: string; mode: "copy" | "move" }
+  ): Promise<{
+    success: boolean;
+    filename?: string;
+    error?: string;
+  }> => {
+    try {
+      const recordingsDir = getRecordingsDir();
+      const originalName = path.basename(data.sourcePath);
+      const destName = getUniqueFilename(recordingsDir, originalName);
+      const destPath = path.join(recordingsDir, destName);
+
+      if (data.mode === "move") {
+        // "Move" means copy then keep original (user asked: don't delete originals)
+        fs.copyFileSync(data.sourcePath, destPath);
+      } else {
+        fs.copyFileSync(data.sourcePath, destPath);
+      }
+
+      console.log(`Imported audio: ${data.sourcePath} → ${destPath} (${data.mode})`);
+      return { success: true, filename: destName };
+    } catch (error) {
+      console.error("Error importing audio file:", error);
+      return { success: false, error: String(error) };
+    }
+  }
+);

@@ -50,7 +50,7 @@ function handleViewDefault(): void {
     <div class="prompt-modal-content">
       <div class="prompt-modal-header">
         <h3>Default Summarization Prompt</h3>
-        <button class="close-modal" id="closeModal">×</button>
+        <button class="close-modal" id="closeModal">x</button>
       </div>
       <div class="prompt-modal-body">
         <p style="font-size: 0.85rem; color: #888; margin-bottom: 1rem;">

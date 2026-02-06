@@ -22,7 +22,7 @@ type ProgressCallback = (progress: SummarizationProgress) => void;
 
 const DEFAULT_MIN_SUMMARY_LENGTH = 20;
 
-function getMinLengthForSummarization(): number {
+export function getMinLengthForSummarization(): number {
   const stored = localStorage.getItem("minSummaryLength");
   if (stored) {
     const parsed = parseInt(stored, 10);

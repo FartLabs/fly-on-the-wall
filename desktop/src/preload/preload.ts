@@ -81,7 +81,11 @@ const electronAPI: IElectronAPI = {
   getRecordingPath: (filename: string) =>
     ipcRenderer.invoke("get-recording-path", filename),
   getRecordingBuffer: (filename: string) =>
-    ipcRenderer.invoke("get-recording-buffer", filename)
+    ipcRenderer.invoke("get-recording-buffer", filename),
+
+  selectAudioFiles: () => ipcRenderer.invoke("select-audio-files"),
+  importAudioFile: (data: { sourcePath: string; mode: "copy" | "move" }) =>
+    ipcRenderer.invoke("import-audio-file", data)
 };
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);

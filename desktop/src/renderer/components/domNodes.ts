@@ -144,7 +144,13 @@ export const elements = {
   ) as HTMLButtonElement,
   resetSettingsBtn: document.getElementById(
     "resetSettingsBtn"
-  ) as HTMLButtonElement
+  ) as HTMLButtonElement,
+
+  importQueue: document.getElementById("importQueue") as HTMLDivElement,
+  importQueueList: document.getElementById("importQueueList") as HTMLDivElement,
+  importQueueCount: document.getElementById("importQueueCount") as HTMLSpanElement,
+
+
 };
 
 export function setUiLocked(locked: boolean): void {
