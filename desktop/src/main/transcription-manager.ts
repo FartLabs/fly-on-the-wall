@@ -36,7 +36,7 @@ function getUtilityProcessPath(): string {
   if (app.isPackaged) {
     return path.join(
       process.resourcesPath,
-      "app",
+      "app.asar",
       ".vite",
       "build",
       "transcription-utility.js"

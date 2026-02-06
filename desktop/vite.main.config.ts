@@ -9,7 +9,7 @@ export default defineConfig({
       formats: ["cjs"]
     },
     rollupOptions: {
-      external: ["electron", "node-llama-cpp"]
+      external: ["electron", "node-llama-cpp", "@node-llama-cpp"]
     }
   }
 });

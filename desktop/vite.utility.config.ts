@@ -18,7 +18,16 @@ export default defineConfig({
       formats: ["cjs"]
     },
     rollupOptions: {
-      external: ["electron", "node-llama-cpp", "@huggingface/transformers"]
+      external: [
+        "electron",
+        "node-llama-cpp",
+        "onnxruntime-node",
+        "@huggingface/transformers",
+        "onnxruntime-common",
+        "sharp",
+        "@img",
+        "@node-llama-cpp"
+      ]
     }
   }
 });

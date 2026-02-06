@@ -39,11 +39,10 @@ export async function checkModelDownloaded(
   const modelId = WHISPER_MODELS[modelSize];
 
   try {
-    console.log(
-      `[Transcription] Checking if model ${modelId} (${modelSize}) is downloaded...`
-    );
     const result = await window.electronAPI.checkWhisperModel(modelId);
-    console.log(`[Transcription] Check result:`, result.exists);
+    if (result.exists) {
+      console.log(`[Transcription] Model ${modelId} is downloaded.`);
+    }
     return result.success && result.exists;
   } catch (e) {
     console.error("Error checking model status:", e);

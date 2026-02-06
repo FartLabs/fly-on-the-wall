@@ -35,7 +35,7 @@ function getUtilityProcessPath(): string {
   if (app.isPackaged) {
     return path.join(
       process.resourcesPath,
-      "app",
+      "app.asar",
       ".vite",
       "build",
       "summarization-utility.js"
@@ -92,6 +92,12 @@ function handleUtilityMessage(message: SummarizationProcessResponse): void {
   if (message.type === "memory") {
     checkMemoryThreshold(message.usage);
     return;
+  }
+
+  if (message.type === "status") {
+    console.log(
+      `[SummarizationManager] Status: ${message.status}${message.message ? ` - ${message.message}` : ""}`
+    );
   }
 
   // route to pending request handlers

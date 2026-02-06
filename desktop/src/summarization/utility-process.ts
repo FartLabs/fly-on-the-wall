@@ -66,7 +66,12 @@ async function loadModel(modelPath: string): Promise<void> {
 
   const { getLlama } = await import("node-llama-cpp");
 
-  llamaInstance = await getLlama();
+  llamaInstance = await getLlama({});
+
+  console.log(
+    `[SummarizationProcess] getLlama() succeeded: buildType=${llamaInstance.buildType} gpu=${llamaInstance.gpu}`
+  );
+
   currentModel = await llamaInstance.loadModel({ modelPath });
   currentContext = await currentModel.createContext();
   currentModelPath = modelPath;

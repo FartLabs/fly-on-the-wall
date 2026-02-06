@@ -197,9 +197,7 @@ export async function summarizeText(
     `[Summarization] Raw transcript preview: ${text.substring(0, 200)}...`
   );
   console.log(`[Summarization] Final prompt length: ${prompt.length}`);
-  console.log(
-    `[Summarization] Final prompt preview: ${prompt.substring(0, 300)}...`
-  );
+  console.log(`[Summarization] Final prompt: ${prompt}...`);
 
   try {
     // Load summarization parameters from settings
