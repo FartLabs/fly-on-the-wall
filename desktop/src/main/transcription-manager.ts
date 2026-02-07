@@ -8,10 +8,10 @@ import {
 import path from "node:path";
 import type {
   TranscriptionMessage,
-  TranscriptionResponse,
-  MemoryUsage
+  TranscriptionResponse
 } from "../transcription/utility-process";
 import { getTranscriptionModelsDir } from "./models";
+import { MemoryUsage } from "@/shared/utilityProcess";
 
 // TODO: Make these configurable via a settings page
 const MEMORY_CHECK_INTERVAL_MS = 10_000;

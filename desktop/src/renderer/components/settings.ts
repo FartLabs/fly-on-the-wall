@@ -39,13 +39,8 @@ const LIMITS = {
   repeatPenalty: { min: 1, max: 2, step: 0.05 }
 } as const;
 
-export interface AppSettings {
+export interface AppSettings extends SummarizationSettings {
   minSummaryLength: number;
-  maxTokens: number;
-  temperature: number;
-  topP: number;
-  topK: number;
-  repeatPenalty: number;
 }
 
 export interface SummarizationSettings {

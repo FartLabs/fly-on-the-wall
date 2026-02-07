@@ -1,31 +1,32 @@
 import fs from "node:fs";
+import {
+  UtilityProcessMessage,
+  UtilityProcessResponse
+} from "@/shared/utilityProcess";
 import { SummarizeParams } from ".";
 
 export type SummarizationProcessMessage =
+  | UtilityProcessMessage
   | {
       type: "summarize";
       text: string;
       modelPath: string;
       params?: SummarizeParams;
     }
-  | { type: "download-model"; modelId: string; targetPath: string }
-  | { type: "check-model"; modelPath: string }
-  | { type: "dispose" }
-  | { type: "get-memory-usage" }
-  | { type: "health-check" };
+  | {
+      type: "check-model";
+      modelPath: string;
+    }
+  | { type: "download-model"; modelId: string; targetPath: string };
 
 export type SummarizationProcessResponse =
-  | { type: "status"; status: string; progress?: number; message?: string }
-  | { type: "result"; result: any }
-  | { type: "error"; error: string }
-  | { type: "memory"; usage: MemoryUsage };
-
-export interface MemoryUsage {
-  heapUsed: number;
-  heapTotal: number;
-  external: number;
-  rss: number;
-}
+  | UtilityProcessResponse
+  | {
+      type: "status";
+      status: string;
+      progress?: number;
+      message?: string;
+    };
 
 let llamaInstance: any = null;
 let currentModel: any = null;

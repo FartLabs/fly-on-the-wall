@@ -1,11 +1,16 @@
 import fs from "node:fs";
 import path from "node:path";
+import {
+  UtilityProcessMessage,
+  UtilityProcessResponse
+} from "@/shared/utilityProcess";
 
 // import transformers.js early so we can configure it
 // TODO: in the future, will use an existing node bindings for whisper.cpp (or one from scratch in this
 // project) since i believe some of the current solutions are not actively maintained
 
 export type TranscriptionMessage =
+  | UtilityProcessMessage
   | {
       type: "transcribe";
       audioData: number[]; // Float32Array sent as normal array (will later be converted back)
@@ -14,29 +19,17 @@ export type TranscriptionMessage =
     }
   | { type: "download-model"; modelId: string }
   | { type: "check-model"; modelId: string }
-  | { type: "dispose" }
-  | { type: "get-memory-usage" }
-  | { type: "health-check" }
   | { type: "set-models-path"; modelsPath: string };
 
 export type TranscriptionResponse =
+  | UtilityProcessResponse
   | {
       type: "status";
       status: string;
       progress?: number;
       message?: string;
       file?: string;
-    }
-  | { type: "result"; result: any }
-  | { type: "error"; error: string }
-  | { type: "memory"; usage: MemoryUsage };
-
-export interface MemoryUsage {
-  heapUsed: number;
-  heapTotal: number;
-  external: number;
-  rss: number;
-}
+    };
 
 let transcriber: any = null;
 let currentModelId: string | null = null;
