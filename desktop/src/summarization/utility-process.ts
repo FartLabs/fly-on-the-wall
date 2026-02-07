@@ -32,7 +32,7 @@ let currentModel: any = null;
 let currentModelPath: string | null = null;
 let currentContext: any = null;
 
-const IDLE_TIMEOUT_MS = 1 * 60 * 1000;
+const IDLE_TIMEOUT_MS = 30 * 1000;
 let idleTimer: NodeJS.Timeout | null = null;
 
 function resetIdleTimer(): void {

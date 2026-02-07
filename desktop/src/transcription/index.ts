@@ -184,12 +184,15 @@ export async function transcribeAudio(
       message: "Starting transcription..."
     });
 
-    const audioDataArray = Array.from(audioArray);
-    const result = await window.electronAPI.transcribe({
+    let audioDataArray: number[] | null = Array.from(audioArray);
+    const transcribePayload = {
       audioData: audioDataArray,
       modelId,
       language
-    });
+    };
+    // release reference before awaiting IPC (data is serialized/copied)
+    audioDataArray = null;
+    const result = await window.electronAPI.transcribe(transcribePayload);
 
     if (!result.success) {
       throw new Error(result.error || "Transcription failed");

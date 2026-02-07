@@ -208,6 +208,8 @@ async function processRecording(onComplete: OnRecordingComplete) {
   if (audioChunks.length === 0) return;
 
   const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+  // free the raw chunks now that we have the blob
+  audioChunks = [];
   const timestamp = recordingStartTime
     ? recordingStartTime.toISOString().replace(/[:.]/g, "-").slice(0, 19)
     : new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
