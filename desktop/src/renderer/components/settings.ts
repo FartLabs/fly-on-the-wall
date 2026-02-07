@@ -1,6 +1,9 @@
 import { elements } from "./domNodes";
 import { clamp } from "@/utils";
 
+// TODO: leave all UI related logic in this file; rest of logic should be
+// somewhere in src/main or maybe its own directory (i.e src/settings)
+
 export const LOCAL_STORAGE_KEYS = {
   // summarization model parameters
   MAX_TOKENS: "summarizationMaxTokens",
