@@ -39,17 +39,6 @@ protocol.registerSchemesAsPrivileged([
   }
 ]);
 
-// Get the project root (parent of desktop folder)
-export const getProjectRoot = (): string => {
-  // In development, __dirname is in .vite/build, so go up to desktop then to project root
-  // In production, adjust as needed
-  if (app.isPackaged) {
-    return path.join(app.getPath("userData"), "..");
-  }
-  // Development: go from desktop/.vite/build to project root
-  return path.resolve(__dirname, "..", "..", "..");
-};
-
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({

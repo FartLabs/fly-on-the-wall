@@ -1,4 +1,8 @@
-import { LOCAL_STORAGE_KEYS } from "@/renderer/components/settings";
+import {
+  getSummarizationModelParams,
+  LOCAL_STORAGE_KEYS,
+  getMinSummaryLength
+} from "@/renderer/components/settings";
 
 export interface SummarizationProgress {
   status: "loading" | "downloading" | "summarizing" | "complete" | "error";
@@ -22,16 +26,8 @@ export interface SummarizeParams {
 
 type ProgressCallback = (progress: SummarizationProgress) => void;
 
-const DEFAULT_MIN_SUMMARY_LENGTH = 20;
+// TODO: move all localstorage related logic to settings.ts
 
-export function getMinLengthForSummarization(): number {
-  const stored = localStorage.getItem(LOCAL_STORAGE_KEYS.MIN_SUMMARY_LENGTH);
-  if (stored) {
-    const parsed = parseInt(stored, 10);
-    if (!isNaN(parsed) && parsed >= 0) return parsed;
-  }
-  return DEFAULT_MIN_SUMMARY_LENGTH;
-}
 const STORAGE_KEY_CUSTOM_PROMPT =
   LOCAL_STORAGE_KEYS.CUSTOM_SUMMARIZATION_PROMPT;
 const STORAGE_KEY_MODEL_PATH =
@@ -146,7 +142,7 @@ export async function summarizeText(
 ): Promise<SummarizationResult> {
   const startTime = Date.now();
 
-  if (text.trim().length < getMinLengthForSummarization()) {
+  if (text.trim().length < getMinSummaryLength()) {
     return {
       summary: "This meeting concluded with no substantive discussion.",
       duration: 0
@@ -204,21 +200,13 @@ export async function summarizeText(
   console.log(`[Summarization] Final prompt: ${prompt}...`);
 
   try {
-    // Load summarization parameters from settings
-    const maxTokens = parseInt(
-      localStorage.getItem("summarizationMaxTokens") || "1024",
-      10
-    );
-    const temperature = parseFloat(
-      localStorage.getItem("summarizationTemperature") || "0.7"
-    );
-    const topP = parseFloat(localStorage.getItem("summarizationTopP") || "0.9");
-    const topK = parseInt(
-      localStorage.getItem("summarizationTopK") || "40",
-      10
-    );
-    const repeatPenalty = parseFloat(
-      localStorage.getItem("summarizationRepeatPenalty") || "1.1"
+    const summarizationParams = getSummarizationModelParams();
+
+    const { maxTokens, temperature, topP, topK, repeatPenalty } =
+      summarizationParams;
+
+    console.log(
+      `[Summarization] Parameters: maxTokens=${maxTokens}, temperature=${temperature}, topP=${topP}, topK=${topK}, repeatPenalty=${repeatPenalty}`
     );
 
     const result = await window.electronAPI.summarize({

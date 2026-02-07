@@ -2,14 +2,15 @@ import { elements } from "./domNodes";
 import { clamp } from "@/utils";
 
 export const LOCAL_STORAGE_KEYS = {
-  MIN_SUMMARY_LENGTH: "minSummaryLength",
+  // summarization model parameters
   MAX_TOKENS: "summarizationMaxTokens",
   TEMPERATURE: "summarizationTemperature",
   TOP_P: "summarizationTopP",
   TOP_K: "summarizationTopK",
   REPEAT_PENALTY: "summarizationRepeatPenalty",
 
-  // not from settings, but they can still be customized else where
+  // other summarization settings
+  MIN_SUMMARY_LENGTH: "minSummaryLength",
   CUSTOM_SUMMARIZATION_PROMPT: "customSummarizationPrompt",
   SELECTED_SUMMARIZATION_MODEL_PATH: "selectedSummarizationModelPath",
 
@@ -66,7 +67,7 @@ function parseNumericSetting(
   return clamp(parsed, limits.min, limits.max);
 }
 
-export function getSettings(): AppSettings {
+function getSettings(): AppSettings {
   return {
     minSummaryLength: parseNumericSetting(
       localStorage.getItem(LOCAL_STORAGE_KEYS.MIN_SUMMARY_LENGTH),
@@ -101,7 +102,7 @@ export function getSettings(): AppSettings {
   };
 }
 
-export function getSummarizationSettings(): SummarizationSettings {
+export function getSummarizationModelParams(): SummarizationSettings {
   const settings = getSettings();
   return {
     maxTokens: settings.maxTokens,
@@ -237,7 +238,6 @@ function handleResetSettings(): void {
 export function setupSettingsListeners(): void {
   loadSettingsIntoUI();
 
-  // Save/reset buttons
   if (elements.saveSettingsBtn) {
     elements.saveSettingsBtn.addEventListener("click", handleSaveSettings);
   }

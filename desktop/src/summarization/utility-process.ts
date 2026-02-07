@@ -45,11 +45,6 @@ function resetIdleTimer(): void {
       `[SummarizationProcess] Idle timeout reached, disposing model to free memory`
     );
     await disposeModel();
-
-    if (global.gc) {
-      console.log(`[SummarizationProcess] Running garbage collection`);
-      global.gc();
-    }
   }, IDLE_TIMEOUT_MS);
 }
 

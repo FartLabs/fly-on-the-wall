@@ -9,14 +9,14 @@ import {
   summarizeText,
   checkSummarizationModelDownloaded,
   getSelectedModelPath,
-  type SummarizationProgress,
-  getMinLengthForSummarization
+  type SummarizationProgress
 } from "@/summarization";
 import {
   getSelectedTranscriptionModel,
   setTranscriptionInProgress
 } from "./models";
 import { elements } from "./domNodes";
+import { getMinSummaryLength } from "./settings";
 
 // 1 GB threshold for large file warning
 // TODO: make this configurable via settings
@@ -280,7 +280,7 @@ async function processQueue(): Promise<void> {
       let summary = "";
       if (
         transcription &&
-        transcription.trim().length > getMinLengthForSummarization()
+        transcription.trim().length > getMinSummaryLength()
       ) {
         item.status = "summarizing";
         renderQueue();

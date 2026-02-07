@@ -131,26 +131,23 @@ const config: ForgeConfig = {
     },
     // check if node-llama-cpp or @node-llama-cpp exists in node_modules before packaging
     prePackage: async (config: ForgeConfig) => {
-      console.log("Running prePackage hook...");
-      const fs = await import("node:fs");
-      const path = await import("node:path");
+      console.log("[prePackage] Running prePackage hook...");
       const llamaPaths = [
         path.join(__dirname, "node_modules", "node-llama-cpp"),
         path.join(__dirname, "node_modules", "@node-llama-cpp")
       ];
       if (!llamaPaths.some((p) => fs.existsSync(p))) {
         console.warn(
-          "node-llama-cpp or @node-llama-cpp not found in node_modules"
+          "[prePackage] node-llama-cpp or @node-llama-cpp not found in node_modules"
         );
       } else {
-        console.log("both @node-llama-cpp and node-llama-cpp found.");
+        console.log(
+          "[prePackage] both @node-llama-cpp and node-llama-cpp found."
+        );
       }
     },
     postPackage: async (config: ForgeConfig, packageResult: PackageResult) => {
-      console.log("Running postPackage hook...");
-      const fs = await import("node:fs");
-      const path = await import("node:path");
-
+      console.log("[postPackage] Running postPackage hook...");
       for (const outputPath of packageResult.outputPaths) {
         // check if app.asar.unpacked exists
         const unpackedPath = path.join(
@@ -158,11 +155,13 @@ const config: ForgeConfig = {
           "resources",
           "app.asar.unpacked"
         );
-        console.log("Checking for unpacked path:", unpackedPath);
+        console.log("[postPackage] Checking for unpacked path:", unpackedPath);
         if (!fs.existsSync(unpackedPath)) {
-          console.warn("app.asar.unpacked not found after packaging");
+          console.warn(
+            "[postPackage] app.asar.unpacked not found after packaging"
+          );
         } else {
-          console.log("app.asar.unpacked found.");
+          console.log("[postPackage] app.asar.unpacked found.");
         }
       }
     }

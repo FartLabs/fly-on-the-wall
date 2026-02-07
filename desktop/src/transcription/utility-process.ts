@@ -4,7 +4,6 @@ import path from "node:path";
 // import transformers.js early so we can configure it
 // TODO: in the future, will use an existing node bindings for whisper.cpp (or one from scratch in this
 // project) since i believe some of the current solutions are not actively maintained
-let transformersModule: any = null;
 
 export type TranscriptionMessage =
   | {
@@ -313,7 +312,6 @@ async function handleSetModelsPath(data: {
     env.allowLocalModels = true;
     env.allowRemoteModels = true;
     env.cacheDir = modelsPath;
-    transformersModule = { env };
     console.log(
       `[TranscriptionProcess] Transformers.js configured with cache dir: ${modelsPath}`
     );
