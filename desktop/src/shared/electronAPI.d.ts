@@ -1,5 +1,30 @@
 // https://www.electronjs.org/docs/latest/tutorial/context-isolation#usage-with-typescript
+
+export interface AppConfig {
+  summarizationParameters: {
+    maxTokens: number;
+    temperature: number;
+    topP: number;
+    topK: number;
+    repeatPenalty: number;
+  };
+  summarization: {
+    minSummaryLength: number;
+    customPrompt: string;
+    selectedModelPath: string;
+  };
+  transcription: {
+    selectedModel: string;
+  };
+  app: {
+    introNoteCreated: boolean;
+  };
+}
+
 export default interface IElectronAPI {
+  configGet: () => Promise<AppConfig>;
+  configSet: (partialConfig: Partial<AppConfig>) => Promise<AppConfig>;
+
   saveRecording: (data: {
     buffer: ArrayBuffer;
     filename: string;

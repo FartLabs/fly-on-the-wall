@@ -50,10 +50,7 @@ import { setupHistoryListeners } from "./components/history";
 import { setupPromptCustomizer } from "./components/promptCustomizer";
 import { setupSidebarListeners } from "./components/leftSideBar";
 import { setupRightPanelListeners } from "./components/rightSideBar";
-import {
-  LOCAL_STORAGE_KEYS,
-  setupSettingsListeners
-} from "./components/settings";
+import { setupSettingsListeners } from "./components/settings";
 import { setupNavigationListeners } from "./components/navigation";
 import { setupImportListeners } from "./components/importAudio";
 import IElectronAPI from "@/shared/electronAPI";
@@ -98,15 +95,12 @@ elements.stopBtn.addEventListener("click", stopRecording);
 
 refreshModelsList()
   .then(async () => {
-    const selTranscription = getSelectedTranscriptionModel();
-    const selSummaryPath = getSelectedModelPath();
+    const selTranscription = await getSelectedTranscriptionModel();
+    const selSummaryPath = await getSelectedModelPath();
     console.log(`selected transcription model: ${selTranscription}`);
     console.log(`selected summarization model path: ${selSummaryPath}`);
 
-    const firstRunKey = LOCAL_STORAGE_KEYS.FIRST_RUN_KEY;
-    const alreadyCreated = localStorage.getItem(firstRunKey) === "true";
-
-    console.log("Is user's first run?", !alreadyCreated);
+    const alreadyCreated = localStorage.getItem("introNoteCreated") === "true";
 
     // create a introductory note if none exist yet
     // this will not run if user already has notes saved
@@ -123,7 +117,7 @@ refreshModelsList()
             filename: "hello_world.json"
           });
           if (res.success) {
-            localStorage.setItem(firstRunKey, "true");
+            localStorage.setItem("introNoteCreated", "true");
             console.log("Introductory note created:", res.filename);
           } else {
             console.error("Failed to create introductory note:", res.error);

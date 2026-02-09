@@ -14,19 +14,19 @@ export function setupPromptCustomizer(): void {
   elements.viewDefaultPromptBtn.addEventListener("click", handleViewDefault);
 }
 
-function loadSavedPrompt(): void {
-  const savedPrompt = getCustomPrompt();
+async function loadSavedPrompt(): Promise<void> {
+  const savedPrompt = await getCustomPrompt();
   if (savedPrompt) {
     elements.customPromptInput.value = savedPrompt;
   }
 }
 
-function handleSavePrompt(): void {
+async function handleSavePrompt(): Promise<void> {
   const prompt = elements.customPromptInput.value.trim();
-  saveCustomPrompt(prompt);
+  await saveCustomPrompt(prompt);
 
   const originalText = elements.savePromptBtn.textContent;
-  elements.savePromptBtn.textContent = "✓ Saved!";
+  elements.savePromptBtn.textContent = "Saved!";
   setTimeout(() => {
     elements.savePromptBtn.textContent = originalText;
   }, 2000);
@@ -34,10 +34,10 @@ function handleSavePrompt(): void {
   console.log("Custom prompt saved");
 }
 
-function handleResetPrompt(): void {
+async function handleResetPrompt(): Promise<void> {
   if (confirm("Reset to default prompt? This will clear your custom prompt.")) {
     elements.customPromptInput.value = "";
-    saveCustomPrompt("");
+    await saveCustomPrompt("");
     console.log("Prompt reset to default");
   }
 }

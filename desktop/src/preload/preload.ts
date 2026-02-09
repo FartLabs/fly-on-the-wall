@@ -5,6 +5,10 @@ import { contextBridge, ipcRenderer } from "electron";
 import IElectronAPI from "@/shared/electronAPI";
 
 const electronAPI: IElectronAPI = {
+  configGet: () => ipcRenderer.invoke("config-get"),
+  configSet: (partialConfig: Record<string, any>) =>
+    ipcRenderer.invoke("config-set", partialConfig),
+
   saveRecording: (data: { buffer: ArrayBuffer; filename: string }) =>
     ipcRenderer.invoke("save-recording", data),
   saveTranscription: (data: { text: string; filename: string }) =>

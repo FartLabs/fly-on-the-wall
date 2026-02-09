@@ -13,26 +13,23 @@ import {
 } from "@/transcription/whisper";
 import { getSelectedModelPath, saveSelectedModelPath } from "@/summarization";
 import { showNotification } from "./notifications";
-import { LOCAL_STORAGE_KEYS } from "./settings";
 
 let downloadingModel: WhisperModelSize | null = null;
 let isTranscribing = false;
 let isDownloadingGguf = false;
 let ggufDownloadProgressUnsub: (() => void) | null = null;
 
-const SELECTED_TRANSCRIPTION_MODEL =
-  LOCAL_STORAGE_KEYS.SELECTED_TRANSCRIPTION_MODEL;
-
-export function saveSelectedTranscriptionModel(
+export async function saveSelectedTranscriptionModel(
   modelSize: WhisperModelSize
-): void {
-  localStorage.setItem(SELECTED_TRANSCRIPTION_MODEL, modelSize);
+): Promise<void> {
+  await window.electronAPI.configSet({
+    transcription: { selectedModel: modelSize } as any
+  });
 }
 
-export function getSelectedTranscriptionModel(): WhisperModelSize | null {
-  return localStorage.getItem(
-    SELECTED_TRANSCRIPTION_MODEL
-  ) as WhisperModelSize | null;
+export async function getSelectedTranscriptionModel(): Promise<WhisperModelSize | null> {
+  const config = await window.electronAPI.configGet();
+  return (config.transcription.selectedModel as WhisperModelSize) || null;
 }
 
 export function setTranscriptionInProgress(inProgress: boolean): void {
@@ -40,9 +37,11 @@ export function setTranscriptionInProgress(inProgress: boolean): void {
   refreshModelsList();
 }
 
-function createModelItemHTML(status: ModelStatus): string {
+function createModelItemHTML(
+  status: ModelStatus,
+  selectedModel: WhisperModelSize | null
+): string {
   const isDownloading = downloadingModel === status.modelSize;
-  const selectedModel = getSelectedTranscriptionModel();
   const isSelected = status.downloaded && selectedModel === status.modelSize;
   const isRecording = isRecordingState();
   const isClickable = status.downloaded && !isTranscribing && !isRecording;
@@ -58,7 +57,7 @@ function createModelItemHTML(status: ModelStatus): string {
         <div class="model-meta">
           <span class="model-size">${status.size}</span>
           <span class="model-status ${status.downloaded ? "downloaded" : ""}">
-            ${status.downloaded ? "✓ Downloaded" : "Not downloaded"}
+            ${status.downloaded ? "Downloaded" : "Not downloaded"}
           </span>
         </div>
         <div class="model-description" style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">
@@ -177,7 +176,7 @@ async function renderGgufModelsList(): Promise<void> {
 
   try {
     const result = await window.electronAPI.listGgufModels();
-    const selectedModelPath = getSelectedModelPath();
+    const selectedModelPath = await getSelectedModelPath();
     const isRecording = isRecordingState();
 
     if (!result.success) {
@@ -267,18 +266,21 @@ export async function refreshModelsList(): Promise<void> {
 
     // auto-select first downloaded model if none selected
     const downloadedModels = statuses.filter((s) => s.downloaded);
-    const currentSelected = getSelectedTranscriptionModel();
+    const currentSelected = await getSelectedTranscriptionModel();
     if (
       downloadedModels.length > 0 &&
       (!currentSelected ||
         !downloadedModels.some((m) => m.modelSize === currentSelected))
     ) {
-      saveSelectedTranscriptionModel(downloadedModels[0].modelSize);
+      await saveSelectedTranscriptionModel(downloadedModels[0].modelSize);
     }
 
     let html =
       '<div class="model-section"><h3 style="font-size: 0.9rem; color: #888; margin-bottom: 0.75rem;">Transcription Models</h3>';
-    html += statuses.map((status) => createModelItemHTML(status)).join("");
+    const selectedTranscription = await getSelectedTranscriptionModel();
+    html += statuses
+      .map((status) => createModelItemHTML(status, selectedTranscription))
+      .join("");
     html += "</div>";
 
     html +=
@@ -410,7 +412,9 @@ export async function refreshModelsList(): Promise<void> {
   }
 }
 
-function selectTranscriptionModel(modelSize: WhisperModelSize): void {
+async function selectTranscriptionModel(
+  modelSize: WhisperModelSize
+): Promise<void> {
   if (isTranscribing) {
     console.log("Cannot change model during transcription");
     return;
@@ -419,7 +423,7 @@ function selectTranscriptionModel(modelSize: WhisperModelSize): void {
     console.log("Cannot change model during recording");
     return;
   }
-  saveSelectedTranscriptionModel(modelSize);
+  await saveSelectedTranscriptionModel(modelSize);
   console.log(`Selected model for transcription: ${modelSize}`);
   refreshModelsList();
 }
@@ -485,7 +489,7 @@ async function handleSelectSummaryModel(): Promise<void> {
       return;
     }
 
-    saveSelectedModelPath(importResult.path);
+    await saveSelectedModelPath(importResult.path);
     console.log(`Model imported and selected: ${importResult.path}`);
     showNotification(
       `Model "${importResult.fileName}" imported successfully`,
@@ -505,7 +509,7 @@ async function handleSelectGgufModel(modelPath: string): Promise<void> {
     return;
   }
 
-  saveSelectedModelPath(modelPath);
+  await saveSelectedModelPath(modelPath);
   console.log(`Selected GGUF model: ${modelPath}`);
   await renderGgufModelsList();
 }
@@ -557,7 +561,7 @@ async function handleImportGgufModel(): Promise<void> {
       "success"
     );
 
-    saveSelectedModelPath(importResult.path);
+    await saveSelectedModelPath(importResult.path);
 
     await refreshModelsList();
   } catch (error) {
@@ -665,7 +669,7 @@ async function handleDownloadGgufModel(): Promise<void> {
       );
 
       if (downloadResult.path) {
-        saveSelectedModelPath(downloadResult.path);
+        await saveSelectedModelPath(downloadResult.path);
       }
 
       const urlInput = document.getElementById(
@@ -723,8 +727,8 @@ async function handleDeleteGgufModel(modelPath: string): Promise<void> {
       return;
     }
 
-    if (getSelectedModelPath() === modelPath) {
-      saveSelectedModelPath("");
+    if ((await getSelectedModelPath()) === modelPath) {
+      await saveSelectedModelPath("");
     }
 
     console.log(`Model deleted: ${modelName}`);

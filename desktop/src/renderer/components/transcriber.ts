@@ -62,7 +62,7 @@ export async function runTranscription(
     console.warn("Save note button not found to hide");
   }
 
-  const modelSize = getSelectedTranscriptionModel();
+  const modelSize = await getSelectedTranscriptionModel();
 
   if (!modelSize) {
     alert(
@@ -163,7 +163,7 @@ export function setupTranscriptionListeners() {
     if (!lastTranscription) return;
     await navigator.clipboard.writeText(lastTranscription);
     const originalText = elements.copyTranscriptionBtn.textContent;
-    elements.copyTranscriptionBtn.textContent = "✓ Copied!";
+    elements.copyTranscriptionBtn.textContent = "Copied!";
     setTimeout(
       () => (elements.copyTranscriptionBtn.textContent = originalText),
       2000

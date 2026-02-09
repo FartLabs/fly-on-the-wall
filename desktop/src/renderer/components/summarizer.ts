@@ -61,7 +61,7 @@ export async function runSummarization(
 ): Promise<void> {
   lastTimestamp = timestamp;
 
-  const selectedModelPath = getSelectedModelPath();
+  const selectedModelPath = await getSelectedModelPath();
   console.log(`Using summarization model: ${selectedModelPath || "none"}`);
 
   if (!selectedModelPath) {
@@ -151,7 +151,7 @@ export function setupSummarizationListeners(): void {
     if (!lastSummary) return;
     await navigator.clipboard.writeText(lastSummary);
     const originalText = elements.copySummaryBtn.textContent;
-    elements.copySummaryBtn.textContent = "✓ Copied!";
+    elements.copySummaryBtn.textContent = "Copied!";
     setTimeout(
       () => (elements.copySummaryBtn.textContent = originalText),
       2000
