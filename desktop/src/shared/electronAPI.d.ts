@@ -148,6 +148,41 @@ export default interface IElectronAPI {
     filename: string
   ) => Promise<{ success: boolean; buffer?: ArrayBuffer; error?: string }>;
 
+  downloadGgufModel: (data: {
+    url?: string;
+    repo?: string;
+    filename?: string;
+    revision?: string;
+  }) => Promise<{
+    success: boolean;
+    path?: string;
+    fileName?: string;
+    error?: string;
+  }>;
+  checkGgufModelUrl: (data: {
+    url?: string;
+    repo?: string;
+    filename?: string;
+    revision?: string;
+  }) => Promise<{
+    success: boolean;
+    fileName?: string;
+    size?: number;
+    sizeFormatted?: string;
+    exists?: boolean;
+    existingSize?: number;
+    existingSizeFormatted?: string;
+    error?: string;
+  }>;
+  onGgufDownloadProgress: (
+    callback: (progress: {
+      percent: number;
+      transferredBytes: number;
+      totalBytes: number;
+      message: string;
+    }) => void
+  ) => () => void;
+
   selectAudioFiles: () => Promise<{
     canceled: boolean;
     files: Array<{ path: string; name: string; size: number }>;

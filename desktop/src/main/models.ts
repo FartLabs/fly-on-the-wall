@@ -4,6 +4,7 @@ import path from "node:path";
 import fs from "node:fs";
 import { formatBytes } from "../utils";
 import { exportNoteHtml } from "./exportedNote";
+import type { ModelDownloader } from "node-llama-cpp";
 
 const getModelsDir = (): string => {
   const modelsDir = path.join(app.getPath("userData"), "models");
@@ -409,6 +410,211 @@ ipcMain.handle(
     } catch (error) {
       console.error("Error exporting note:", error);
       return { success: false, error: String(error) };
+    }
+  }
+);
+
+/**
+ * Supported formats:
+ *   - Direct HTTP URL (to the .gguf file): https://huggingface.co/user/repo/resolve/main/model.gguf
+ *   - Huggingface URI: hf:<user>/<model>:<quant>, hf:<user>/<model>/<file-path>#<branch>
+ *
+ * See: https://node-llama-cpp.withcat.ai/api/functions/createModelDownloader for more info
+ */
+function buildModelUri(data: {
+  url?: string;
+  repo?: string;
+  filename?: string;
+  revision?: string;
+}): { modelUri: string } | { error: string } {
+  if (data.url) {
+    const trimmed = data.url.trim();
+    if (
+      !trimmed.startsWith("http://") &&
+      !trimmed.startsWith("https://") &&
+      !trimmed.startsWith("hf:")
+    ) {
+      return {
+        error:
+          "URL must start with http://, https:// (highly recommended), or hf:"
+      };
+    }
+    return { modelUri: trimmed };
+  }
+
+  if (data.repo && data.filename) {
+    if (!data.filename.toLowerCase().endsWith(".gguf")) {
+      return { error: "Filename must end with .gguf" };
+    }
+    const revision = data.revision?.trim() || "main";
+    let modelUri = `hf:${data.repo}/${data.filename}`;
+    if (revision !== "main") {
+      modelUri += `#${revision}`;
+    }
+    return { modelUri };
+  }
+
+  return { error: "Provide either a URL, or a repo + filename" };
+}
+
+function broadcastToRenderer(channel: string, data: any): void {
+  // there's only one window for this app
+  const win = BrowserWindow.getAllWindows()[0];
+  if (win && !win.isDestroyed()) {
+    win.webContents.send(channel, data);
+  }
+}
+
+ipcMain.handle(
+  "check-gguf-model-url",
+  async (
+    _event,
+    data: {
+      url?: string;
+      repo?: string;
+      filename?: string;
+      revision?: string;
+    }
+  ) => {
+    try {
+      const result = buildModelUri(data);
+      if ("error" in result) {
+        return { success: false, error: result.error };
+      }
+
+      const summarizationDir = getSummarizationModelsDir();
+
+      let downloader: ModelDownloader;
+      try {
+        const { createModelDownloader } = await import("node-llama-cpp");
+        downloader = await createModelDownloader({
+          modelUri: result.modelUri,
+          dirPath: summarizationDir,
+          skipExisting: true
+        });
+      } catch (err) {
+        console.error("[Models] Failed to resolve model URI:", err);
+        return {
+          success: false,
+          error: `Failed to resolve model: ${err instanceof Error ? err.message : String(err)}`
+        };
+      }
+
+      const filename = downloader.entrypointFilename;
+      const size = downloader.totalSize || undefined;
+      const sizeFormatted = size ? formatBytes(size) : undefined;
+
+      // check if file already exists locally
+      const targetPath = path.join(summarizationDir, filename);
+      let exists = false;
+      let existingSize: number | undefined;
+      let existingSizeFormatted: string | undefined;
+
+      if (fs.existsSync(targetPath)) {
+        exists = true;
+        const stats = fs.statSync(targetPath);
+        existingSize = stats.size;
+        existingSizeFormatted = formatBytes(stats.size);
+      }
+
+      // then cancel the downloader, only need the metadata
+      await downloader.cancel({ deleteTempFile: true });
+
+      return {
+        success: true,
+        fileName: filename,
+        size,
+        sizeFormatted,
+        exists,
+        existingSize,
+        existingSizeFormatted
+      };
+    } catch (error) {
+      console.error("[Models] Error checking GGUF model URL:", error);
+      return { success: false, error: String(error) };
+    }
+  }
+);
+
+ipcMain.handle(
+  "download-gguf-model",
+  async (
+    _event,
+    data: {
+      url?: string;
+      repo?: string;
+      filename?: string;
+      revision?: string;
+    }
+  ) => {
+    try {
+      const result = buildModelUri(data);
+      if ("error" in result) {
+        return { success: false, error: result.error };
+      }
+
+      const summarizationDir = getSummarizationModelsDir();
+
+      console.log(`[Models] Downloading GGUF model: ${result.modelUri}`);
+      console.log(`[Models] Target directory: ${summarizationDir}`);
+
+      broadcastToRenderer("gguf-download-progress", {
+        percent: 0,
+        transferredBytes: 0,
+        totalBytes: 0,
+        message: "Resolving model..."
+      });
+
+      const { createModelDownloader } = await import("node-llama-cpp");
+      const downloader = await createModelDownloader({
+        modelUri: result.modelUri,
+        dirPath: summarizationDir,
+        skipExisting: false,
+        deleteTempFileOnCancel: true,
+        onProgress({ totalSize, downloadedSize }) {
+          const percent =
+            totalSize > 0 ? Math.round((downloadedSize / totalSize) * 100) : 0;
+          broadcastToRenderer("gguf-download-progress", {
+            percent,
+            transferredBytes: downloadedSize,
+            totalBytes: totalSize,
+            message:
+              totalSize > 0
+                ? `Downloading... ${formatBytes(downloadedSize)} / ${formatBytes(totalSize)} (${percent}%)`
+                : `Downloading... ${formatBytes(downloadedSize)}`
+          });
+        }
+      });
+
+      const filename = downloader.entrypointFilename;
+
+      console.log(
+        `[Models] Resolved filename: ${filename}, total size: ${formatBytes(downloader.totalSize)}`
+      );
+
+      const modelPath = await downloader.download();
+
+      broadcastToRenderer("gguf-download-progress", {
+        percent: 100,
+        transferredBytes: downloader.totalSize,
+        totalBytes: downloader.totalSize,
+        message: "Download complete!"
+      });
+
+      console.log(`[Models] GGUF model downloaded successfully: ${modelPath}`);
+      return { success: true, path: modelPath, fileName: filename };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+
+      broadcastToRenderer("gguf-download-progress", {
+        percent: 0,
+        transferredBytes: 0,
+        totalBytes: 0,
+        message: `Download failed: ${message}`
+      });
+
+      console.error("[Models] Error downloading GGUF model:", error);
+      return { success: false, error: message };
     }
   }
 );

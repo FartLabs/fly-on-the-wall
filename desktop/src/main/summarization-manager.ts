@@ -8,9 +8,9 @@ import {
 import path from "node:path";
 import type {
   SummarizationProcessMessage,
-  SummarizationProcessResponse,
-  MemoryUsage
+  SummarizationProcessResponse
 } from "../summarization/utility-process";
+import type { MemoryUsage } from "@/shared/utilityProcess";
 import { SummarizeParams } from "@/summarization";
 
 // TODO: Make these configurable via a settings page
@@ -125,7 +125,7 @@ function handleProcessExit(code: number | null): void {
   utilityProc = null;
   stopMemoryMonitoring();
 
-  for (const [id, handler] of pendingRequests.entries()) {
+  for (const [_, handler] of pendingRequests.entries()) {
     handler.reject(new Error(`Utility process exited with code ${code}`));
   }
   pendingRequests.clear();

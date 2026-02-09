@@ -17,10 +17,11 @@ import { LOCAL_STORAGE_KEYS } from "./settings";
 
 let downloadingModel: WhisperModelSize | null = null;
 let isTranscribing = false;
+let isDownloadingGguf = false;
+let ggufDownloadProgressUnsub: (() => void) | null = null;
 
 const SELECTED_TRANSCRIPTION_MODEL =
   LOCAL_STORAGE_KEYS.SELECTED_TRANSCRIPTION_MODEL;
-// const STORAGE_KEY_SELECTED_SUMMARY_MODEL = LOCAL_STORAGE_KEYS.SELECTED_SUMMARY_MODEL;
 
 export function saveSelectedTranscriptionModel(
   modelSize: WhisperModelSize
@@ -105,6 +106,65 @@ function createSummaryModelHTML(): string {
         Import Model
       </button>
     </div>
+
+    <div class="gguf-download-section">
+      <h4 class="gguf-download-title">Download from Hugging Face</h4>
+
+      <div class="gguf-download-tabs">
+        <button class="gguf-tab active" data-tab="url">Direct URL</button>
+        <button class="gguf-tab" data-tab="repo">Repo + Filename</button>
+      </div>
+
+      <div class="gguf-tab-content" id="ggufTabUrl">
+        <input
+          type="text"
+          id="ggufDirectUrlInput"
+          class="gguf-download-input"
+          placeholder="hf:lmstudio-community/Llama-3.2-1B-Instruct-GGUF:Q3_K_L"
+          ${isDownloadingGguf ? "disabled" : ""}
+        />
+      </div>
+
+      <div class="gguf-tab-content hidden" id="ggufTabRepo">
+        <input
+          type="text"
+          id="ggufRepoInput"
+          class="gguf-download-input"
+          placeholder="Repo ID (e.g. TheBloke/Llama-2-7B-GGUF)"
+          ${isDownloadingGguf ? "disabled" : ""}
+        />
+        <input
+          type="text"
+          id="ggufFilenameInput"
+          class="gguf-download-input"
+          placeholder="Filename (e.g. llama-2-7b.Q4_K_M.gguf)"
+          style="margin-top: 0.5rem;"
+          ${isDownloadingGguf ? "disabled" : ""}
+        />
+        <input
+          type="text"
+          id="ggufRevisionInput"
+          class="gguf-download-input"
+          placeholder="Branch/tag (default: main)"
+          style="margin-top: 0.5rem;"
+          ${isDownloadingGguf ? "disabled" : ""}
+        />
+      </div>
+
+      <div style="margin-top: 0.75rem;">
+        <button class="model-btn download-btn" id="ggufDownloadBtn" ${isButtonDisabled || isDownloadingGguf ? "disabled" : ""}>
+          ${isDownloadingGguf ? "Downloading..." : "Download Model"}
+        </button>
+      </div>
+
+      <div class="gguf-download-progress hidden" id="ggufDownloadProgress">
+        <div class="model-progress-bar">
+          <div class="model-progress-fill" id="ggufProgressFill"></div>
+        </div>
+        <div class="model-progress-text" id="ggufProgressText">Starting...</div>
+      </div>
+    </div>
+
     <div id="ggufModelsList">
       <div style="text-align: center; padding: 1rem; color: #888;">Loading models...</div>
     </div>
@@ -301,6 +361,33 @@ export async function refreshModelsList(): Promise<void> {
       });
     }
 
+    const tabs = elements.modelsList.querySelectorAll(".gguf-tab");
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        tabs.forEach((t) => t.classList.remove("active"));
+        tab.classList.add("active");
+        const tabName = (tab as HTMLElement).dataset.tab;
+        const urlContent = document.getElementById("ggufTabUrl");
+        const repoContent = document.getElementById("ggufTabRepo");
+        if (urlContent)
+          urlContent.classList.toggle("hidden", tabName !== "url");
+        if (repoContent)
+          repoContent.classList.toggle("hidden", tabName !== "repo");
+      });
+    });
+
+    const ggufDownloadBtn = document.getElementById("ggufDownloadBtn");
+    if (ggufDownloadBtn) {
+      ggufDownloadBtn.addEventListener("click", async (e) => {
+        if (isRecordingState() || isTranscribing || isDownloadingGguf) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        await handleDownloadGgufModel();
+      });
+    }
+
     elements.modelsList.querySelectorAll(".delete-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         if (isRecordingState() || isTranscribing) {
@@ -476,6 +563,144 @@ async function handleImportGgufModel(): Promise<void> {
   } catch (error) {
     console.error("Error importing model:", error);
     showNotification(`Error importing model: ${error}`, "error");
+  }
+}
+
+async function handleDownloadGgufModel(): Promise<void> {
+  const activeTab = document.querySelector(".gguf-tab.active") as HTMLElement;
+  const tabName = activeTab?.dataset.tab || "url";
+
+  let downloadData: {
+    url?: string;
+    repo?: string;
+    filename?: string;
+    revision?: string;
+  };
+
+  if (tabName === "url") {
+    const urlInput = document.getElementById(
+      "ggufDirectUrlInput"
+    ) as HTMLInputElement;
+    const url = urlInput?.value.trim();
+    if (!url) {
+      showNotification("Please enter a URL.", "error");
+      return;
+    }
+    downloadData = { url };
+  } else {
+    const repoInput = document.getElementById(
+      "ggufRepoInput"
+    ) as HTMLInputElement;
+    const filenameInput = document.getElementById(
+      "ggufFilenameInput"
+    ) as HTMLInputElement;
+    const revisionInput = document.getElementById(
+      "ggufRevisionInput"
+    ) as HTMLInputElement;
+    const repo = repoInput?.value.trim();
+    const filename = filenameInput?.value.trim();
+    const revision = revisionInput?.value.trim() || undefined;
+    if (!repo || !filename) {
+      showNotification("Please enter both repo ID and filename.", "error");
+      return;
+    }
+    if (!filename.toLowerCase().endsWith(".gguf")) {
+      showNotification("Filename must end with .gguf", "error");
+      return;
+    }
+    downloadData = { repo, filename, revision };
+  }
+
+  try {
+    const checkResult =
+      await window.electronAPI.checkGgufModelUrl(downloadData);
+    if (!checkResult.success) {
+      showNotification(`Invalid model: ${checkResult.error}`, "error");
+      return;
+    }
+
+    if (checkResult.exists) {
+      const incomingSize = checkResult.sizeFormatted || "unknown size";
+      const existingSize = checkResult.existingSizeFormatted || "unknown size";
+      const shouldReplace = confirm(
+        `A model named "${checkResult.fileName}" already exists.\n\n` +
+          `Existing file: ${existingSize}\n` +
+          `New file: ${incomingSize}\n\n` +
+          `Do you want to replace it?`
+      );
+      if (!shouldReplace) return;
+    }
+
+    isDownloadingGguf = true;
+    const progressContainer = document.getElementById("ggufDownloadProgress");
+    if (progressContainer) progressContainer.classList.remove("hidden");
+
+    if (ggufDownloadProgressUnsub) ggufDownloadProgressUnsub();
+    ggufDownloadProgressUnsub = window.electronAPI.onGgufDownloadProgress(
+      (progress) => {
+        const fill = document.getElementById("ggufProgressFill");
+        const text = document.getElementById("ggufProgressText");
+        if (fill) fill.style.width = `${progress.percent}%`;
+        if (text) text.textContent = progress.message;
+      }
+    );
+
+    const dlBtn = document.getElementById(
+      "ggufDownloadBtn"
+    ) as HTMLButtonElement;
+    if (dlBtn) {
+      dlBtn.disabled = true;
+      dlBtn.textContent = "Downloading...";
+    }
+
+    const downloadResult =
+      await window.electronAPI.downloadGgufModel(downloadData);
+
+    if (!downloadResult.success) {
+      showNotification(`Download failed: ${downloadResult.error}`, "error");
+    } else {
+      showNotification(
+        `Model "${downloadResult.fileName}" downloaded successfully!`,
+        "success"
+      );
+
+      if (downloadResult.path) {
+        saveSelectedModelPath(downloadResult.path);
+      }
+
+      const urlInput = document.getElementById(
+        "ggufDirectUrlInput"
+      ) as HTMLInputElement;
+      const repoInput = document.getElementById(
+        "ggufRepoInput"
+      ) as HTMLInputElement;
+      const filenameInput = document.getElementById(
+        "ggufFilenameInput"
+      ) as HTMLInputElement;
+      const revisionInput = document.getElementById(
+        "ggufRevisionInput"
+      ) as HTMLInputElement;
+      if (urlInput) urlInput.value = "";
+      if (repoInput) repoInput.value = "";
+      if (filenameInput) filenameInput.value = "";
+      if (revisionInput) revisionInput.value = "";
+    }
+  } catch (error) {
+    console.error("Error downloading GGUF model:", error);
+    showNotification(`Download error: ${error}`, "error");
+  } finally {
+    isDownloadingGguf = false;
+    if (ggufDownloadProgressUnsub) {
+      ggufDownloadProgressUnsub();
+      ggufDownloadProgressUnsub = null;
+    }
+
+    setTimeout(() => {
+      const progressContainer = document.getElementById("ggufDownloadProgress");
+      if (progressContainer) progressContainer.classList.add("hidden");
+    }, 2000);
+
+    await refreshModelsList();
   }
 }
 
