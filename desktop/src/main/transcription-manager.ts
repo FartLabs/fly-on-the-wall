@@ -22,7 +22,7 @@ const PROCESS_RECYCLE_TIMEOUT_MS = 5 * 60 * 1000;
 let utilityProc: UtilityProcess | null = null;
 let memoryCheckTimer: NodeJS.Timeout | null = null;
 let processRecycleTimer: NodeJS.Timeout | null = null;
-let pendingRequests: Map<
+const pendingRequests: Map<
   string,
   {
     resolve: (value: any) => void;
@@ -151,7 +151,7 @@ function handleProcessExit(code: number | null): void {
   modelsPathInitialized = false;
   stopMemoryMonitoring();
 
-  for (const [id, handler] of pendingRequests.entries()) {
+  for (const [_, handler] of pendingRequests.entries()) {
     handler.reject(new Error(`Utility process exited with code ${code}`));
   }
   pendingRequests.clear();
@@ -267,7 +267,7 @@ function sendToUtility(message: TranscriptionMessage): void {
 
 function sendMessageAndWait(
   message: TranscriptionMessage,
-  timeoutMs: number = 300000
+  timeoutMs = 300000
 ): Promise<any> {
   return new Promise((resolve, reject) => {
     (async () => {

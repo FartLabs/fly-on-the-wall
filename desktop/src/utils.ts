@@ -20,10 +20,7 @@ export function isScreenSource(source: { id: string; name: string }): boolean {
   );
 }
 
-export function generateDateLabel(
-  date: Date,
-  locale: string = "en-US"
-): string {
+export function generateDateLabel(date: Date, locale = "en-US"): string {
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
@@ -41,10 +38,7 @@ export function generateDateLabel(
   });
 }
 
-export function convertToLocaleTime(
-  date: Date,
-  locale: string = "en-US"
-): string {
+export function convertToLocaleTime(date: Date, locale = "en-US"): string {
   return date.toLocaleTimeString(locale, {
     hour: "numeric",
     minute: "2-digit",

@@ -5,8 +5,6 @@ import { elements } from "./domNodes";
 
 type Page = "main" | "history" | "settings";
 
-let currentPage: Page = "main";
-
 export function navigateToPage(page: Page): void {
   elements.mainPage?.classList.add("hidden");
   elements.historyPage?.classList.add("hidden");
@@ -24,7 +22,6 @@ export function navigateToPage(page: Page): void {
       break;
   }
 
-  currentPage = page;
   console.log(`Navigated to ${page} page`);
 }
 

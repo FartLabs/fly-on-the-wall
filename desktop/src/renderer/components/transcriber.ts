@@ -11,7 +11,6 @@ import {
 } from "./models";
 
 let lastTranscription: string | null = null;
-let lastTimestamp: string | null = null;
 let lastRecordingFilename: string | null = null;
 
 function updateProgress(progress: TranscriptionProgress): void {
@@ -47,7 +46,6 @@ export async function runTranscription(
     "[runTranscription] Recording filename received:",
     recordingFilename
   );
-  lastTimestamp = timestamp;
   lastRecordingFilename = recordingFilename || null;
   console.log(
     "[runTranscription] Set lastRecordingFilename to:",

@@ -22,7 +22,7 @@ const PROCESS_RECYCLE_TIMEOUT_MS = 5 * 60 * 1000;
 let utilityProc: UtilityProcess | null = null;
 let memoryCheckTimer: NodeJS.Timeout | null = null;
 let processRecycleTimer: NodeJS.Timeout | null = null;
-let pendingRequests: Map<
+const pendingRequests: Map<
   string,
   {
     resolve: (value: any) => void;
@@ -239,7 +239,7 @@ function sendToUtility(message: SummarizationProcessMessage): void {
 
 function sendMessageAndWait(
   message: SummarizationProcessMessage,
-  timeoutMs: number = 30000
+  timeoutMs = 30000
 ): Promise<any> {
   return new Promise((resolve, reject) => {
     if (!utilityProc) {

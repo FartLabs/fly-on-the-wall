@@ -130,7 +130,7 @@ const config: ForgeConfig = {
       console.log("[packageAfterCopy] testBindingBinary patch complete.");
     },
     // check if node-llama-cpp or @node-llama-cpp exists in node_modules before packaging
-    prePackage: async (config: ForgeConfig) => {
+    prePackage: async (_config: ForgeConfig) => {
       console.log("[prePackage] Running prePackage hook...");
       const llamaPaths = [
         path.join(__dirname, "node_modules", "node-llama-cpp"),
@@ -146,7 +146,7 @@ const config: ForgeConfig = {
         );
       }
     },
-    postPackage: async (config: ForgeConfig, packageResult: PackageResult) => {
+    postPackage: async (_config: ForgeConfig, packageResult: PackageResult) => {
       console.log("[postPackage] Running postPackage hook...");
       for (const outputPath of packageResult.outputPaths) {
         // check if app.asar.unpacked exists

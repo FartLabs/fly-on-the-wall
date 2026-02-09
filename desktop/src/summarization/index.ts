@@ -12,6 +12,7 @@ export interface SummarizationProgress {
 export interface SummarizationResult {
   summary: string;
   duration: number;
+  timestamp: string;
 }
 
 export interface SummarizeParams {
@@ -128,7 +129,8 @@ export async function summarizeText(
   text: string,
   onProgress?: ProgressCallback,
   modelPath?: string | null,
-  participants: string[] = []
+  participants: string[] = [],
+  timestamp: string = new Date().toISOString()
 ): Promise<SummarizationResult> {
   const startTime = Date.now();
 
@@ -136,7 +138,8 @@ export async function summarizeText(
   if (text.trim().length < minLength) {
     return {
       summary: "This meeting concluded with no substantive discussion.",
-      duration: 0
+      duration: 0,
+      timestamp
     };
   }
 
@@ -227,7 +230,8 @@ export async function summarizeText(
 
     return {
       summary,
-      duration
+      duration,
+      timestamp
     };
   } catch (error) {
     console.error("Summarization error:", error);

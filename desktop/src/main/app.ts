@@ -1,4 +1,4 @@
-import { app, BrowserWindow, protocol, net, Menu } from "electron";
+import { app, BrowserWindow, protocol, net } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
 import fs from "node:fs";

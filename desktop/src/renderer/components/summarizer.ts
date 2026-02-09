@@ -8,7 +8,6 @@ import {
 import { saveNote } from "./saveNote";
 
 let lastSummary: string | null = null;
-let lastTimestamp: string | null = null;
 
 export function clearSummary(): void {
   if (elements.summaryCard) {
@@ -27,7 +26,6 @@ export function clearSummary(): void {
     elements.summaryText.textContent = "";
   }
   lastSummary = null;
-  lastTimestamp = null;
 }
 
 function updateSummaryProgress(progress: SummarizationProgress): void {
@@ -57,10 +55,8 @@ function updateSummaryProgress(progress: SummarizationProgress): void {
 
 export async function runSummarization(
   transcription: string,
-  timestamp: string
+  _timestamp: string
 ): Promise<void> {
-  lastTimestamp = timestamp;
-
   const selectedModelPath = await getSelectedModelPath();
   console.log(`Using summarization model: ${selectedModelPath || "none"}`);
 

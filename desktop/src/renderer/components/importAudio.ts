@@ -248,7 +248,7 @@ async function processQueue(): Promise<void> {
       item.status = "transcribing";
       renderQueue();
 
-      const modelSize = getSelectedTranscriptionModel();
+      const modelSize = await getSelectedTranscriptionModel();
       if (!modelSize) {
         throw new Error(
           "No transcription model selected. Please select one in AI Models."
@@ -280,12 +280,12 @@ async function processQueue(): Promise<void> {
       let summary = "";
       if (
         transcription &&
-        transcription.trim().length > getMinSummaryLength()
+        transcription.trim().length > (await getMinSummaryLength())
       ) {
         item.status = "summarizing";
         renderQueue();
 
-        const selectedModelPath = getSelectedModelPath();
+        const selectedModelPath = await getSelectedModelPath();
         if (selectedModelPath) {
           const isModelValid =
             await checkSummarizationModelDownloaded(selectedModelPath);

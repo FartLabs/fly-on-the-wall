@@ -60,7 +60,7 @@ export async function startRecording(
     if (systemAudioEnabled) {
       try {
         const sources = await window.electronAPI.getDesktopSources();
-        let screenSource = sources.find(isScreenSource) || sources[0];
+        const screenSource = sources.find(isScreenSource) || sources[0];
 
         if (screenSource) {
           const systemStream = await navigator.mediaDevices.getUserMedia({

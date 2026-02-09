@@ -1,5 +1,4 @@
-import { app, ipcMain, dialog, shell } from "electron";
-import { BrowserWindow } from "electron";
+import { app, ipcMain, dialog, shell, BrowserWindow } from "electron";
 import path from "node:path";
 import fs from "node:fs";
 import { formatBytes } from "../utils";
