@@ -100,13 +100,14 @@ export const elements = {
 
   mainPage: document.getElementById("mainPage") as HTMLDivElement,
   historyPage: document.getElementById("historyPage") as HTMLDivElement,
-  settingsPage: document.getElementById("settingsPage") as HTMLDivElement,
+
+  settingsModal: document.getElementById("settingsModal") as HTMLDivElement,
+  closeSettingsModal: document.getElementById(
+    "closeSettingsModal"
+  ) as HTMLButtonElement,
 
   viewSettingsBtn: document.getElementById(
     "viewSettingsBtn"
-  ) as HTMLButtonElement,
-  backToMainFromSettings: document.getElementById(
-    "backToMainFromSettings"
   ) as HTMLButtonElement,
 
   batchOperationsToolbar: document.getElementById(

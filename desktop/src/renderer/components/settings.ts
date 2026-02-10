@@ -7,6 +7,7 @@ import {
   type AppSettings,
   type SummarizationSettings
 } from "@/shared/config";
+import { closeSettingsModal } from "./navigation";
 
 async function getSettings(): Promise<AppSettings> {
   const config = await window.electronAPI.configGet();
@@ -179,7 +180,8 @@ async function handleSaveSettings(): Promise<void> {
     elements.saveSettingsBtn.textContent = "Saved!";
     setTimeout(() => {
       elements.saveSettingsBtn.textContent = originalText;
-    }, 2000);
+      closeSettingsModal();
+    }, 1500);
   }
 
   console.log("Settings saved:", settings);

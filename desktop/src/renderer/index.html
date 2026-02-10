@@ -358,131 +358,133 @@
       </div>
     </div>
 
-    <div class="container hidden" id="settingsPage">
-      <div class="header-with-nav">
-        <div>
-          <h1>Settings</h1>
-          <p class="subtitle">Configure Application Settings</p>
-        </div>
-        <button
-          class="nav-btn"
-          id="backToMainFromSettings"
-          title="Back to recorder"
-        >
-          <span>Recorder</span>
-        </button>
-      </div>
-
-      <div class="settings-page-card">
-        <div class="card-header">
-          <h2>Summarization Settings</h2>
-        </div>
-
-        <div class="settings-group">
-          <label class="settings-label" for="minSummaryLengthInput">
-            Minimum Text Length
-            <span class="settings-hint"
-              >Skip summarization for short transcripts</span
-            >
-          </label>
-          <input
-            type="number"
-            id="minSummaryLengthInput"
-            class="settings-input"
-            min="0"
-            max="1000"
-            step="10"
-            value="20"
-          />
-        </div>
-
-        <div class="settings-group">
-          <label class="settings-label" for="maxTokensInput">
-            Max Tokens
-            <span class="settings-hint">Maximum output length (128-4096)</span>
-          </label>
-          <input
-            type="number"
-            id="maxTokensInput"
-            class="settings-input"
-            min="128"
-            max="4096"
-            step="64"
-            value="1024"
-          />
-        </div>
-
-        <div class="settings-group">
-          <label class="settings-label" for="temperatureInput">
-            Temperature
-            <span class="settings-hint">Creativity level (0.0-2.0)</span>
-          </label>
-          <input
-            type="number"
-            id="temperatureInput"
-            class="settings-input"
-            min="0"
-            max="2"
-            step="0.1"
-            value="0.7"
-          />
-        </div>
-
-        <div class="settings-group">
-          <label class="settings-label" for="topPInput">
-            Top P
-            <span class="settings-hint">Nucleus sampling (0.0-1.0)</span>
-          </label>
-          <input
-            type="number"
-            id="topPInput"
-            class="settings-input"
-            min="0"
-            max="1"
-            step="0.05"
-            value="0.9"
-          />
-        </div>
-
-        <div class="settings-group">
-          <label class="settings-label" for="topKInput">
-            Top K
-            <span class="settings-hint"
-              >Token selection limit (0-100, 0 = disabled)</span
-            >
-          </label>
-          <input
-            type="number"
-            id="topKInput"
-            class="settings-input"
-            min="0"
-            max="100"
-            step="1"
-            value="40"
-          />
-        </div>
-
-        <div class="settings-group">
-          <label class="settings-label" for="repeatPenaltyInput">
-            Repeat Penalty
-            <span class="settings-hint">Reduce repetition (1.0-2.0)</span>
-          </label>
-          <input
-            type="number"
-            id="repeatPenaltyInput"
-            class="settings-input"
-            min="1"
-            max="2"
-            step="0.05"
-            value="1.1"
-          />
-        </div>
-
-        <div class="settings-actions">
-          <button class="action-btn" id="saveSettingsBtn">Save Settings</button>
-          <button class="action-btn secondary" id="resetSettingsBtn">
-            Reset to Defaults
+    <div class="modal-overlay hidden" id="settingsModal">
+      <div class="modal-container">
+        <div class="modal-header">
+          <div>
+            <h2>Settings</h2>
+            <p class="modal-subtitle">Configure Application Settings</p>
+          </div>
+          <button class="modal-close-btn" id="closeSettingsModal" title="Close">
+            ✕
           </button>
+        </div>
+
+        <div class="modal-content">
+          <div class="settings-section">
+            <h3 class="settings-section-title">Summarization Settings</h3>
+
+            <div class="settings-group">
+              <label class="settings-label" for="minSummaryLengthInput">
+                Minimum Text Length
+                <span class="settings-hint"
+                  >Skip summarization for short transcripts</span
+                >
+              </label>
+              <input
+                type="number"
+                id="minSummaryLengthInput"
+                class="settings-input"
+                min="0"
+                max="1000"
+                step="10"
+                value="20"
+              />
+            </div>
+
+            <div class="settings-group">
+              <label class="settings-label" for="maxTokensInput">
+                Max Tokens
+                <span class="settings-hint"
+                  >Maximum output length (128-4096)</span
+                >
+              </label>
+              <input
+                type="number"
+                id="maxTokensInput"
+                class="settings-input"
+                min="128"
+                max="4096"
+                step="64"
+                value="1024"
+              />
+            </div>
+
+            <div class="settings-group">
+              <label class="settings-label" for="temperatureInput">
+                Temperature
+                <span class="settings-hint">Creativity level (0.0-2.0)</span>
+              </label>
+              <input
+                type="number"
+                id="temperatureInput"
+                class="settings-input"
+                min="0"
+                max="2"
+                step="0.1"
+                value="0.7"
+              />
+            </div>
+
+            <div class="settings-group">
+              <label class="settings-label" for="topPInput">
+                Top P
+                <span class="settings-hint">Nucleus sampling (0.0-1.0)</span>
+              </label>
+              <input
+                type="number"
+                id="topPInput"
+                class="settings-input"
+                min="0"
+                max="1"
+                step="0.05"
+                value="0.9"
+              />
+            </div>
+
+            <div class="settings-group">
+              <label class="settings-label" for="topKInput">
+                Top K
+                <span class="settings-hint"
+                  >Token selection limit (0-100, 0 = disabled)</span
+                >
+              </label>
+              <input
+                type="number"
+                id="topKInput"
+                class="settings-input"
+                min="0"
+                max="100"
+                step="1"
+                value="40"
+              />
+            </div>
+
+            <div class="settings-group">
+              <label class="settings-label" for="repeatPenaltyInput">
+                Repeat Penalty
+                <span class="settings-hint">Reduce repetition (1.0-2.0)</span>
+              </label>
+              <input
+                type="number"
+                id="repeatPenaltyInput"
+                class="settings-input"
+                min="1"
+                max="2"
+                step="0.05"
+                value="1.1"
+              />
+            </div>
+
+            <div class="settings-actions">
+              <button class="action-btn" id="saveSettingsBtn">
+                Save Settings
+              </button>
+              <button class="action-btn secondary" id="resetSettingsBtn">
+                Reset to Defaults
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
