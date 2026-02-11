@@ -53,15 +53,13 @@ const config: ForgeConfig = {
     new MakerDMG()
   ],
   publishers: [
-    // TODO: configure later when app is good enough for 1.0
-    // https://www.electronforge.io/config/publishers/github
-    // new PublisherGithub({
-    //   repository: {
-    //     owner: 'me',
-    //     name: 'awesome-thing'
-    //   },
-    //   prerelease: true
-    // })
+    new PublisherGithub({
+      repository: {
+        owner: "FartLabs",
+        name: "fly-on-the-wall"
+      },
+      prerelease: true
+    })
   ],
   hooks: {
     /**
