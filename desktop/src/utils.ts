@@ -20,7 +20,7 @@ export function isScreenSource(source: { id: string; name: string }): boolean {
   );
 }
 
-export function generateDateLabel(date: Date): string {
+export function generateDateLabel(date: Date, locale = "en-US"): string {
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
@@ -31,15 +31,15 @@ export function generateDateLabel(date: Date): string {
     return "Yesterday";
   }
 
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString(locale, {
     month: "short",
     day: "numeric",
     year: date.getFullYear() !== today.getFullYear() ? "numeric" : undefined
   });
 }
 
-export function convertToLocaleTime(date: Date): string {
-  return date.toLocaleTimeString("en-US", {
+export function convertToLocaleTime(date: Date, locale = "en-US"): string {
+  return date.toLocaleTimeString(locale, {
     hour: "numeric",
     minute: "2-digit",
     hour12: true
@@ -57,8 +57,21 @@ export function escapeHtml(unsafe: string): string {
 
 export function getBaseName(filename: string): string {
   // preserve filenames that are just an extension (e.g., ".gitignore")
-  if (filename.startsWith('.') && filename.lastIndexOf('.') === 0) {
+  if (filename.startsWith(".") && filename.lastIndexOf(".") === 0) {
     return filename;
   }
   return filename.replace(/\..*$/, "");
-};
+}
+
+const sizes = ["Bytes", "KB", "MB", "GB"];
+
+export function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+}
+
+export function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}

@@ -1,4 +1,11 @@
-import { generateDateLabel, convertToLocaleTime, escapeHtml, getBaseName } from "@/utils";
+import {
+  generateDateLabel,
+  convertToLocaleTime,
+  escapeHtml,
+  getBaseName
+} from "@/utils";
+import { navigateToPage } from "./navigation";
+import { elements } from "./domNodes";
 
 interface NoteFile {
   name: string;
@@ -9,27 +16,17 @@ interface NoteFile {
 }
 
 let currentNoteFilename: string | null = null;
+const selectedNotes: Set<string> = new Set();
 
 export function showHistoryPage(): void {
-  const mainPage = document.getElementById("mainPage");
-  const historyPage = document.getElementById("historyPage");
-
-  if (mainPage && historyPage) {
-    mainPage.classList.add("hidden");
-    historyPage.classList.remove("hidden");
-    loadHistory();
-  }
+  navigateToPage("history");
+  selectedNotes.clear();
+  loadHistory();
 }
 
 export function showMainPage(): void {
-  const mainPage = document.getElementById("mainPage");
-  const historyPage = document.getElementById("historyPage");
-
-  if (mainPage && historyPage) {
-    historyPage.classList.add("hidden");
-    mainPage.classList.remove("hidden");
-    closeNoteViewer();
-  }
+  navigateToPage("main");
+  closeNoteViewer();
 }
 
 export async function loadHistory(): Promise<void> {
@@ -53,6 +50,8 @@ export async function loadHistory(): Promise<void> {
       const item = createHistoryItem(file);
       historyList.appendChild(item);
     });
+
+    updateBatchOperationsUI();
   } catch (error) {
     console.error("Error loading history:", error);
     historyList.innerHTML =
@@ -63,6 +62,7 @@ export async function loadHistory(): Promise<void> {
 function createHistoryItem(file: NoteFile): HTMLElement {
   const item = document.createElement("div");
   item.className = "history-item";
+  item.dataset.filename = file.name;
 
   const filenameLabel = getBaseName(file.name);
 
@@ -70,13 +70,24 @@ function createHistoryItem(file: NoteFile): HTMLElement {
   const formattedDate = generateDateLabel(date);
   const formattedTime = convertToLocaleTime(date);
 
+  const isSelected = selectedNotes.has(file.name);
+
   item.innerHTML = `
+    <label class="history-item-checkbox">
+      <input type="checkbox" class="note-checkbox" data-filename="${escapeHtml(file.name)}" ${isSelected ? "checked" : ""} />
+    </label>
     <div class="history-item-info">
       <div class="history-item-type">${filenameLabel}</div>
       <div class="history-item-date">${formattedDate} at ${formattedTime}</div>
     </div>
     <button class="history-item-btn" title="View">👁️</button>
   `;
+
+  const checkbox = item.querySelector(".note-checkbox") as HTMLInputElement;
+  checkbox?.addEventListener("change", (e) => {
+    e.stopPropagation();
+    handleNoteCheckboxChange(file.name, checkbox.checked);
+  });
 
   const viewBtn = item.querySelector(".history-item-btn");
   viewBtn?.addEventListener("click", () => openNote(file.name));
@@ -100,72 +111,65 @@ async function openNote(filename: string): Promise<void> {
     const noteTranscription = document.getElementById("noteTranscription");
     const noteSummary = document.getElementById("noteSummary");
 
-    if (!noteViewerCard || !noteViewerTitle || !noteTranscription || !noteSummary) return;
+    if (
+      !noteViewerCard ||
+      !noteViewerTitle ||
+      !noteTranscription ||
+      !noteSummary
+    )
+      return;
 
     noteTranscription.textContent = "";
     noteSummary.textContent = "";
 
     if (result.content && typeof result.content === "object") {
-      const noteId = result.content.id || filename.replace(/\.json$/, "");
+      // TODO: add typings, don't wanna rely on "any"
+      const content = result.content as any;
+      const noteId = content.id || filename.replace(/\.json$/, "");
       noteViewerTitle.textContent = noteId;
       noteViewerTitle.removeAttribute("contenteditable");
       noteViewerTitle.classList.remove("editable");
 
-      noteTranscription.innerHTML = `<div>${escapeHtml(result.content.transcription || "")}</div>`;
-      noteSummary.innerHTML = `<div>${escapeHtml(result.content.summary || "")}</div>`;
+      noteTranscription.innerHTML = `<div>${escapeHtml(content.transcription || "")}</div>`;
+      noteSummary.innerHTML = `<div>${escapeHtml(content.summary || "")}</div>`;
       noteTranscription.removeAttribute("contenteditable");
       noteSummary.removeAttribute("contenteditable");
       noteTranscription.classList.remove("editable-body");
       noteSummary.classList.remove("editable-body");
 
+      await handleRecordingPlayback(content.metadata);
+      displayOriginalFilename(content.metadata);
+
       const copyTransBtn = document.getElementById("copyTranscriptionBtn");
       const copySummaryBtn = document.getElementById("copySummaryBtn");
-      
+
       noteTranscription.setAttribute("contenteditable", "true");
       noteSummary.setAttribute("contenteditable", "true");
       noteTranscription.classList.add("editable-body");
       noteSummary.classList.add("editable-body");
 
       const exportNoteBtn = document.getElementById("exportNoteBtn");
+      const autoSaveTimeoutRef = {
+        current: null as ReturnType<typeof setTimeout> | null
+      };
+      const autoSaveDelayMs = 1500;
 
-      async function saveEdits() {
-        try {
-          const newTitle = (noteViewerTitle.textContent || "").trim();
-          const newTrans = noteTranscription.textContent || "";
-          const newSum = noteSummary.textContent || "";
+      const boundSaveEdits = (silent = false) =>
+        saveEdits(
+          noteViewerTitle,
+          noteTranscription,
+          noteSummary,
+          filename,
+          noteId,
+          silent
+        );
 
-          if (!newTrans && !newSum) {
-            alert("Cannot save empty note.");
-            return;
-          }
-
-          const safeBase = (newTitle || noteId)
-            .replace(/[^a-zA-Z0-9-_ ]/g, "")
-            .trim()
-            .replace(/\s+/g, "_");
-          const newFilename = `${safeBase || noteId}.json`;
-
-          const res = await window.electronAPI.saveNote({
-            transcription: newTrans,
-            summary: newSum,
-            filename: newFilename
-          });
-
-          if (res && res.success) {
-            if (newFilename !== filename) {
-              await window.electronAPI.deleteNote(filename);
-              currentNoteFilename = newFilename;
-            }
-            alert("Note saved");
-            loadHistory();
-          } else {
-            alert("Failed to save note: " + (res && res.error));
-          }
-        } catch (err) {
-          console.error("Error saving note from viewer:", err);
-          alert("Error saving note");
-        }
-      }
+      const boundScheduleAutoSave = () =>
+        scheduleAutoSave(
+          autoSaveTimeoutRef,
+          () => boundSaveEdits(true),
+          autoSaveDelayMs
+        );
 
       noteViewerTitle.onclick = () => {
         noteViewerTitle.setAttribute("contenteditable", "true");
@@ -178,25 +182,23 @@ async function openNote(filename: string): Promise<void> {
         if (e.key === "Enter") {
           e.preventDefault();
           // remove title editable styling after saving
-          saveEdits().then(() => {
+          boundSaveEdits().then(() => {
             noteViewerTitle.removeAttribute("contenteditable");
             noteViewerTitle.classList.remove("editable");
           });
         }
       };
 
-      // auto-save when transcription/summary lose focus
-      noteTranscription.onblur = () => {
-        saveEdits();
-      };
-      noteSummary.onblur = () => {
-        saveEdits();
-      };
+      noteTranscription.addEventListener("input", boundScheduleAutoSave);
+      noteSummary.addEventListener("input", boundScheduleAutoSave);
+      noteViewerTitle.addEventListener("input", boundScheduleAutoSave);
 
       if (copyTransBtn) {
         copyTransBtn.onclick = async () => {
           try {
-            await navigator.clipboard.writeText(noteTranscription.textContent || "");
+            await navigator.clipboard.writeText(
+              noteTranscription.textContent || ""
+            );
             const orig = copyTransBtn.textContent;
             copyTransBtn.textContent = "Copied!";
             setTimeout(() => (copyTransBtn.textContent = orig), 2000);
@@ -205,7 +207,6 @@ async function openNote(filename: string): Promise<void> {
           }
         };
       }
-
 
       if (copySummaryBtn) {
         copySummaryBtn.onclick = async () => {
@@ -228,7 +229,15 @@ async function openNote(filename: string): Promise<void> {
               format: "pdf"
             });
             if (res && res.success) {
-              alert(`Exported to ${res.path}`);
+              const hasRecording =
+                result.content &&
+                (result.content as any).metadata &&
+                (result.content as any).metadata.recordingFilename;
+
+              const message = hasRecording
+                ? `Exported PDF and audio recording to ${res.path}`
+                : `Exported to ${res.path}`;
+              alert(message);
             } else {
               alert(`Export failed: ${res && res.error}`);
             }
@@ -250,12 +259,138 @@ async function openNote(filename: string): Promise<void> {
   }
 }
 
+async function handleRecordingPlayback(
+  metadata?: Record<string, any>
+): Promise<void> {
+  console.log("[handleRecordingPlayback] Called with metadata:", metadata);
+
+  if (!elements.noteRecordingPlayer || !elements.noteAudioPlayer) {
+    console.log("[handleRecordingPlayback] Player elements not found");
+    return;
+  }
+
+  elements.noteRecordingPlayer.classList.add("hidden");
+  elements.noteAudioPlayer.src = "";
+
+  if (!metadata || !metadata.recordingFilename) {
+    console.log("[handleRecordingPlayback] No recording filename in metadata");
+    return;
+  }
+
+  const recordingFilename = metadata.recordingFilename;
+  console.log(
+    "[handleRecordingPlayback] Found recording filename:",
+    recordingFilename
+  );
+
+  try {
+    const result = await window.electronAPI.getRecordingPath(recordingFilename);
+    console.log(
+      "[handleRecordingPlayback] getRecordingPath result:",
+      result.success
+    );
+
+    if (result.success && result.path) {
+      elements.noteAudioPlayer.src = `recording://${encodeURIComponent(result.path)}`;
+      elements.noteRecordingPlayer.classList.remove("hidden");
+      console.log(`Loaded recording: ${recordingFilename}`);
+    } else {
+      console.warn(
+        `Recording file not found: ${recordingFilename}`,
+        result.error
+      );
+    }
+  } catch (error) {
+    console.error("Error loading recording:", error);
+  }
+}
+
+function displayOriginalFilename(metadata?: Record<string, any>): void {
+  const el = document.getElementById("noteOriginalFilename");
+  if (!el) return;
+
+  if (metadata && metadata.originalFilename) {
+    el.textContent = `Imported from: ${metadata.originalFilename}`;
+    el.classList.remove("hidden");
+  } else {
+    el.textContent = "";
+    el.classList.add("hidden");
+  }
+}
+
 function closeNoteViewer(): void {
   const noteViewerCard = document.getElementById("noteViewerCard");
   if (noteViewerCard) {
     noteViewerCard.classList.add("hidden");
   }
+
+  if (elements.noteAudioPlayer) {
+    elements.noteAudioPlayer.pause();
+    elements.noteAudioPlayer.src = "";
+  }
+  if (elements.noteRecordingPlayer) {
+    elements.noteRecordingPlayer.classList.add("hidden");
+  }
+
   currentNoteFilename = null;
+}
+
+async function saveEdits(
+  noteViewerTitle: HTMLElement,
+  noteTranscription: HTMLElement,
+  noteSummary: HTMLElement,
+  filename: string,
+  noteId: string,
+  silent = false
+): Promise<void> {
+  try {
+    const newTitle = (noteViewerTitle.textContent || "").trim();
+    const newTrans = noteTranscription.textContent || "";
+    const newSum = noteSummary.textContent || "";
+
+    if (!newTrans && !newSum) {
+      if (!silent) alert("Cannot save empty note.");
+      return;
+    }
+
+    const safeBase = (newTitle || noteId)
+      .replace(/[^a-zA-Z0-9-_ ]/g, "")
+      .trim()
+      .replace(/\s+/g, "_");
+    const newFilename = `${safeBase || noteId}.json`;
+
+    const res = await window.electronAPI.saveNote({
+      transcription: newTrans,
+      summary: newSum,
+      filename: newFilename
+    });
+
+    if (res && res.success) {
+      if (newFilename !== filename) {
+        await window.electronAPI.deleteNote(filename);
+        currentNoteFilename = newFilename;
+      }
+      loadHistory();
+    } else {
+      if (!silent) alert("Failed to save note: " + (res && res.error));
+    }
+  } catch (err) {
+    console.error("Error saving note from viewer:", err);
+    if (!silent) alert("Error saving note");
+  }
+}
+
+function scheduleAutoSave(
+  autoSaveTimeoutRef: { current: ReturnType<typeof setTimeout> | null },
+  saveCallback: () => void,
+  delayMs: number
+): void {
+  if (autoSaveTimeoutRef.current) {
+    clearTimeout(autoSaveTimeoutRef.current);
+  }
+  autoSaveTimeoutRef.current = setTimeout(() => {
+    saveCallback();
+  }, delayMs);
 }
 
 async function deleteCurrentNote(): Promise<void> {
@@ -300,4 +435,104 @@ export function setupHistoryListeners(): void {
 
   closeNoteBtn?.addEventListener("click", closeNoteViewer);
   deleteNoteBtn?.addEventListener("click", deleteCurrentNote);
+
+  elements.selectAllNotesCheckbox?.addEventListener("change", handleSelectAll);
+  elements.deleteSelectedBtn?.addEventListener("click", deleteSelectedNotes);
+}
+
+function handleNoteCheckboxChange(filename: string, checked: boolean): void {
+  if (checked) {
+    selectedNotes.add(filename);
+  } else {
+    selectedNotes.delete(filename);
+  }
+  updateBatchOperationsUI();
+}
+
+function handleSelectAll(e: Event): void {
+  const target = e.target as HTMLInputElement;
+  const checkboxes = document.querySelectorAll(
+    ".note-checkbox"
+  ) as NodeListOf<HTMLInputElement>;
+
+  checkboxes.forEach((checkbox) => {
+    checkbox.checked = target.checked;
+    const filename = checkbox.dataset.filename;
+    if (filename) {
+      if (target.checked) {
+        selectedNotes.add(filename);
+      } else {
+        selectedNotes.delete(filename);
+      }
+    }
+  });
+
+  updateBatchOperationsUI();
+}
+
+function updateBatchOperationsUI(): void {
+  const count = selectedNotes.size;
+  const hasNotes = document.querySelectorAll(".history-item").length > 0;
+
+  if (hasNotes && elements.batchOperationsToolbar) {
+    elements.batchOperationsToolbar.classList.remove("hidden");
+  } else if (elements.batchOperationsToolbar) {
+    elements.batchOperationsToolbar.classList.add("hidden");
+  }
+
+  if (elements.selectedCount) {
+    elements.selectedCount.textContent = `${count} selected`;
+  }
+
+  if (elements.selectAllNotesCheckbox) {
+    const totalCheckboxes = document.querySelectorAll(".note-checkbox").length;
+    const allSelected = count > 0 && count === totalCheckboxes;
+    const someSelected = count > 0 && count < totalCheckboxes;
+
+    elements.selectAllNotesCheckbox.checked = allSelected;
+    elements.selectAllNotesCheckbox.indeterminate = someSelected;
+  }
+
+  if (elements.deleteSelectedBtn) {
+    elements.deleteSelectedBtn.disabled = count === 0;
+  }
+}
+
+async function deleteSelectedNotes(): Promise<void> {
+  const count = selectedNotes.size;
+
+  if (count === 0) {
+    return;
+  }
+
+  const confirmed = confirm(
+    `Are you sure you want to delete ${count} note${count > 1 ? "s" : ""}? This cannot be undone.`
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    const deletePromises = Array.from(selectedNotes).map((filename) =>
+      window.electronAPI.deleteNote(filename)
+    );
+
+    const results = await Promise.all(deletePromises);
+
+    const failed = results.filter((r) => !r.success);
+
+    if (failed.length > 0) {
+      alert(
+        `Failed to delete ${failed.length} note${failed.length > 1 ? "s" : ""}`
+      );
+    }
+
+    selectedNotes.clear();
+    closeNoteViewer();
+    loadHistory();
+  } catch (error) {
+    console.error("Error deleting notes:", error);
+    alert("Failed to delete notes");
+  }
 }

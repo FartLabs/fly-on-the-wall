@@ -1,8 +1,9 @@
-import { app, ipcMain, dialog } from "electron";
-import { BrowserWindow } from "electron";
+import { app, ipcMain, dialog, shell, BrowserWindow } from "electron";
 import path from "node:path";
 import fs from "node:fs";
-import { getProjectRoot } from "./app";
+import { formatBytes } from "../utils";
+import { exportNoteHtml } from "./exportedNote";
+import type { ModelDownloader } from "node-llama-cpp";
 
 const getModelsDir = (): string => {
   const modelsDir = path.join(app.getPath("userData"), "models");
@@ -12,8 +13,165 @@ const getModelsDir = (): string => {
   return modelsDir;
 };
 
+const getModelsCacheDir = (): string => {
+  const cacheDir = path.join(app.getPath("userData"), "cache", "models");
+  if (!fs.existsSync(cacheDir)) {
+    fs.mkdirSync(cacheDir, { recursive: true });
+  }
+  return cacheDir;
+};
+
+const getSummarizationModelsDir = (): string => {
+  const summarizationDir = path.join(
+    app.getPath("userData"),
+    "models",
+    "summarization"
+  );
+  if (!fs.existsSync(summarizationDir)) {
+    fs.mkdirSync(summarizationDir, { recursive: true });
+  }
+  return summarizationDir;
+};
+
+export const getTranscriptionModelsDir = (): string => {
+  const transcriptionDir = path.join(
+    app.getPath("userData"),
+    "models",
+    "transcription"
+  );
+  if (!fs.existsSync(transcriptionDir)) {
+    fs.mkdirSync(transcriptionDir, { recursive: true });
+  }
+  return transcriptionDir;
+};
+
+const getNotesDir = (): string => {
+  const notesDir = path.join(app.getPath("userData"), "notes");
+  if (!fs.existsSync(notesDir)) {
+    fs.mkdirSync(notesDir, { recursive: true });
+  }
+  return notesDir;
+};
+
 ipcMain.handle("get-models-dir", () => {
   return getModelsDir();
+});
+
+ipcMain.handle("get-models-cache-dir", () => {
+  return getModelsCacheDir();
+});
+
+ipcMain.handle("open-models-folder", async () => {
+  try {
+    const summarizationDir = getSummarizationModelsDir();
+    await shell.openPath(summarizationDir);
+    return { success: true, path: summarizationDir };
+  } catch (error) {
+    console.error("Error opening models folder:", error);
+    return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle("list-gguf-models", async () => {
+  try {
+    const summarizationDir = getSummarizationModelsDir();
+    const files = fs.readdirSync(summarizationDir);
+    const ggufFiles = files
+      .filter((file) => file.toLowerCase().endsWith(".gguf"))
+      .map((file) => {
+        const filePath = path.join(summarizationDir, file);
+        const stats = fs.statSync(filePath);
+        return {
+          name: file,
+          path: filePath,
+          size: stats.size,
+          sizeFormatted: formatBytes(stats.size),
+          modified: stats.mtime.toISOString()
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    return { success: true, models: ggufFiles };
+  } catch (error) {
+    console.error("Error listing GGUF models:", error);
+    return { success: false, error: String(error), models: [] };
+  }
+});
+
+ipcMain.handle("select-model-file", async () => {
+  const result = await dialog.showOpenDialog({
+    title: "Select GGUF Model File",
+    filters: [
+      { name: "GGUF Models", extensions: ["gguf"] },
+      { name: "All Files", extensions: ["*"] }
+    ],
+    properties: ["openFile"]
+  });
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return { canceled: true };
+  }
+
+  return { canceled: false, filePath: result.filePaths[0] };
+});
+
+ipcMain.handle(
+  "import-gguf-model",
+  async (_event, data: { sourcePath: string; copyMode?: "copy" | "move" }) => {
+    try {
+      const summarizationDir = getSummarizationModelsDir();
+      const fileName = path.basename(data.sourcePath);
+      const targetPath = path.join(summarizationDir, fileName);
+
+      if (!data.sourcePath.toLowerCase().endsWith(".gguf")) {
+        return { success: false, error: "File must be a .gguf file" };
+      }
+
+      if (!fs.existsSync(data.sourcePath)) {
+        return { success: false, error: "Source file does not exist" };
+      }
+
+      if (fs.existsSync(targetPath)) {
+        return {
+          success: false,
+          error: "A model with this name already exists"
+        };
+      }
+
+      const mode = data.copyMode || "copy";
+      if (mode === "move") {
+        fs.renameSync(data.sourcePath, targetPath);
+        console.log(`Model moved: ${data.sourcePath} -> ${targetPath}`);
+      } else {
+        fs.copyFileSync(data.sourcePath, targetPath);
+        console.log(`Model copied: ${data.sourcePath} -> ${targetPath}`);
+      }
+
+      return { success: true, path: targetPath, fileName };
+    } catch (error) {
+      console.error("Error importing GGUF model:", error);
+      return { success: false, error: String(error) };
+    }
+  }
+);
+
+ipcMain.handle("delete-gguf-model", async (_event, modelPath: string) => {
+  try {
+    if (!modelPath.toLowerCase().endsWith(".gguf")) {
+      return { success: false, error: "File is not a .gguf file" };
+    }
+
+    if (fs.existsSync(modelPath)) {
+      fs.unlinkSync(modelPath);
+      console.log(`GGUF model deleted: ${modelPath}`);
+      return { success: true };
+    }
+
+    return { success: false, error: "Model file not found" };
+  } catch (error) {
+    console.error("Error deleting GGUF model:", error);
+    return { success: false, error: String(error) };
+  }
 });
 
 ipcMain.handle("check-model-exists", async (_event, modelId: string) => {
@@ -48,13 +206,7 @@ ipcMain.handle(
   "save-transcription",
   async (_event, data: { text: string; filename: string }) => {
     try {
-      const projectRoot = getProjectRoot();
-      const notesDir = path.join(projectRoot, "notes");
-
-      if (!fs.existsSync(notesDir)) {
-        fs.mkdirSync(notesDir, { recursive: true });
-      }
-
+      const notesDir = getNotesDir();
       const filePath = path.join(notesDir, data.filename);
       fs.writeFileSync(filePath, data.text, "utf-8");
 
@@ -66,8 +218,6 @@ ipcMain.handle(
     }
   }
 );
-
-// TODO: would it be possible to store transcriptions and summaries in browser's db instead?
 
 ipcMain.handle(
   "save-note",
@@ -81,12 +231,7 @@ ipcMain.handle(
     }
   ) => {
     try {
-      const projectRoot = getProjectRoot();
-      const notesDir = path.join(projectRoot, "notes");
-
-      if (!fs.existsSync(notesDir)) {
-        fs.mkdirSync(notesDir, { recursive: true });
-      }
+      const notesDir = getNotesDir();
 
       const ts = new Date();
       const filename =
@@ -115,12 +260,7 @@ ipcMain.handle(
 
 ipcMain.handle("list-notes", async () => {
   try {
-    const projectRoot = getProjectRoot();
-    const notesDir = path.join(projectRoot, "notes");
-
-    if (!fs.existsSync(notesDir)) {
-      return { success: true, files: [] };
-    }
+    const notesDir = getNotesDir();
 
     const files = fs
       .readdirSync(notesDir)
@@ -150,8 +290,7 @@ ipcMain.handle("list-notes", async () => {
 
 ipcMain.handle("read-note", async (_event, filename: string) => {
   try {
-    const projectRoot = getProjectRoot();
-    const notesDir = path.join(projectRoot, "notes");
+    const notesDir = getNotesDir();
     const filePath = path.join(notesDir, filename);
 
     const content = fs.readFileSync(filePath, "utf-8");
@@ -170,8 +309,7 @@ ipcMain.handle("read-note", async (_event, filename: string) => {
 
 ipcMain.handle("delete-note", async (_event, filename: string) => {
   try {
-    const projectRoot = getProjectRoot();
-    const notesDir = path.join(projectRoot, "notes");
+    const notesDir = getNotesDir();
     const filePath = path.join(notesDir, filename);
 
     fs.unlinkSync(filePath);
@@ -187,8 +325,7 @@ ipcMain.handle(
   "export-note",
   async (_event, data: { filename: string; format: string }) => {
     try {
-      const projectRoot = getProjectRoot();
-      const notesDir = path.join(projectRoot, "notes");
+      const notesDir = getNotesDir();
       const filePath = path.join(notesDir, data.filename);
 
       if (!fs.existsSync(filePath)) {
@@ -198,7 +335,7 @@ ipcMain.handle(
       const content = fs.readFileSync(filePath, "utf-8");
       const note = JSON.parse(content);
 
-      const html = `<!doctype html><html><head><meta charset="utf-8"><title>${note.id}</title><style>body{font-family:Arial,Helvetica,sans-serif;padding:20px}h1{font-size:18px}h2{font-size:14px;margin-top:18px}pre{white-space:pre-wrap;background:#f7f7f7;padding:12px;border-radius:6px}</style></head><body><h1>${note.id}</h1><p>Created: ${note.created}</p><h2>Transcription</h2><pre>${note.transcription || ""}</pre><h2>Summary</h2><pre>${note.summary || ""}</pre></body></html>`;
+      const html = exportNoteHtml(note);
 
       // create a hidden BrowserWindow to render the HTML and print to PDF
       const win = new BrowserWindow({
@@ -208,11 +345,13 @@ ipcMain.handle(
         }
       });
 
-      await win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html));
+      await win.loadURL(
+        "data:text/html;charset=utf-8," + encodeURIComponent(html)
+      );
 
       if (data.format === "pdf") {
         const pdfBuffer = await win.webContents.printToPDF({
-          printBackground: true,
+          printBackground: true
         });
 
         const { canceled, filePath: savePath } = await dialog.showSaveDialog({
@@ -227,6 +366,40 @@ ipcMain.handle(
         }
 
         fs.writeFileSync(savePath, pdfBuffer);
+
+        // save the recording file if it exists
+        if (note.metadata && note.metadata.recordingFilename) {
+          try {
+            const recordingsDir = path.join(
+              app.getPath("userData"),
+              "recordings"
+            );
+            const recordingPath = path.join(
+              recordingsDir,
+              note.metadata.recordingFilename
+            );
+
+            if (fs.existsSync(recordingPath)) {
+              const pdfDir = path.dirname(savePath);
+              const pdfBaseName = path.basename(savePath, ".pdf");
+              const recordingExt = path.extname(
+                note.metadata.recordingFilename
+              );
+              const audioSavePath = path.join(
+                pdfDir,
+                `${pdfBaseName}${recordingExt}`
+              );
+
+              fs.copyFileSync(recordingPath, audioSavePath);
+              console.log(`Exported recording to: ${audioSavePath}`);
+            }
+          } catch (audioError) {
+            console.error("Error copying recording:", audioError);
+          }
+        } else {
+          console.log("No recording associated with this note.");
+        }
+
         win.destroy();
         return { success: true, path: savePath };
       }
@@ -240,181 +413,207 @@ ipcMain.handle(
   }
 );
 
-// interface ModelValidationResult {
-//   valid: boolean;
-//   error?: string;
-//   modelType?: string;
-//   modelName?: string;
-// }
+/**
+ * Supported formats:
+ *   - Direct HTTP URL (to the .gguf file): https://huggingface.co/user/repo/resolve/main/model.gguf
+ *   - Huggingface URI: hf:<user>/<model>:<quant>, hf:<user>/<model>/<file-path>#<branch>
+ *
+ * See: https://node-llama-cpp.withcat.ai/api/functions/createModelDownloader for more info
+ */
+function buildModelUri(data: {
+  url?: string;
+  repo?: string;
+  filename?: string;
+  revision?: string;
+}): { modelUri: string } | { error: string } {
+  if (data.url) {
+    const trimmed = data.url.trim();
+    if (
+      !trimmed.startsWith("http://") &&
+      !trimmed.startsWith("https://") &&
+      !trimmed.startsWith("hf:")
+    ) {
+      return {
+        error:
+          "URL must start with http://, https:// (highly recommended), or hf:"
+      };
+    }
+    return { modelUri: trimmed };
+  }
 
-// function validateSummarizationModel(modelPath: string): ModelValidationResult {
-//   try {
-//     if (!fs.existsSync(modelPath) || !fs.statSync(modelPath).isDirectory()) {
-//       return { valid: false, error: "Selected path is not a valid directory" };
-//     }
+  if (data.repo && data.filename) {
+    if (!data.filename.toLowerCase().endsWith(".gguf")) {
+      return { error: "Filename must end with .gguf" };
+    }
+    const revision = data.revision?.trim() || "main";
+    let modelUri = `hf:${data.repo}/${data.filename}`;
+    if (revision !== "main") {
+      modelUri += `#${revision}`;
+    }
+    return { modelUri };
+  }
 
-//     const configPath = path.join(modelPath, "config.json");
-//     const tokenizerPath = path.join(modelPath, "tokenizer.json");
-    
-//     if (!fs.existsSync(configPath)) {
-//       return { valid: false, error: "Missing config.json - not a valid model" };
-//     }
+  return { error: "Provide either a URL, or a repo + filename" };
+}
 
-//     if (!fs.existsSync(tokenizerPath)) {
-//       return { valid: false, error: "Missing tokenizer.json - not a valid model" };
-//     }
+function broadcastToRenderer(channel: string, data: any): void {
+  // there's only one window for this app
+  const win = BrowserWindow.getAllWindows()[0];
+  if (win && !win.isDestroyed()) {
+    win.webContents.send(channel, data);
+  }
+}
 
-//     const files = fs.readdirSync(modelPath);
-//     const hasOnnxFiles = files.some(file => file.endsWith('.onnx') || file.endsWith('.onnx_data'));
-    
-//     if (!hasOnnxFiles) {
-//       return { 
-//         valid: false, 
-//         error: "No ONNX model files found - model must be in ONNX format for transformers.js" 
-//       };
-//     }
+ipcMain.handle(
+  "check-gguf-model-url",
+  async (
+    _event,
+    data: {
+      url?: string;
+      repo?: string;
+      filename?: string;
+      revision?: string;
+    }
+  ) => {
+    try {
+      const result = buildModelUri(data);
+      if ("error" in result) {
+        return { success: false, error: result.error };
+      }
 
-//     const configContent = fs.readFileSync(configPath, 'utf-8');
-//     const config = JSON.parse(configContent);
+      const summarizationDir = getSummarizationModelsDir();
 
-//     // Extract model name from path or config
-//     const modelName = config.name || config._name_or_path || path.basename(modelPath);
+      let downloader: ModelDownloader;
+      try {
+        const { createModelDownloader } = await import("node-llama-cpp");
+        downloader = await createModelDownloader({
+          modelUri: result.modelUri,
+          dirPath: summarizationDir,
+          skipExisting: true
+        });
+      } catch (err) {
+        console.error("[Models] Failed to resolve model URI:", err);
+        return {
+          success: false,
+          error: `Failed to resolve model: ${err instanceof Error ? err.message : String(err)}`
+        };
+      }
 
-//     return { 
-//       valid: true, 
-//       modelType: 'text-generation',
-//       modelName 
-//     };
-//   } catch (error) {
-//     return { 
-//       valid: false, 
-//       error: `Error validating model: ${error instanceof Error ? error.message : String(error)}` 
-//     };
-//   }
-// }
+      const filename = downloader.entrypointFilename;
+      const size = downloader.totalSize || undefined;
+      const sizeFormatted = size ? formatBytes(size) : undefined;
 
-// ipcMain.handle("select-custom-model-folder", async () => {
-//   try {
-//     const result = await dialog.showOpenDialog({
-//       properties: ["openDirectory"],
-//       title: "Select Custom Model Folder",
-//       message: "Choose a folder containing an ONNX model for summarization"
-//     });
+      // check if file already exists locally
+      const targetPath = path.join(summarizationDir, filename);
+      let exists = false;
+      let existingSize: number | undefined;
+      let existingSizeFormatted: string | undefined;
 
-//     if (result.canceled || result.filePaths.length === 0) {
-//       return { success: false, canceled: true };
-//     }
+      if (fs.existsSync(targetPath)) {
+        exists = true;
+        const stats = fs.statSync(targetPath);
+        existingSize = stats.size;
+        existingSizeFormatted = formatBytes(stats.size);
+      }
 
-//     const selectedPath = result.filePaths[0];
-//     return { success: true, path: selectedPath };
-//   } catch (error) {
-//     console.error("Error selecting folder:", error);
-//     return { success: false, error: String(error) };
-//   }
-// });
+      // then cancel the downloader, only need the metadata
+      await downloader.cancel({ deleteTempFile: true });
 
-// ipcMain.handle("validate-custom-model", async (_event, modelPath: string) => {
-//   return validateSummarizationModel(modelPath);
-// });
+      return {
+        success: true,
+        fileName: filename,
+        size,
+        sizeFormatted,
+        exists,
+        existingSize,
+        existingSizeFormatted
+      };
+    } catch (error) {
+      console.error("[Models] Error checking GGUF model URL:", error);
+      return { success: false, error: String(error) };
+    }
+  }
+);
 
-// ipcMain.handle("import-custom-model", async (_event, data: { 
-//   sourcePath: string; 
-//   modelName: string;
-// }) => {
-//   try {
-//     const { sourcePath, modelName } = data;
+ipcMain.handle(
+  "download-gguf-model",
+  async (
+    _event,
+    data: {
+      url?: string;
+      repo?: string;
+      filename?: string;
+      revision?: string;
+    }
+  ) => {
+    try {
+      const result = buildModelUri(data);
+      if ("error" in result) {
+        return { success: false, error: result.error };
+      }
 
-//     const validation = validateSummarizationModel(sourcePath);
-//     if (!validation.valid) {
-//       return { success: false, error: validation.error };
-//     }
+      const summarizationDir = getSummarizationModelsDir();
 
-//     const modelsDir = getModelsDir();
-    
-//     const safeName = modelName.replace(/[^a-zA-Z0-9-_]/g, '_');
-//     const targetPath = path.join(modelsDir, `custom--${safeName}`);
+      console.log(`[Models] Downloading GGUF model: ${result.modelUri}`);
+      console.log(`[Models] Target directory: ${summarizationDir}`);
 
-//     if (fs.existsSync(targetPath)) {
-//       return { 
-//         success: false, 
-//         error: "A custom model with this name already exists" 
-//       };
-//     }
+      broadcastToRenderer("gguf-download-progress", {
+        percent: 0,
+        transferredBytes: 0,
+        totalBytes: 0,
+        message: "Resolving model..."
+      });
 
-//     fs.mkdirSync(targetPath, { recursive: true });
-//     copyDirectory(sourcePath, targetPath);
+      const { createModelDownloader } = await import("node-llama-cpp");
+      const downloader = await createModelDownloader({
+        modelUri: result.modelUri,
+        dirPath: summarizationDir,
+        skipExisting: false,
+        deleteTempFileOnCancel: true,
+        onProgress({ totalSize, downloadedSize }) {
+          const percent =
+            totalSize > 0 ? Math.round((downloadedSize / totalSize) * 100) : 0;
+          broadcastToRenderer("gguf-download-progress", {
+            percent,
+            transferredBytes: downloadedSize,
+            totalBytes: totalSize,
+            message:
+              totalSize > 0
+                ? `Downloading... ${formatBytes(downloadedSize)} / ${formatBytes(totalSize)} (${percent}%)`
+                : `Downloading... ${formatBytes(downloadedSize)}`
+          });
+        }
+      });
 
-//     const relativePath = path.relative(app.getPath('userData'), targetPath);
-//     const modelUrl = `app-data://${relativePath.replace(/\\/g, '/')}`;
+      const filename = downloader.entrypointFilename;
 
-//     console.log(`Custom model imported: ${targetPath}`);
-//     return { 
-//       success: true, 
-//       path: targetPath,
-//       url: modelUrl,
-//       modelId: `custom--${safeName}`
-//     };
-//   } catch (error) {
-//     console.error("Error importing custom model:", error);
-//     return { success: false, error: String(error) };
-//   }
-// });
+      console.log(
+        `[Models] Resolved filename: ${filename}, total size: ${formatBytes(downloader.totalSize)}`
+      );
 
-// ipcMain.handle("list-custom-models", async () => {
-//   try {
-//     const modelsDir = getModelsDir();
-    
-//     if (!fs.existsSync(modelsDir)) {
-//       return { success: true, models: [] };
-//     }
+      const modelPath = await downloader.download();
 
-//     const entries = fs.readdirSync(modelsDir, { withFileTypes: true });
-//     const customModels = entries
-//       .filter(entry => entry.isDirectory() && entry.name.startsWith('custom--'))
-//       .map(entry => {
-//         const modelPath = path.join(modelsDir, entry.name);
-//         const configPath = path.join(modelPath, 'config.json');
-        
-//         let modelName = entry.name.replace('custom--', '');
-        
-//         if (fs.existsSync(configPath)) {
-//           try {
-//             const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-//             modelName = config.name || config._name_or_path || modelName;
-//           } catch (e) {
-//             console.warn(`Could not read config for model ${entry.name}:`, e);
-//         }
-//         }
+      broadcastToRenderer("gguf-download-progress", {
+        percent: 100,
+        transferredBytes: downloader.totalSize,
+        totalBytes: downloader.totalSize,
+        message: "Download complete!"
+      });
 
-//         const modelUrl = modelPath;
+      console.log(`[Models] GGUF model downloaded successfully: ${modelPath}`);
+      return { success: true, path: modelPath, fileName: filename };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
 
-//         return {
-//           id: entry.name,
-//           name: modelName,
-//           path: modelPath,
-//           url: modelUrl
-//         };
-//       });
+      broadcastToRenderer("gguf-download-progress", {
+        percent: 0,
+        transferredBytes: 0,
+        totalBytes: 0,
+        message: `Download failed: ${message}`
+      });
 
-//     return { success: true, models: customModels };
-//   } catch (error) {
-//     console.error("Error listing custom models:", error);
-//     return { success: false, error: String(error), models: [] };
-//   }
-// });
-
-// function copyDirectory(source: string, destination: string) {
-//   const entries = fs.readdirSync(source, { withFileTypes: true });
-  
-//   for (const entry of entries) {
-//     const srcPath = path.join(source, entry.name);
-//     const destPath = path.join(destination, entry.name);
-    
-//     if (entry.isDirectory()) {
-//       fs.mkdirSync(destPath, { recursive: true });
-//       copyDirectory(srcPath, destPath);
-//     } else {
-//       fs.copyFileSync(srcPath, destPath);
-//     }
-//   }
-// }
+      console.error("[Models] Error downloading GGUF model:", error);
+      return { success: false, error: message };
+    }
+  }
+);

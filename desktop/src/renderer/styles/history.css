@@ -15,13 +15,26 @@
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   transition: all 0.2s ease;
-  cursor: pointer;
 }
 
 .history-item:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(102, 126, 234, 0.3);
   transform: translateX(4px);
+}
+
+.history-item-checkbox {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.history-item-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: rgba(102, 126, 234, 0.8);
 }
 
 .history-item-icon {
@@ -94,7 +107,7 @@
 }
 
 .note-section {
-  background: rgba(0,0,0,0.05);
+  background: rgba(0, 0, 0, 0.05);
   border-radius: 8px;
   padding: 0.75rem 1rem;
   min-height: 200px;
@@ -114,17 +127,120 @@
 }
 
 .editable {
-  outline: 2px dashed rgba(102,126,234,0.35);
+  outline: 2px dashed rgba(102, 126, 234, 0.35);
   padding: 4px 6px;
   border-radius: 6px;
 }
 
 .editable-body:focus {
-  outline: 2px dashed rgba(102,126,234,0.5);
+  outline: 2px dashed rgba(102, 126, 234, 0.5);
+}
+
+.batch-operations-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: rgba(102, 126, 234, 0.1);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.batch-selection-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.batch-select-all {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #fff;
+}
+
+.batch-select-all input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: rgba(102, 126, 234, 0.8);
+}
+
+.selected-count {
+  font-size: 0.85rem;
+  color: #aaa;
+  font-weight: 500;
+}
+
+.batch-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.history-header-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.action-btn.danger {
+  background: rgba(255, 107, 129, 0.2);
+  border-color: rgba(255, 107, 129, 0.3);
+  color: #ff6b81;
+}
+
+.action-btn.danger:hover:not(:disabled) {
+  background: rgba(255, 107, 129, 0.3);
+  border-color: rgba(255, 107, 129, 0.5);
+}
+
+.action-btn.danger:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.note-recording-player {
+  background: rgba(102, 126, 234, 0.1);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.recording-header {
+  margin-bottom: 0.75rem;
+}
+
+.recording-header h4 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.note-audio {
+  width: 100%;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.note-audio:focus {
+  outline: 2px solid rgba(102, 126, 234, 0.5);
+  outline-offset: 2px;
 }
 
 @media (max-width: 900px) {
   .note-sections {
     grid-template-columns: 1fr;
   }
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }

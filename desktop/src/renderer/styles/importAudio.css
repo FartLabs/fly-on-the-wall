@@ -1,0 +1,216 @@
+/* ── Import button ── */
+
+.import-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 1.25rem 0;
+}
+
+.import-divider::before,
+.import-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.import-divider-text {
+  font-size: 0.8rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.import-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.04);
+  color: #ccc;
+}
+
+.import-btn:hover {
+  border-color: rgba(102, 126, 234, 0.5);
+  background: rgba(102, 126, 234, 0.08);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.15);
+}
+
+.import-btn:active {
+  transform: translateY(0);
+}
+
+.import-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ── Import queue ── */
+
+.import-queue {
+  margin-top: 1.25rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1rem;
+  text-align: left;
+}
+
+.import-queue-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.import-queue-header h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ddd;
+  margin: 0;
+}
+
+.import-queue-count {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.import-queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.import-queue-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.85rem;
+}
+
+.import-queue-name {
+  flex: 1;
+  color: #ccc;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.import-queue-size {
+  color: #888;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.import-queue-status {
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.import-status-pending {
+  color: #888;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.import-status-active {
+  color: #60a5fa;
+  background: rgba(96, 165, 250, 0.12);
+  animation: importPulse 1.5s infinite;
+}
+
+.import-status-done {
+  color: #34d399;
+  background: rgba(52, 211, 153, 0.12);
+}
+
+.import-status-error {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.12);
+  cursor: help;
+}
+
+@keyframes importPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* ── Large file warning dialog ── */
+
+.import-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20000;
+}
+
+.import-dialog {
+  background: #1e1e2e;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 1.5rem 2rem;
+  max-width: 440px;
+  width: 90%;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+.import-dialog h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  color: #f0f0f0;
+}
+
+.import-dialog p {
+  font-size: 0.9rem;
+  color: #aaa;
+  margin: 0 0 0.5rem;
+  line-height: 1.5;
+}
+
+.import-dialog-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 1.25rem;
+  justify-content: flex-end;
+}
+
+/* ── Original filename in note viewer ── */
+
+.note-original-filename {
+  font-size: 0.82rem;
+  color: #888;
+  margin-bottom: 8px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  border-left: 3px solid rgba(102, 126, 234, 0.5);
+}

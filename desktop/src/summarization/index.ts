@@ -1,10 +1,7 @@
-// TODO: let users drop in their own onnx models for summarization
-
 import {
-  SUMMARIZATION_MODEL,
-  MODEL_SIZE,
-} from "./pipeline";
-import { sendWorkerMessage } from "../worker-client";
+  getSummarizationModelParams,
+  getMinSummaryLength
+} from "@/renderer/components/settings";
 
 export interface SummarizationProgress {
   status: "loading" | "downloading" | "summarizing" | "complete" | "error";
@@ -15,23 +12,40 @@ export interface SummarizationProgress {
 export interface SummarizationResult {
   summary: string;
   duration: number;
+  timestamp: string;
+}
+
+export interface SummarizeParams {
+  maxTokens?: number;
+  temperature?: number;
+  topP?: number;
+  topK?: number;
+  repeatPenalty?: number;
+  systemPrompt?: string;
 }
 
 type ProgressCallback = (progress: SummarizationProgress) => void;
 
-const MIN_LENGTH_FOR_SUMMARIZATION = 20;
-const STORAGE_KEY_CUSTOM_PROMPT = "customSummarizationPrompt";
-
-export function getCustomPrompt(): string | null {
-  return localStorage.getItem(STORAGE_KEY_CUSTOM_PROMPT);
+export async function getCustomPrompt(): Promise<string | null> {
+  const config = await window.electronAPI.configGet();
+  return config.summarization.customPrompt || null;
 }
 
-export function saveCustomPrompt(prompt: string): void {
-  if (prompt.trim()) {
-    localStorage.setItem(STORAGE_KEY_CUSTOM_PROMPT, prompt.trim());
-  } else {
-    localStorage.removeItem(STORAGE_KEY_CUSTOM_PROMPT);
-  }
+export async function saveCustomPrompt(prompt: string): Promise<void> {
+  await window.electronAPI.configSet({
+    summarization: { customPrompt: prompt.trim() } as any
+  });
+}
+
+export async function getSelectedModelPath(): Promise<string | null> {
+  const config = await window.electronAPI.configGet();
+  return config.summarization.selectedModelPath || null;
+}
+
+export async function saveSelectedModelPath(modelPath: string): Promise<void> {
+  await window.electronAPI.configSet({
+    summarization: { selectedModelPath: modelPath.trim() } as any
+  });
 }
 
 export function getDefaultPromptTemplate(
@@ -41,74 +55,39 @@ export function getDefaultPromptTemplate(
   return createDefaultPrompt(transcript, participants);
 }
 
-export async function checkSummarizationModelDownloaded(): Promise<boolean> {
-  // check the browser's Cache API
-  try {
-    const cache = await caches.open("transformers-cache");
-    const testUrl = `https://huggingface.co/${SUMMARIZATION_MODEL}/resolve/main/config.json`;
-    const cached = await cache.match(testUrl);
-    if (cached) {
-      return true;
-    }
-  } catch (e) {
-    console.log("Could not check summarization model cache:", e);
+export async function checkSummarizationModelDownloaded(
+  modelPath?: string
+): Promise<boolean> {
+  const path = modelPath || (await getSelectedModelPath());
+  if (!path) {
+    return false;
   }
 
-  return false;
-}
-
-export async function downloadSummarizationModel(
-  onProgress?: ProgressCallback
-): Promise<void> {
-  onProgress?.({
-    status: "downloading",
-    progress: 0,
-    message: `Downloading summarization model (${MODEL_SIZE})...`
-  });
-
-  await sendWorkerMessage({ type: "download-summarization" }, (data) => {
-    if (data.status === "downloading") {
-      onProgress?.({
-        status: "downloading",
-        progress: data.progress,
-        message: `Downloading: ${data.progress}%`
-      });
-    }
-  });
-
-  onProgress?.({
-    status: "complete",
-    progress: 100,
-    message: "Model ready!"
-  });
+  try {
+    const result = await window.electronAPI.checkSummarizationModel(path);
+    return result.success && result.exists === true && result.isValid === true;
+  } catch (error) {
+    console.error("Failed to check summarization model:", error);
+    return false;
+  }
 }
 
 export async function deleteSummarizationModel(): Promise<boolean> {
   try {
-    const cache = await caches.open("transformers-cache");
-
-    const cacheKeys = await cache.keys();
-    const modelKeys = cacheKeys.filter((request) =>
-      request.url.includes(SUMMARIZATION_MODEL)
-    );
-
-    for (const key of modelKeys) {
-      await cache.delete(key);
-    }
-
-    console.log(
-      `Summarization model deleted from cache: ${SUMMARIZATION_MODEL}`
-    );
-
-    // Dispose from worker memory
-    await sendWorkerMessage({ type: "dispose-summarization" });
-    console.log("Disposed Summarization model from worker memory");
-
-    return true;
+    const result = await window.electronAPI.disposeSummarizationModel();
+    return result.success;
   } catch (error) {
-    console.error("Failed to delete summarization model:", error);
+    console.error("Failed to dispose summarization model:", error);
     return false;
   }
+}
+
+export async function getModelsCacheDir(): Promise<string> {
+  return window.electronAPI.getModelsCacheDir();
+}
+
+export async function getModelsDir(): Promise<string> {
+  return window.electronAPI.getModelsDir();
 }
 
 function createDefaultPrompt(
@@ -149,16 +128,26 @@ ${transcript}
 export async function summarizeText(
   text: string,
   onProgress?: ProgressCallback,
-  modelId?: string | null,
-  participants: string[] = []
+  modelPath?: string | null,
+  participants: string[] = [],
+  timestamp: string = new Date().toISOString()
 ): Promise<SummarizationResult> {
   const startTime = Date.now();
 
-  if (text.trim().length < MIN_LENGTH_FOR_SUMMARIZATION) {
+  const minLength = await getMinSummaryLength();
+  if (text.trim().length < minLength) {
     return {
       summary: "This meeting concluded with no substantive discussion.",
-      duration: 0
+      duration: 0,
+      timestamp
     };
+  }
+
+  const actualModelPath = modelPath || (await getSelectedModelPath());
+  if (!actualModelPath) {
+    throw new Error(
+      "No summarization model selected. Please select a GGUF model file in settings."
+    );
   }
 
   onProgress?.({
@@ -166,49 +155,71 @@ export async function summarizeText(
     message: "Loading summarization model..."
   });
 
-  const customPrompt = getCustomPrompt();
+  let cleanupListener: (() => void) | undefined;
+  if (onProgress) {
+    const statusHandler = (status: any) => {
+      if (status.type === "status") {
+        if (status.status === "loading") {
+          onProgress({
+            status: "loading",
+            message: status.message || "Loading model..."
+          });
+        } else if (status.status === "summarizing") {
+          onProgress({
+            status: "summarizing",
+            message: status.message || "Generating summary..."
+          });
+        }
+      }
+    };
+    const removeListener =
+      window.electronAPI.onSummarizationStatus(statusHandler);
+    cleanupListener =
+      typeof removeListener === "function" ? removeListener : undefined;
+  }
+
+  const customPrompt = await getCustomPrompt();
   const prompt = customPrompt
     ? customPrompt
         .replace("{transcript}", text)
         .replace("{participants}", participants.join(", ") || "Not specified")
     : createDefaultPrompt(text, participants);
 
-  const actualModelId = modelId || SUMMARIZATION_MODEL;
-  console.log(`Using summarization model: ${actualModelId}`);
+  console.log(`Using summarization model: ${actualModelPath}`);
+  console.log(`[Summarization] Raw transcript length: ${text.length}`);
+  console.log(
+    `[Summarization] Raw transcript preview: ${text.substring(0, 200)}...`
+  );
+  console.log(`[Summarization] Final prompt length: ${prompt.length}`);
+  console.log(`[Summarization] Final prompt: ${prompt}...`);
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result: any = await sendWorkerMessage(
-      {
-        type: "summarize",
-        text: prompt, 
-        modelId: actualModelId, 
-     },
-      (data) => {
-        if (data.status === "downloading") {
-          onProgress?.({
-            status: "downloading",
-            progress: data.progress,
-            message: `Downloading model: ${data.progress}%`
-          });
-        } else if (data.status === "summarizing") {
-          onProgress?.({
-            status: "summarizing",
-            message: "Generating summary..."
-          });
-        }
-      }
+    const summarizationParams = await getSummarizationModelParams();
+
+    const { maxTokens, temperature, topP, topK, repeatPenalty } =
+      summarizationParams;
+
+    console.log(
+      `[Summarization] Parameters: maxTokens=${maxTokens}, temperature=${temperature}, topP=${topP}, topK=${topK}, repeatPenalty=${repeatPenalty}`
     );
 
-    console.log("Raw summarization result:", result);
+    const result = await window.electronAPI.summarize({
+      text: prompt,
+      modelPath: actualModelPath,
+      params: {
+        maxTokens,
+        temperature,
+        topP,
+        topK,
+        repeatPenalty
+      }
+    });
 
-    const generatedText = Array.isArray(result)
-      ? result[0]?.generated_text
-      : result?.generated_text;
-    const summary = (generatedText || "Could not generate summary.").trim();
+    if (!result.success) {
+      throw new Error(result.error || "Summarization failed");
+    }
 
-    console.log("Generated summary:", summary);
-
+    const summary = (result.summary || "Could not generate summary.").trim();
     const duration = (Date.now() - startTime) / 1000;
 
     onProgress?.({
@@ -219,7 +230,8 @@ export async function summarizeText(
 
     return {
       summary,
-      duration
+      duration,
+      timestamp
     };
   } catch (error) {
     console.error("Summarization error:", error);
@@ -228,5 +240,28 @@ export async function summarizeText(
       message: `Summarization failed: ${error}`
     });
     throw new Error(`Failed to generate summary: ${error}`);
+  } finally {
+    cleanupListener?.();
+  }
+}
+
+export async function checkSummarizationHealth(): Promise<{
+  healthy: boolean;
+  modelLoaded: boolean;
+  currentModelPath: string | null;
+}> {
+  try {
+    const result = await window.electronAPI.summarizationHealthCheck();
+    if (!result.success) {
+      return { healthy: false, modelLoaded: false, currentModelPath: null };
+    }
+    return {
+      healthy: result.healthy ?? false,
+      modelLoaded: result.modelLoaded ?? false,
+      currentModelPath: result.currentModelPath ?? null
+    };
+  } catch (error) {
+    console.error("Health check failed:", error);
+    return { healthy: false, modelLoaded: false, currentModelPath: null };
   }
 }

@@ -310,3 +310,97 @@
   border-radius: 4px;
   font-family: monospace;
 }
+
+.gguf-download-section {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+
+.gguf-download-title {
+  font-size: 0.85rem;
+  color: #aaa;
+  margin: 0 0 0.75rem 0;
+  font-weight: 500;
+}
+
+.gguf-download-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.gguf-tab {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background: rgba(255, 255, 255, 0.03);
+  color: #888;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.gguf-tab:not(:last-child) {
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.gguf-tab:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ccc;
+}
+
+.gguf-tab.active {
+  background: rgba(102, 126, 234, 0.2);
+  color: #a0b9ff;
+}
+
+.gguf-tab-content {
+  transition: opacity 0.15s ease;
+}
+
+.gguf-tab-content.hidden {
+  display: none;
+}
+
+.gguf-download-input {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.gguf-download-input:focus {
+  outline: none;
+  border-color: rgba(102, 126, 234, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.gguf-download-input::placeholder {
+  color: #555;
+  font-size: 0.78rem;
+}
+
+.gguf-download-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.gguf-download-progress {
+  margin-top: 0.75rem;
+}
+
+.gguf-download-progress.hidden {
+  display: none;
+}

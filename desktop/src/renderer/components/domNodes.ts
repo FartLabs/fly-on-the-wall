@@ -97,21 +97,59 @@ export const elements = {
     "rightPanelTrigger"
   ) as HTMLDivElement,
   exportNoteBtn: document.getElementById("exportNoteBtn") as HTMLButtonElement,
+
+  mainPage: document.getElementById("mainPage") as HTMLDivElement,
+  historyPage: document.getElementById("historyPage") as HTMLDivElement,
+
+  settingsModal: document.getElementById("settingsModal") as HTMLDivElement,
+  closeSettingsModal: document.getElementById(
+    "closeSettingsModal"
+  ) as HTMLButtonElement,
+
+  viewSettingsBtn: document.getElementById(
+    "viewSettingsBtn"
+  ) as HTMLButtonElement,
+
+  batchOperationsToolbar: document.getElementById(
+    "batchOperationsToolbar"
+  ) as HTMLDivElement,
+  selectAllNotesCheckbox: document.getElementById(
+    "selectAllNotesCheckbox"
+  ) as HTMLInputElement,
+  selectedCount: document.getElementById("selectedCount") as HTMLSpanElement,
+  deleteSelectedBtn: document.getElementById(
+    "deleteSelectedBtn"
+  ) as HTMLButtonElement,
+
+  noteRecordingPlayer: document.getElementById(
+    "noteRecordingPlayer"
+  ) as HTMLDivElement,
+  noteAudioPlayer: document.getElementById(
+    "noteAudioPlayer"
+  ) as HTMLAudioElement,
+
+  minSummaryLengthInput: document.getElementById(
+    "minSummaryLengthInput"
+  ) as HTMLInputElement,
+  maxTokensInput: document.getElementById("maxTokensInput") as HTMLInputElement,
+  temperatureInput: document.getElementById(
+    "temperatureInput"
+  ) as HTMLInputElement,
+  topPInput: document.getElementById("topPInput") as HTMLInputElement,
+  topKInput: document.getElementById("topKInput") as HTMLInputElement,
+  repeatPenaltyInput: document.getElementById(
+    "repeatPenaltyInput"
+  ) as HTMLInputElement,
+  saveSettingsBtn: document.getElementById(
+    "saveSettingsBtn"
+  ) as HTMLButtonElement,
+  resetSettingsBtn: document.getElementById(
+    "resetSettingsBtn"
+  ) as HTMLButtonElement,
+
+  importQueue: document.getElementById("importQueue") as HTMLDivElement,
+  importQueueList: document.getElementById("importQueueList") as HTMLDivElement,
+  importQueueCount: document.getElementById(
+    "importQueueCount"
+  ) as HTMLSpanElement
 };
-
-export function setUiLocked(locked: boolean): void {
-  elements.systemAudioToggle.disabled = locked;
-  elements.systemAudioItem.classList.toggle("disabled", locked);
-
-  // lock all microphone toggles
-  const micToggles = elements.devicesList.querySelectorAll(
-    ".mute-toggle input"
-  ) as NodeListOf<HTMLInputElement>;
-  micToggles.forEach((toggle) => {
-    toggle.disabled = locked;
-  });
-  elements.devicesList.classList.toggle("disabled", locked);
-
-  elements.refreshDevicesBtn.disabled = locked;
-  elements.refreshDevicesBtn.classList.toggle("disabled", locked);
-}

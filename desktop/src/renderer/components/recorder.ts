@@ -1,4 +1,4 @@
-import { elements, setUiLocked } from "./domNodes";
+import { elements } from "./domNodes";
 import { getActiveInputDeviceIds } from "./devices";
 import { formatSecondsToTime, isScreenSource } from "@/utils";
 import { refreshModelsList } from "./models";
@@ -12,11 +12,32 @@ let timerInterval: number | null = null;
 let elapsedSeconds = 0;
 
 // allow the main renderer to receive the buffer when recording stops
-type OnRecordingComplete = (buffer: ArrayBuffer, timestamp: string) => void;
+type OnRecordingComplete = (
+  buffer: ArrayBuffer,
+  timestamp: string,
+  filename?: string
+) => void;
 
 function updateTimer(): void {
   elapsedSeconds++;
   elements.timerDisplay.textContent = formatSecondsToTime(elapsedSeconds);
+}
+
+function setUiLocked(locked: boolean): void {
+  elements.systemAudioToggle.disabled = locked;
+  elements.systemAudioItem.classList.toggle("disabled", locked);
+
+  // lock all microphone toggles
+  const micToggles = elements.devicesList.querySelectorAll(
+    ".mute-toggle input"
+  ) as NodeListOf<HTMLInputElement>;
+  micToggles.forEach((toggle) => {
+    toggle.disabled = locked;
+  });
+  elements.devicesList.classList.toggle("disabled", locked);
+
+  elements.refreshDevicesBtn.disabled = locked;
+  elements.refreshDevicesBtn.classList.toggle("disabled", locked);
 }
 
 export async function startRecording(
@@ -39,7 +60,7 @@ export async function startRecording(
     if (systemAudioEnabled) {
       try {
         const sources = await window.electronAPI.getDesktopSources();
-        let screenSource = sources.find(isScreenSource) || sources[0];
+        const screenSource = sources.find(isScreenSource) || sources[0];
 
         if (screenSource) {
           const systemStream = await navigator.mediaDevices.getUserMedia({
@@ -187,6 +208,8 @@ async function processRecording(onComplete: OnRecordingComplete) {
   if (audioChunks.length === 0) return;
 
   const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+  // free the raw chunks now that we have the blob
+  audioChunks = [];
   const timestamp = recordingStartTime
     ? recordingStartTime.toISOString().replace(/[:.]/g, "-").slice(0, 19)
     : new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
@@ -202,7 +225,7 @@ async function processRecording(onComplete: OnRecordingComplete) {
 
   if (result.success) {
     elements.statusText.textContent = "Recording saved!";
-    onComplete(arrayBuffer, timestamp);
+    onComplete(arrayBuffer, timestamp, filename);
   } else {
     elements.statusText.textContent = "Failed to save recording";
   }

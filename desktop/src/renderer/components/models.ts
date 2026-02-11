@@ -11,39 +11,25 @@ import {
   type WhisperModelSize,
   MODEL_DESCRIPTIONS
 } from "@/transcription/whisper";
-import {
-  checkSummarizationModelDownloaded,
-  downloadSummarizationModel,
-  deleteSummarizationModel,
-  type SummarizationProgress
-} from "@/summarization";
-import {
-  SUMMARIZATION_MODEL,
-  MODEL_SIZE as SUMMARY_MODEL_SIZE
-} from "@/summarization/pipeline";
+import { getSelectedModelPath, saveSelectedModelPath } from "@/summarization";
+import { showNotification } from "./notifications";
+
 let downloadingModel: WhisperModelSize | null = null;
-let downloadingSummaryModel = false;
 let isTranscribing = false;
+let isDownloadingGguf = false;
+let ggufDownloadProgressUnsub: (() => void) | null = null;
 
-export const STORAGE_KEY_SELECTED_TRANSCRIPTION_MODEL = "selectedWhisperModel";
-export const STORAGE_KEY_SELECTED_SUMMARY_MODEL = "selectedSummaryModel";
-
-export function saveSelectedTranscriptionModel(modelSize: WhisperModelSize): void {
-  localStorage.setItem(STORAGE_KEY_SELECTED_TRANSCRIPTION_MODEL, modelSize);
+export async function saveSelectedTranscriptionModel(
+  modelSize: WhisperModelSize
+): Promise<void> {
+  await window.electronAPI.configSet({
+    transcription: { selectedModel: modelSize } as any
+  });
 }
 
-export function getSelectedTranscriptionModel(): WhisperModelSize | null {
-  return localStorage.getItem(
-    STORAGE_KEY_SELECTED_TRANSCRIPTION_MODEL
-  ) as WhisperModelSize | null;
-}
-
-export function saveSelectedSummaryModel(modelId: string): void {
-  localStorage.setItem(STORAGE_KEY_SELECTED_SUMMARY_MODEL, modelId);
-}
-
-export function getSelectedSummaryModel(): string | null {
-  return localStorage.getItem(STORAGE_KEY_SELECTED_SUMMARY_MODEL);
+export async function getSelectedTranscriptionModel(): Promise<WhisperModelSize | null> {
+  const config = await window.electronAPI.configGet();
+  return (config.transcription.selectedModel as WhisperModelSize) || null;
 }
 
 export function setTranscriptionInProgress(inProgress: boolean): void {
@@ -51,9 +37,11 @@ export function setTranscriptionInProgress(inProgress: boolean): void {
   refreshModelsList();
 }
 
-function createModelItemHTML(status: ModelStatus): string {
+function createModelItemHTML(
+  status: ModelStatus,
+  selectedModel: WhisperModelSize | null
+): string {
   const isDownloading = downloadingModel === status.modelSize;
-  const selectedModel = getSelectedTranscriptionModel();
   const isSelected = status.downloaded && selectedModel === status.modelSize;
   const isRecording = isRecordingState();
   const isClickable = status.downloaded && !isTranscribing && !isRecording;
@@ -69,7 +57,7 @@ function createModelItemHTML(status: ModelStatus): string {
         <div class="model-meta">
           <span class="model-size">${status.size}</span>
           <span class="model-status ${status.downloaded ? "downloaded" : ""}">
-            ${status.downloaded ? "✓ Downloaded" : "Not downloaded"}
+            ${status.downloaded ? "Downloaded" : "Not downloaded"}
           </span>
         </div>
         <div class="model-description" style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">
@@ -104,132 +92,210 @@ function createModelItemHTML(status: ModelStatus): string {
   `;
 }
 
-function createSummaryModelHTML(downloaded: boolean): string {
-  const modelName = SUMMARIZATION_MODEL.split("/").pop();
+function createSummaryModelHTML(): string {
   const isRecording = isRecordingState();
-  const isButtonDisabled =
-    downloadingSummaryModel || isTranscribing || isRecording;
-  const selectedSummaryModel = getSelectedSummaryModel();
-  const isSelected = downloaded && (!selectedSummaryModel || selectedSummaryModel === SUMMARIZATION_MODEL);
-  const isClickable = downloaded && !isTranscribing && !isRecording;
+  const isButtonDisabled = isTranscribing || isRecording;
 
   return `
-    <div class="model-item summary-model ${downloaded ? "downloaded" : ""} ${isSelected ? "selected" : ""} ${isClickable ? "selectable" : ""}" data-model="summary" data-model-id="${SUMMARIZATION_MODEL}">
-      <div class="model-info">
-        <div class="model-name">
-          🤖 ${modelName}
-          ${isSelected ? '<span style="color: #4CAF50; margin-left: 0.5rem;">● Active</span>' : ""}
-        </div>
-        <div class="model-meta">
-          <span class="model-size">${SUMMARY_MODEL_SIZE}</span>
-          <span class="model-status ${downloaded ? "downloaded" : ""}">
-            ${downloaded ? "✓ Downloaded" : "Not downloaded"}
-          </span>
-        </div>
-        <div class="model-description" style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">
-          AI model for generating meeting summaries
-          ${downloaded && !isSelected && !isTranscribing && !isRecording ? '<span style="color: #888; font-style: italic;"> • Click to use for summarization</span>' : ""}
-        </div>
+    <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+      <button class="model-btn" id="openModelsFolderBtn" ${isButtonDisabled ? "disabled" : ""}>
+        Open Folder
+      </button>
+      <button class="model-btn" id="importModelBtn" ${isButtonDisabled ? "disabled" : ""}>
+        Import Model
+      </button>
+    </div>
+
+    <div class="gguf-download-section">
+      <h4 class="gguf-download-title">Download from Hugging Face</h4>
+
+      <div class="gguf-download-tabs">
+        <button class="gguf-tab active" data-tab="url">Direct URL</button>
+        <button class="gguf-tab" data-tab="repo">Repo + Filename</button>
       </div>
-      <div class="model-actions">
-        ${
-          downloaded
-            ? `<button class="model-btn delete-btn" data-model="summary" ${isButtonDisabled ? "disabled" : ""}>Delete</button>`
-            : `<button class="model-btn download-btn" data-model="summary" ${isButtonDisabled ? "disabled" : ""}>
-              ${downloadingSummaryModel ? "Downloading..." : "Download"}
-            </button>`
-        }
+
+      <div class="gguf-tab-content" id="ggufTabUrl">
+        <input
+          type="text"
+          id="ggufDirectUrlInput"
+          class="gguf-download-input"
+          placeholder="hf:lmstudio-community/Llama-3.2-1B-Instruct-GGUF:Q3_K_L"
+          ${isDownloadingGguf ? "disabled" : ""}
+        />
       </div>
-      ${
-        downloadingSummaryModel
-          ? `
-        <div class="model-download-progress">
-          <div class="model-progress-bar">
-            <div class="model-progress-fill" id="model-progress-summary"></div>
-          </div>
-          <div class="model-progress-text" id="model-progress-text-summary">Starting...</div>
+
+      <div class="gguf-tab-content hidden" id="ggufTabRepo">
+        <input
+          type="text"
+          id="ggufRepoInput"
+          class="gguf-download-input"
+          placeholder="Repo ID (e.g. TheBloke/Llama-2-7B-GGUF)"
+          ${isDownloadingGguf ? "disabled" : ""}
+        />
+        <input
+          type="text"
+          id="ggufFilenameInput"
+          class="gguf-download-input"
+          placeholder="Filename (e.g. llama-2-7b.Q4_K_M.gguf)"
+          style="margin-top: 0.5rem;"
+          ${isDownloadingGguf ? "disabled" : ""}
+        />
+        <input
+          type="text"
+          id="ggufRevisionInput"
+          class="gguf-download-input"
+          placeholder="Branch/tag (default: main)"
+          style="margin-top: 0.5rem;"
+          ${isDownloadingGguf ? "disabled" : ""}
+        />
+      </div>
+
+      <div style="margin-top: 0.75rem;">
+        <button class="model-btn download-btn" id="ggufDownloadBtn" ${isButtonDisabled || isDownloadingGguf ? "disabled" : ""}>
+          ${isDownloadingGguf ? "Downloading..." : "Download Model"}
+        </button>
+      </div>
+
+      <div class="gguf-download-progress hidden" id="ggufDownloadProgress">
+        <div class="model-progress-bar">
+          <div class="model-progress-fill" id="ggufProgressFill"></div>
         </div>
-      `
-          : ""
-      }
+        <div class="model-progress-text" id="ggufProgressText">Starting...</div>
+      </div>
+    </div>
+
+    <div id="ggufModelsList">
+      <div style="text-align: center; padding: 1rem; color: #888;">Loading models...</div>
     </div>
   `;
+}
+
+async function renderGgufModelsList(): Promise<void> {
+  const container = document.getElementById("ggufModelsList");
+  if (!container) return;
+
+  try {
+    const result = await window.electronAPI.listGgufModels();
+    const selectedModelPath = await getSelectedModelPath();
+    const isRecording = isRecordingState();
+
+    if (!result.success) {
+      container.innerHTML = `<div style="color: #ff6b81; padding: 0.5rem; font-size: 0.8rem;">Error loading models: ${result.error}</div>`;
+      return;
+    }
+
+    if (result.models.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 1rem; color: #888; font-size: 0.85rem;">
+          No GGUF models found.<br>
+          <span style="font-size: 0.75rem;">Import a model or drag-and-drop .gguf files into the models folder.</span>
+        </div>
+      `;
+      return;
+    }
+
+    let html = "";
+    result.models.forEach((model: any) => {
+      const isSelected = selectedModelPath === model.path;
+      const isClickable = !isTranscribing && !isRecording;
+      html += `
+        <div class="gguf-model-item ${isSelected ? "selected" : ""} ${isClickable ? "selectable" : ""}" 
+             data-model-path="${model.path}" 
+             style="padding: 0.5rem; background: rgba(102, 126, 234, ${isSelected ? "0.2" : "0.1"}); 
+                    border-radius: 6px; margin-bottom: 0.5rem; 
+                    display: flex; justify-content: space-between; align-items: center; 
+                    cursor: ${isClickable ? "pointer" : "default"};">
+          <div style="flex: 1; min-width: 0; overflow: hidden;">
+            <div style="font-size: 0.85rem; color: #fff;">
+              ${model.name}
+              ${isSelected ? '<span style="color: #4CAF50; margin-left: 0.5rem;">● Active</span>' : ""}
+            </div>
+            <div style="font-size: 0.7rem; color: #666;">
+              ${model.sizeFormatted}
+              ${!isSelected && isClickable ? " • Click to use for summarization" : ""}
+              ${isTranscribing || isRecording ? " • Locked during operation" : ""}
+            </div>
+          </div>
+          <div class="model-actions">
+            <button class="model-btn delete-btn gguf-delete-btn" 
+                    data-model-path="${model.path}"
+                    style="padding: 0.25rem 0.5rem; font-size: 0.75rem;"
+                    ${!isClickable ? "disabled" : ""}>
+              Delete
+            </button>
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+
+    container
+      .querySelectorAll(".gguf-model-item.selectable")
+      .forEach((item) => {
+        item.addEventListener("click", (e) => {
+          const target = e.target as HTMLElement;
+          if (target.closest(".gguf-delete-btn")) return;
+
+          const modelPath = (e.currentTarget as HTMLElement).dataset.modelPath;
+          if (modelPath) {
+            handleSelectGgufModel(modelPath);
+          }
+        });
+      });
+
+    container.querySelectorAll(".gguf-delete-btn").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const modelPath = (e.currentTarget as HTMLElement).dataset.modelPath;
+        if (modelPath) {
+          await handleDeleteGgufModel(modelPath);
+        }
+      });
+    });
+  } catch (error) {
+    console.error("Error rendering GGUF models:", error);
+    container.innerHTML = `<div style="color: #ff6b81; padding: 0.5rem; font-size: 0.8rem;">Error: ${error}</div>`;
+  }
 }
 
 // this is used frequently, may need to be optimized in future if performance issues arise
 export async function refreshModelsList(): Promise<void> {
   try {
     const statuses = await getAllModelStatus();
-    const summaryDownloaded = await checkSummarizationModelDownloaded();
 
     // auto-select first downloaded model if none selected
     const downloadedModels = statuses.filter((s) => s.downloaded);
-    const currentSelected = getSelectedTranscriptionModel();
+    const currentSelected = await getSelectedTranscriptionModel();
     if (
       downloadedModels.length > 0 &&
       (!currentSelected ||
         !downloadedModels.some((m) => m.modelSize === currentSelected))
     ) {
-      saveSelectedTranscriptionModel(downloadedModels[0].modelSize);
+      await saveSelectedTranscriptionModel(downloadedModels[0].modelSize);
     }
 
     let html =
       '<div class="model-section"><h3 style="font-size: 0.9rem; color: #888; margin-bottom: 0.75rem;">Transcription Models</h3>';
-    html += statuses.map((status) => createModelItemHTML(status)).join("");
+    const selectedTranscription = await getSelectedTranscriptionModel();
+    html += statuses
+      .map((status) => createModelItemHTML(status, selectedTranscription))
+      .join("");
     html += "</div>";
 
     html +=
       '<div class="model-section" style="margin-top: 1.5rem;"><h3 style="font-size: 0.9rem; color: #888; margin-bottom: 0.75rem;">Summarization Model</h3>';
-    html += createSummaryModelHTML(summaryDownloaded);
-    
-    // custom model selection disabled for now
-    
-    // const selectedSummaryModel = getSelectedSummaryModel();
-    // const isRecording = isRecordingState();
-    // try {
-    //   const customModelsResult = await window.electronAPI.listCustomModels();
-    //   if (customModelsResult.success && customModelsResult.models.length > 0) {
-    //     html += '<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">';
-    //     html += '<h4 style="font-size: 0.8rem; color: #666; margin-bottom: 0.5rem;">Custom Models</h4>';
-    //     customModelsResult.models.forEach(model => {
-    //       const isCustomSelected = selectedSummaryModel === model.url;
-    //       const isClickable = !isTranscribing && !isRecording;
-    //       html += `
-    //         <div class="custom-model-item ${isCustomSelected ? "selected" : ""} ${isClickable ? "selectable" : ""}" data-model-url="${model.url}" style="padding: 0.5rem; background: rgba(102, 126, 234, ${isCustomSelected ? '0.2' : '0.1'}); border-radius: 6px; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; cursor: ${isClickable ? 'pointer' : 'default'};">
-    //           <div style="flex: 1;">
-    //             <div style="font-size: 0.85rem; color: #fff;">
-    //               ${model.name}
-    //               ${isCustomSelected ? '<span style="color: #4CAF50; margin-left: 0.5rem;">● Active</span>' : ""}
-    //             </div>
-    //             <div style="font-size: 0.7rem; color: #666;">
-    //               Custom • ID: ${model.id}
-    //               ${!isCustomSelected && isClickable ? '<span style="color: #888; font-style: italic;"> • Click to use for summarization</span>' : ""}
-    //             </div>
-    //           </div>
-    //           <div class="model-actions">
-    //             <button class="model-btn delete-btn custom-model-delete" data-model-id="${model.id}" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" ${!isClickable ? 'disabled' : ''}>Delete</button>
-    //           </div>
-    //         </div>
-    //       `;
-    //     });
-    //     html += '</div>';
-    //   }
-    // } catch (error) {
-    //   console.error('Failed to load custom models:', error);
-    // }
-    
-    // html += `
-    //   <button class="action-btn" id="importCustomModelBtn" style="width: 100%; margin-top: 1rem; background: rgba(102, 126, 234, 0.2); border: 1px solid rgba(102, 126, 234, 0.3);">
-    //     📁 Import Custom Model
-    //   </button>
-    // `;
-    
-    // html += "</div>";
+    html += createSummaryModelHTML();
+    html += "</div>";
 
     elements.modelsList.innerHTML = html;
 
+    await renderGgufModelsList();
+
     elements.modelsList
-      .querySelectorAll(".model-item.selectable[data-model]:not([data-model=\"summary\"])")
+      .querySelectorAll(
+        '.model-item.selectable[data-model]:not([data-model="summary"])'
+      )
       .forEach((item) => {
         item.addEventListener("click", (e) => {
           const target = e.target as HTMLElement;
@@ -254,13 +320,75 @@ export async function refreshModelsList(): Promise<void> {
         }
 
         const model = (e.currentTarget as HTMLButtonElement).dataset.model;
-        if (model === "summary") {
-          handleSummaryModelDownload();
-        } else {
+        // handle Whisper model downloads here
+        if (model && model !== "summary") {
           handleModelDownload(model as WhisperModelSize);
         }
       });
     });
+
+    const selectSummaryBtn = document.getElementById("selectSummaryModelBtn");
+    if (selectSummaryBtn) {
+      selectSummaryBtn.addEventListener("click", (e) => {
+        if (isRecordingState() || isTranscribing) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        handleSelectSummaryModel();
+      });
+    }
+
+    const openFolderBtn = document.getElementById("openModelsFolderBtn");
+    if (openFolderBtn) {
+      openFolderBtn.addEventListener("click", async (e) => {
+        if (isRecordingState() || isTranscribing) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        await handleOpenModelsFolder();
+      });
+    }
+
+    const importBtn = document.getElementById("importModelBtn");
+    if (importBtn) {
+      importBtn.addEventListener("click", async (e) => {
+        if (isRecordingState() || isTranscribing) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        await handleImportGgufModel();
+      });
+    }
+
+    const tabs = elements.modelsList.querySelectorAll(".gguf-tab");
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        tabs.forEach((t) => t.classList.remove("active"));
+        tab.classList.add("active");
+        const tabName = (tab as HTMLElement).dataset.tab;
+        const urlContent = document.getElementById("ggufTabUrl");
+        const repoContent = document.getElementById("ggufTabRepo");
+        if (urlContent)
+          urlContent.classList.toggle("hidden", tabName !== "url");
+        if (repoContent)
+          repoContent.classList.toggle("hidden", tabName !== "repo");
+      });
+    });
+
+    const ggufDownloadBtn = document.getElementById("ggufDownloadBtn");
+    if (ggufDownloadBtn) {
+      ggufDownloadBtn.addEventListener("click", async (e) => {
+        if (isRecordingState() || isTranscribing || isDownloadingGguf) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        await handleDownloadGgufModel();
+      });
+    }
 
     elements.modelsList.querySelectorAll(".delete-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
@@ -272,56 +400,21 @@ export async function refreshModelsList(): Promise<void> {
         }
 
         const model = (e.currentTarget as HTMLButtonElement).dataset.model;
-        const modelId = (e.currentTarget as HTMLButtonElement).dataset.modelId;
-        
-        // if (modelId) {
-          // handleCustomModelDelete(modelId);
-        // }
-         if (model === "summary") {
-          handleSummaryModelDelete();
-        } else {
+
+        if (model && model !== "summary") {
           handleModelDelete(model as WhisperModelSize);
         }
       });
     });
-
-    elements.modelsList.querySelectorAll(".summary-model.selectable").forEach((item) => {
-      item.addEventListener("click", (e) => {
-        const target = e.target as HTMLElement;
-        if (target.closest(".model-actions")) return;
-
-        const modelId = (e.currentTarget as HTMLElement).dataset.modelId;
-        if (modelId) {
-          selectSummaryModel(modelId);
-        }
-      });
-    });
-
-    // custom model selection disabled for now
-
-    // elements.modelsList.querySelectorAll(".custom-model-item.selectable").forEach((item) => {
-    //   item.addEventListener("click", (e) => {
-    //     const target = e.target as HTMLElement;
-    //     if (target.closest(".model-actions")) return;
-    
-    //     const modelUrl = (e.currentTarget as HTMLElement).dataset.modelUrl;
-    //     if (modelUrl) {
-    //       selectSummaryModel(modelUrl);
-    //     }
-    //   });
-    // });
-    
-    // const importBtn = document.getElementById("importCustomModelBtn");
-    // if (importBtn) {
-    //   importBtn.addEventListener("click", handleImportCustomModel);
-    // }
   } catch (error) {
     elements.modelsList.innerHTML =
       '<p class="error-text">Failed to load models</p>';
   }
 }
 
-function selectTranscriptionModel(modelSize: WhisperModelSize): void {
+async function selectTranscriptionModel(
+  modelSize: WhisperModelSize
+): Promise<void> {
   if (isTranscribing) {
     console.log("Cannot change model during transcription");
     return;
@@ -330,22 +423,8 @@ function selectTranscriptionModel(modelSize: WhisperModelSize): void {
     console.log("Cannot change model during recording");
     return;
   }
-  saveSelectedTranscriptionModel(modelSize);
+  await saveSelectedTranscriptionModel(modelSize);
   console.log(`Selected model for transcription: ${modelSize}`);
-  refreshModelsList();
-}
-
-function selectSummaryModel(modelId: string): void {
-  if (isTranscribing) {
-    console.log("Cannot change model during transcription or summarization");
-    return;
-  }
-  if (isRecordingState()) {
-    console.log("Cannot change model during recording");
-    return;
-  }
-  saveSelectedSummaryModel(modelId);
-  console.log(`Selected model for summarization: ${modelId}`);
   refreshModelsList();
 }
 
@@ -361,48 +440,18 @@ async function handleModelDownload(modelSize: WhisperModelSize) {
       if (fill && progress.progress) fill.style.width = `${progress.progress}%`;
       if (text) text.textContent = progress.message;
     });
+
+    console.log(
+      `Model ${modelSize} downloaded successfully, refreshing list...`
+    );
+    await refreshModelsList();
   } catch (err) {
+    console.error(`Download failed for ${modelSize}:`, err);
     alert(`Download failed: ${err}`);
   } finally {
     downloadingModel = null;
-  }
-}
-
-async function handleSummaryModelDownload() {
-  if (downloadingSummaryModel) return;
-  downloadingSummaryModel = true;
-  await refreshModelsList();
-
-  try {
-    await downloadSummarizationModel((progress: SummarizationProgress) => {
-      const fill = document.getElementById("model-progress-summary");
-      const text = document.getElementById("model-progress-text-summary");
-      if (fill && progress.progress) fill.style.width = `${progress.progress}%`;
-      if (text) text.textContent = progress.message;
-    });
-  } catch (err) {
-    alert(`Download failed: ${err}`);
-  } finally {
-    downloadingSummaryModel = false;
     await refreshModelsList();
   }
-}
-
-async function handleSummaryModelDelete() {
-  if (
-    !confirm(
-      `Delete summarization model (${SUMMARY_MODEL_SIZE})?\n\nThis will free up disk space.`
-    )
-  )
-    return;
-
-  const success = await deleteSummarizationModel();
-  if (success) {
-    console.log("Summarization model deleted successfully");
-  } else {
-    alert("Failed to delete summarization model. Please try again.");
-  }
-  await refreshModelsList();
 }
 
 async function handleModelDelete(modelSize: WhisperModelSize) {
@@ -411,83 +460,281 @@ async function handleModelDelete(modelSize: WhisperModelSize) {
   await refreshModelsList();
 }
 
-// Custom models disabled for now
+async function handleSelectSummaryModel(): Promise<void> {
+  try {
+    const result = await window.electronAPI.selectModelFile();
 
-// async function handleImportCustomModel() {
-//   try {
-//     const selectResult = await window.electronAPI.selectCustomModelFolder();
-    
-//     if (!selectResult.success) {
-//       if (!selectResult.canceled) {
-//         alert(`Error selecting folder: ${selectResult.error}`);
-//       }
-//       return;
-//     }
+    if (result.canceled || !result.filePath) {
+      console.log("Model selection canceled");
+      return;
+    }
 
-//     if (!selectResult.path) {
-//       return;
-//     }
+    const filePath = result.filePath;
 
-//     const validation = await window.electronAPI.validateCustomModel(selectResult.path);
-    
-//     if (!validation.valid) {
-//       alert(`Invalid model:\n\n${validation.error}\n\nPlease select a valid ONNX model folder for summarization.`);
-//       return;
-//     }
+    if (!filePath.toLowerCase().endsWith(".gguf")) {
+      showNotification("Please select a valid GGUF model file.", "error");
+      return;
+    }
 
-//     const finalName = validation.modelName || 'custom-model';
+    const importResult = await window.electronAPI.importGgufModel({
+      sourcePath: filePath,
+      copyMode: "copy"
+    });
 
-//     const importingMsg = document.createElement('div');
-//     importingMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); padding: 2rem; border-radius: 8px; z-index: 10000; color: white;';
-//     importingMsg.textContent = 'Importing model...';
-//     document.body.appendChild(importingMsg);
+    if (!importResult.success) {
+      showNotification(
+        `Failed to import model: ${importResult.error}`,
+        "error"
+      );
+      return;
+    }
 
-//     try {
-//       const importResult = await window.electronAPI.importCustomModel({
-//         sourcePath: selectResult.path,
-//         modelName: finalName
-//       });
+    await saveSelectedModelPath(importResult.path);
+    console.log(`Model imported and selected: ${importResult.path}`);
+    showNotification(
+      `Model "${importResult.fileName}" imported successfully`,
+      "success"
+    );
 
-//       document.body.removeChild(importingMsg);
+    await refreshModelsList();
+  } catch (error) {
+    console.error("Error selecting model file:", error);
+    showNotification(`Failed to select model file: ${error}`, "error");
+  }
+}
 
-//       if (!importResult.success) {
-//         alert(`Failed to import model:\n\n${importResult.error}`);
-//         return;
-//       }
+async function handleSelectGgufModel(modelPath: string): Promise<void> {
+  if (isTranscribing || isRecordingState()) {
+    console.log("Cannot select model during operation");
+    return;
+  }
 
-//       alert(`Model imported successfully!\n\nName: ${finalName}\nID: ${importResult.modelId}\n\nYou can now use this model for summarization.`);
-      
-//       if (importResult.url) {
-//         selectSummaryModel(importResult.url);
-//       }
-      
-//       await refreshModelsList();
-//     } catch (error) {
-//       document.body.removeChild(importingMsg);
-//       throw error;
-//     }
-//   } catch (error) {
-//     console.error('Error importing custom model:', error);
-//     alert(`Error importing model: ${error}`);
-//   }
-// }
+  await saveSelectedModelPath(modelPath);
+  console.log(`Selected GGUF model: ${modelPath}`);
+  await renderGgufModelsList();
+}
 
-// async function handleCustomModelDelete(modelId: string) {
-//   if (!confirm(`Delete custom model?\n\nID: ${modelId}\n\nThis will permanently remove the model files.`)) {
-//     return;
-//   }
+async function handleOpenModelsFolder(): Promise<void> {
+  try {
+    const result = await window.electronAPI.openModelsFolder();
+    if (!result.success) {
+      alert(`Failed to open models folder: ${result.error}`);
+    }
+  } catch (error) {
+    console.error("Error opening models folder:", error);
+    alert(`Error: ${error}`);
+  }
+}
 
-//   try {
-//     const result = await window.electronAPI.deleteModel(modelId);
-    
-//     if (result.success) {
-//       console.log(`Custom model deleted: ${modelId}`);
-//       await refreshModelsList();
-//     } else {
-//       alert('Failed to delete custom model. Please try again.');
-//     }
-//   } catch (error) {
-//     console.error('Error deleting custom model:', error);
-//     alert(`Error deleting model: ${error}`);
-//   }
-// }
+async function handleImportGgufModel(): Promise<void> {
+  try {
+    const result = await window.electronAPI.selectModelFile();
+
+    if (result.canceled || !result.filePath) {
+      console.log("Import canceled");
+      return;
+    }
+
+    const filePath = result.filePath;
+
+    if (!filePath.toLowerCase().endsWith(".gguf")) {
+      showNotification("Please select a valid GGUF model file.", "error");
+      return;
+    }
+
+    const importResult = await window.electronAPI.importGgufModel({
+      sourcePath: filePath,
+      copyMode: "copy"
+    });
+
+    if (!importResult.success) {
+      showNotification(
+        `Failed to import model: ${importResult.error}`,
+        "error"
+      );
+      return;
+    }
+
+    console.log(`Model imported: ${importResult.fileName}`);
+    showNotification(
+      `Model "${importResult.fileName}" imported successfully`,
+      "success"
+    );
+
+    await saveSelectedModelPath(importResult.path);
+
+    await refreshModelsList();
+  } catch (error) {
+    console.error("Error importing model:", error);
+    showNotification(`Error importing model: ${error}`, "error");
+  }
+}
+
+async function handleDownloadGgufModel(): Promise<void> {
+  const activeTab = document.querySelector(".gguf-tab.active") as HTMLElement;
+  const tabName = activeTab?.dataset.tab || "url";
+
+  let downloadData: {
+    url?: string;
+    repo?: string;
+    filename?: string;
+    revision?: string;
+  };
+
+  if (tabName === "url") {
+    const urlInput = document.getElementById(
+      "ggufDirectUrlInput"
+    ) as HTMLInputElement;
+    const url = urlInput?.value.trim();
+    if (!url) {
+      showNotification("Please enter a URL.", "error");
+      return;
+    }
+    downloadData = { url };
+  } else {
+    const repoInput = document.getElementById(
+      "ggufRepoInput"
+    ) as HTMLInputElement;
+    const filenameInput = document.getElementById(
+      "ggufFilenameInput"
+    ) as HTMLInputElement;
+    const revisionInput = document.getElementById(
+      "ggufRevisionInput"
+    ) as HTMLInputElement;
+    const repo = repoInput?.value.trim();
+    const filename = filenameInput?.value.trim();
+    const revision = revisionInput?.value.trim() || undefined;
+    if (!repo || !filename) {
+      showNotification("Please enter both repo ID and filename.", "error");
+      return;
+    }
+    if (!filename.toLowerCase().endsWith(".gguf")) {
+      showNotification("Filename must end with .gguf", "error");
+      return;
+    }
+    downloadData = { repo, filename, revision };
+  }
+
+  try {
+    const checkResult =
+      await window.electronAPI.checkGgufModelUrl(downloadData);
+    if (!checkResult.success) {
+      showNotification(`Invalid model: ${checkResult.error}`, "error");
+      return;
+    }
+
+    if (checkResult.exists) {
+      const incomingSize = checkResult.sizeFormatted || "unknown size";
+      const existingSize = checkResult.existingSizeFormatted || "unknown size";
+      const shouldReplace = confirm(
+        `A model named "${checkResult.fileName}" already exists.\n\n` +
+          `Existing file: ${existingSize}\n` +
+          `New file: ${incomingSize}\n\n` +
+          `Do you want to replace it?`
+      );
+      if (!shouldReplace) return;
+    }
+
+    isDownloadingGguf = true;
+    const progressContainer = document.getElementById("ggufDownloadProgress");
+    if (progressContainer) progressContainer.classList.remove("hidden");
+
+    if (ggufDownloadProgressUnsub) ggufDownloadProgressUnsub();
+    ggufDownloadProgressUnsub = window.electronAPI.onGgufDownloadProgress(
+      (progress) => {
+        const fill = document.getElementById("ggufProgressFill");
+        const text = document.getElementById("ggufProgressText");
+        if (fill) fill.style.width = `${progress.percent}%`;
+        if (text) text.textContent = progress.message;
+      }
+    );
+
+    const dlBtn = document.getElementById(
+      "ggufDownloadBtn"
+    ) as HTMLButtonElement;
+    if (dlBtn) {
+      dlBtn.disabled = true;
+      dlBtn.textContent = "Downloading...";
+    }
+
+    const downloadResult =
+      await window.electronAPI.downloadGgufModel(downloadData);
+
+    if (!downloadResult.success) {
+      showNotification(`Download failed: ${downloadResult.error}`, "error");
+    } else {
+      showNotification(
+        `Model "${downloadResult.fileName}" downloaded successfully!`,
+        "success"
+      );
+
+      if (downloadResult.path) {
+        await saveSelectedModelPath(downloadResult.path);
+      }
+
+      const urlInput = document.getElementById(
+        "ggufDirectUrlInput"
+      ) as HTMLInputElement;
+      const repoInput = document.getElementById(
+        "ggufRepoInput"
+      ) as HTMLInputElement;
+      const filenameInput = document.getElementById(
+        "ggufFilenameInput"
+      ) as HTMLInputElement;
+      const revisionInput = document.getElementById(
+        "ggufRevisionInput"
+      ) as HTMLInputElement;
+      if (urlInput) urlInput.value = "";
+      if (repoInput) repoInput.value = "";
+      if (filenameInput) filenameInput.value = "";
+      if (revisionInput) revisionInput.value = "";
+    }
+  } catch (error) {
+    console.error("Error downloading GGUF model:", error);
+    showNotification(`Download error: ${error}`, "error");
+  } finally {
+    isDownloadingGguf = false;
+    if (ggufDownloadProgressUnsub) {
+      ggufDownloadProgressUnsub();
+      ggufDownloadProgressUnsub = null;
+    }
+
+    setTimeout(() => {
+      const progressContainer = document.getElementById("ggufDownloadProgress");
+      if (progressContainer) progressContainer.classList.add("hidden");
+    }, 2000);
+
+    await refreshModelsList();
+  }
+}
+
+async function handleDeleteGgufModel(modelPath: string): Promise<void> {
+  const modelName = modelPath.split(/[/\\]/).pop();
+
+  if (
+    !confirm(
+      `Delete model "${modelName}"?\n\nThis will permanently remove the file from your models folder.`
+    )
+  ) {
+    return;
+  }
+
+  try {
+    const result = await window.electronAPI.deleteGgufModel(modelPath);
+
+    if (!result.success) {
+      alert(`Failed to delete model: ${result.error}`);
+      return;
+    }
+
+    if ((await getSelectedModelPath()) === modelPath) {
+      await saveSelectedModelPath("");
+    }
+
+    console.log(`Model deleted: ${modelName}`);
+    await refreshModelsList();
+  } catch (error) {
+    console.error("Error deleting model:", error);
+    alert(`Error: ${error}`);
+  }
+}

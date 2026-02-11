@@ -1,4 +1,5 @@
 import { elements } from "./domNodes";
+import { saveNote } from "./saveNote";
 
 export function setupRightPanelListeners() {
   const { rightPanel, rightPanelTrigger } = elements;
@@ -21,7 +22,7 @@ export function setupRightPanelListeners() {
   const closeRightPanel = () => {
     closeTimeout = window.setTimeout(() => {
       rightPanel.classList.remove("open");
-    }, 300); 
+    }, 300);
   };
 
   rightPanelTrigger.addEventListener("mouseenter", openRightPanel);
@@ -40,39 +41,19 @@ export function setupRightPanelListeners() {
     }
   });
 
-  // save both transcription + summary
+  // manual save button (in case auto-save didn't work)
   try {
     const saveBtn = elements.saveNoteBtn;
     if (saveBtn) {
       saveBtn.addEventListener("click", async () => {
-        const transcription = elements.transcriptionText?.textContent || "";
-        const summary = elements.summaryText?.textContent || "";
-
-        if (!transcription && !summary) {
-          alert("Nothing to save: transcription and summary are both empty.");
-          return;
-        }
+        saveBtn.disabled = true;
+        const original = saveBtn.textContent;
+        saveBtn.textContent = "Saving...";
 
         try {
-          saveBtn.disabled = true;
-          const original = saveBtn.textContent;
-          saveBtn.textContent = "Saving...";
-          const res = await window.electronAPI.saveNote({
-            transcription,
-            summary
-          });
-          if (res && res.success) {
-            saveBtn.textContent = "✓ Saved";
-            setTimeout(() => (saveBtn.textContent = original), 2000);
-          } else {
-            console.error("Failed to save note:", res && res.error);
-            alert("Failed to save note");
-            saveBtn.textContent = original;
-          }
-        } catch (err) {
-          console.error("Error saving note:", err);
-          alert("Error saving note");
+          await saveNote();
         } finally {
+          saveBtn.textContent = original;
           saveBtn.disabled = false;
         }
       });

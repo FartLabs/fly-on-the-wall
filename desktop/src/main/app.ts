@@ -1,22 +1,43 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, protocol, net } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
+import fs from "node:fs";
+
+if (!app.isPackaged) {
+  app.setName("Fly on the Wall-dev");
+}
+
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    // focus current instance instead of opening a new one
+    const allWindows = BrowserWindow.getAllWindows();
+    if (allWindows.length > 0) {
+      const mainWindow = allWindows[0];
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
   app.quit();
 }
 
-// Get the project root (parent of desktop folder)
-export const getProjectRoot = (): string => {
-  // In development, __dirname is in .vite/build, so go up to desktop then to project root
-  // In production, adjust as needed
-  if (app.isPackaged) {
-    return path.join(app.getPath("userData"), "..");
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: "recording",
+    privileges: {
+      // standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+      stream: true
+    }
   }
-  // Development: go from desktop/.vite/build to project root
-  return path.resolve(__dirname, "..", "..", "..");
-};
+]);
 
 const createWindow = () => {
   // Create the browser window.
@@ -33,9 +54,18 @@ const createWindow = () => {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
   } else {
     mainWindow.loadFile(
-      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)
+      path.join(
+        __dirname,
+        "..",
+        "renderer",
+        MAIN_WINDOW_VITE_NAME,
+        "index.html"
+      )
     );
   }
+
+  // TODO: add content security policy
+  // https://www.electronjs.org/docs/latest/tutorial/security#7-define-a-content-security-policy
 
   mainWindow.maximize();
 
@@ -46,7 +76,21 @@ const createWindow = () => {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on("ready", createWindow);
+app.on("ready", () => {
+  protocol.handle("recording", (request) => {
+    const url = request.url.replace("recording://", "");
+    const filePath = decodeURIComponent(url);
+
+    // ensure the file exists and is in the recordings directory
+    if (!fs.existsSync(filePath)) {
+      return new Response("File not found", { status: 404 });
+    }
+
+    return net.fetch(`file://${filePath}`);
+  });
+
+  createWindow();
+});
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits

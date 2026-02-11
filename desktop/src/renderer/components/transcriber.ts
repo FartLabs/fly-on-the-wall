@@ -5,10 +5,13 @@ import {
   type TranscriptionProgress
 } from "@/transcription";
 import { runSummarization, clearSummary } from "./summarizer";
-import { getSelectedTranscriptionModel, setTranscriptionInProgress } from "./models";
+import {
+  getSelectedTranscriptionModel,
+  setTranscriptionInProgress
+} from "./models";
 
 let lastTranscription: string | null = null;
-let lastTimestamp: string | null = null;
+let lastRecordingFilename: string | null = null;
 
 function updateProgress(progress: TranscriptionProgress): void {
   if (
@@ -36,9 +39,18 @@ function updateProgress(progress: TranscriptionProgress): void {
 
 export async function runTranscription(
   buffer: ArrayBuffer,
-  timestamp: string
+  timestamp: string,
+  recordingFilename?: string
 ): Promise<void> {
-  lastTimestamp = timestamp;
+  console.log(
+    "[runTranscription] Recording filename received:",
+    recordingFilename
+  );
+  lastRecordingFilename = recordingFilename || null;
+  console.log(
+    "[runTranscription] Set lastRecordingFilename to:",
+    lastRecordingFilename
+  );
   clearSummary();
 
   // hide unified save while processing
@@ -48,7 +60,7 @@ export async function runTranscription(
     console.warn("Save note button not found to hide");
   }
 
-  const modelSize = getSelectedTranscriptionModel();
+  const modelSize = await getSelectedTranscriptionModel();
 
   if (!modelSize) {
     alert(
@@ -149,10 +161,14 @@ export function setupTranscriptionListeners() {
     if (!lastTranscription) return;
     await navigator.clipboard.writeText(lastTranscription);
     const originalText = elements.copyTranscriptionBtn.textContent;
-    elements.copyTranscriptionBtn.textContent = "✓ Copied!";
+    elements.copyTranscriptionBtn.textContent = "Copied!";
     setTimeout(
       () => (elements.copyTranscriptionBtn.textContent = originalText),
       2000
     );
   });
+}
+
+export function getLastRecordingFilename(): string | null {
+  return lastRecordingFilename;
 }
