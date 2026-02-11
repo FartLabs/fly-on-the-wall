@@ -39,11 +39,10 @@ export async function checkModelDownloaded(
   const modelId = WHISPER_MODELS[modelSize];
 
   try {
-    console.log(
-      `[Transcription] Checking if model ${modelId} (${modelSize}) is downloaded...`
-    );
     const result = await window.electronAPI.checkWhisperModel(modelId);
-    console.log(`[Transcription] Check result:`, result.exists);
+    if (result.exists) {
+      console.log(`[Transcription] Model ${modelId} is downloaded.`);
+    }
     return result.success && result.exists;
   } catch (e) {
     console.error("Error checking model status:", e);
@@ -185,12 +184,15 @@ export async function transcribeAudio(
       message: "Starting transcription..."
     });
 
-    const audioDataArray = Array.from(audioArray);
-    const result = await window.electronAPI.transcribe({
+    let audioDataArray: number[] | null = Array.from(audioArray);
+    const transcribePayload = {
       audioData: audioDataArray,
       modelId,
       language
-    });
+    };
+    // release reference before awaiting IPC (data is serialized/copied)
+    audioDataArray = null;
+    const result = await window.electronAPI.transcribe(transcribePayload);
 
     if (!result.success) {
       throw new Error(result.error || "Transcription failed");

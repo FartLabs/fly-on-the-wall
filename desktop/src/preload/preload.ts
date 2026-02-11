@@ -5,6 +5,10 @@ import { contextBridge, ipcRenderer } from "electron";
 import IElectronAPI from "@/shared/electronAPI";
 
 const electronAPI: IElectronAPI = {
+  configGet: () => ipcRenderer.invoke("config-get"),
+  configSet: (partialConfig: Record<string, any>) =>
+    ipcRenderer.invoke("config-set", partialConfig),
+
   saveRecording: (data: { buffer: ArrayBuffer; filename: string }) =>
     ipcRenderer.invoke("save-recording", data),
   saveTranscription: (data: { text: string; filename: string }) =>
@@ -81,7 +85,36 @@ const electronAPI: IElectronAPI = {
   getRecordingPath: (filename: string) =>
     ipcRenderer.invoke("get-recording-path", filename),
   getRecordingBuffer: (filename: string) =>
-    ipcRenderer.invoke("get-recording-buffer", filename)
+    ipcRenderer.invoke("get-recording-buffer", filename),
+
+  downloadGgufModel: (data: {
+    url?: string;
+    repo?: string;
+    filename?: string;
+    revision?: string;
+  }) => ipcRenderer.invoke("download-gguf-model", data),
+  checkGgufModelUrl: (data: {
+    url?: string;
+    repo?: string;
+    filename?: string;
+    revision?: string;
+  }) => ipcRenderer.invoke("check-gguf-model-url", data),
+  onGgufDownloadProgress: (
+    callback: (progress: {
+      percent: number;
+      transferredBytes: number;
+      totalBytes: number;
+      message: string;
+    }) => void
+  ) => {
+    const handler = (_event: any, progress: any) => callback(progress);
+    ipcRenderer.on("gguf-download-progress", handler);
+    return () => ipcRenderer.removeListener("gguf-download-progress", handler);
+  },
+
+  selectAudioFiles: () => ipcRenderer.invoke("select-audio-files"),
+  importAudioFile: (data: { sourcePath: string; mode: "copy" | "move" }) =>
+    ipcRenderer.invoke("import-audio-file", data)
 };
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);

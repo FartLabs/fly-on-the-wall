@@ -1,12 +1,16 @@
 import fs from "node:fs";
 import path from "node:path";
+import {
+  UtilityProcessMessage,
+  UtilityProcessResponse
+} from "@/shared/utilityProcess";
 
 // import transformers.js early so we can configure it
 // TODO: in the future, will use an existing node bindings for whisper.cpp (or one from scratch in this
 // project) since i believe some of the current solutions are not actively maintained
-let transformersModule: any = null;
 
 export type TranscriptionMessage =
+  | UtilityProcessMessage
   | {
       type: "transcribe";
       audioData: number[]; // Float32Array sent as normal array (will later be converted back)
@@ -15,35 +19,23 @@ export type TranscriptionMessage =
     }
   | { type: "download-model"; modelId: string }
   | { type: "check-model"; modelId: string }
-  | { type: "dispose" }
-  | { type: "get-memory-usage" }
-  | { type: "health-check" }
   | { type: "set-models-path"; modelsPath: string };
 
 export type TranscriptionResponse =
+  | UtilityProcessResponse
   | {
       type: "status";
       status: string;
       progress?: number;
       message?: string;
       file?: string;
-    }
-  | { type: "result"; result: any }
-  | { type: "error"; error: string }
-  | { type: "memory"; usage: MemoryUsage };
-
-export interface MemoryUsage {
-  heapUsed: number;
-  heapTotal: number;
-  external: number;
-  rss: number;
-}
+    };
 
 let transcriber: any = null;
 let currentModelId: string | null = null;
 let modelsPath: string | null = null;
 
-const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+const IDLE_TIMEOUT_MS = 30 * 1000;
 let idleTimer: NodeJS.Timeout | null = null;
 
 function sendMessage(message: TranscriptionResponse): void {
@@ -77,11 +69,6 @@ function resetIdleTimer(): void {
   idleTimer = setTimeout(async () => {
     console.log(`[TranscriptionProcess] Idle timeout reached, disposing model`);
     await disposeModel();
-
-    if (global.gc) {
-      console.log(`[TranscriptionProcess] Running garbage collection`);
-      global.gc();
-    }
   }, IDLE_TIMEOUT_MS);
 }
 
@@ -162,7 +149,9 @@ async function handleTranscribe(data: {
 
     sendStatus("transcribing", "Processing audio...");
 
-    const audioFloat32 = new Float32Array(audioData);
+    let audioFloat32: Float32Array | null = new Float32Array(audioData);
+    // release the incoming array now that we've copied to Float32Array
+    data.audioData = null as any;
 
     console.log(
       `[TranscriptionProcess] Running inference on ${audioFloat32.length} samples...`
@@ -175,6 +164,9 @@ async function handleTranscribe(data: {
       stride_length_s: 5,
       return_timestamps: false
     });
+
+    // free audio buffer after inference
+    audioFloat32 = null;
 
     console.log(`[TranscriptionProcess] Transcription complete`);
     sendResult(result);
@@ -313,7 +305,6 @@ async function handleSetModelsPath(data: {
     env.allowLocalModels = true;
     env.allowRemoteModels = true;
     env.cacheDir = modelsPath;
-    transformersModule = { env };
     console.log(
       `[TranscriptionProcess] Transformers.js configured with cache dir: ${modelsPath}`
     );

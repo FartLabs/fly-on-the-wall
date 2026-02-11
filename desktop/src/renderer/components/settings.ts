@@ -1,101 +1,58 @@
 import { elements } from "./domNodes";
+import { clamp } from "@/utils";
+import { AppConfig } from "@/shared/electronAPI";
+import {
+  DEFAULT_CONFIG,
+  LIMITS,
+  type AppSettings,
+  type SummarizationSettings
+} from "@/shared/config";
+import { closeSettingsModal } from "./navigation";
 
-const STORAGE_KEYS = {
-  MIN_SUMMARY_LENGTH: "minSummaryLength",
-  MAX_TOKENS: "summarizationMaxTokens",
-  TEMPERATURE: "summarizationTemperature",
-  TOP_P: "summarizationTopP",
-  TOP_K: "summarizationTopK",
-  REPEAT_PENALTY: "summarizationRepeatPenalty"
-} as const;
-
-export const DEFAULT_SETTINGS = {
-  minSummaryLength: 20,
-  maxTokens: 1024,
-  temperature: 0.7,
-  topP: 0.9,
-  topK: 40,
-  repeatPenalty: 1.1
-} as const;
-
-const LIMITS = {
-  minSummaryLength: { min: 0, max: 1000, step: 10 },
-  maxTokens: { min: 128, max: 4096, step: 64 },
-  temperature: { min: 0, max: 2, step: 0.1 },
-  topP: { min: 0, max: 1, step: 0.05 },
-  topK: { min: 0, max: 100, step: 1 },
-  repeatPenalty: { min: 1, max: 2, step: 0.05 }
-} as const;
-
-export interface AppSettings {
-  minSummaryLength: number;
-  maxTokens: number;
-  temperature: number;
-  topP: number;
-  topK: number;
-  repeatPenalty: number;
-}
-
-export interface SummarizationSettings {
-  maxTokens: number;
-  temperature: number;
-  topP: number;
-  topK: number;
-  repeatPenalty: number;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
-
-function parseNumericSetting(
-  value: string | null,
-  defaultValue: number,
-  limits: { min: number; max: number }
-): number {
-  if (value === null) return defaultValue;
-  const parsed = parseFloat(value);
-  if (isNaN(parsed)) return defaultValue;
-  return clamp(parsed, limits.min, limits.max);
-}
-
-export function getSettings(): AppSettings {
+async function getSettings(): Promise<AppSettings> {
+  const config = await window.electronAPI.configGet();
   return {
-    minSummaryLength: parseNumericSetting(
-      localStorage.getItem(STORAGE_KEYS.MIN_SUMMARY_LENGTH),
-      DEFAULT_SETTINGS.minSummaryLength,
-      LIMITS.minSummaryLength
+    minSummaryLength: clamp(
+      config.summarization.minSummaryLength ??
+        DEFAULT_CONFIG.summarization.minSummaryLength,
+      LIMITS.minSummaryLength.min,
+      LIMITS.minSummaryLength.max
     ),
-    maxTokens: parseNumericSetting(
-      localStorage.getItem(STORAGE_KEYS.MAX_TOKENS),
-      DEFAULT_SETTINGS.maxTokens,
-      LIMITS.maxTokens
+    maxTokens: clamp(
+      config.summarizationParameters.maxTokens ??
+        DEFAULT_CONFIG.summarizationParameters.maxTokens,
+      LIMITS.maxTokens.min,
+      LIMITS.maxTokens.max
     ),
-    temperature: parseNumericSetting(
-      localStorage.getItem(STORAGE_KEYS.TEMPERATURE),
-      DEFAULT_SETTINGS.temperature,
-      LIMITS.temperature
+    temperature: clamp(
+      config.summarizationParameters.temperature ??
+        DEFAULT_CONFIG.summarizationParameters.temperature,
+      LIMITS.temperature.min,
+      LIMITS.temperature.max
     ),
-    topP: parseNumericSetting(
-      localStorage.getItem(STORAGE_KEYS.TOP_P),
-      DEFAULT_SETTINGS.topP,
-      LIMITS.topP
+    topP: clamp(
+      config.summarizationParameters.topP ??
+        DEFAULT_CONFIG.summarizationParameters.topP,
+      LIMITS.topP.min,
+      LIMITS.topP.max
     ),
-    topK: parseNumericSetting(
-      localStorage.getItem(STORAGE_KEYS.TOP_K),
-      DEFAULT_SETTINGS.topK,
-      LIMITS.topK
+    topK: clamp(
+      config.summarizationParameters.topK ??
+        DEFAULT_CONFIG.summarizationParameters.topK,
+      LIMITS.topK.min,
+      LIMITS.topK.max
     ),
-    repeatPenalty: parseNumericSetting(
-      localStorage.getItem(STORAGE_KEYS.REPEAT_PENALTY),
-      DEFAULT_SETTINGS.repeatPenalty,
-      LIMITS.repeatPenalty
+    repeatPenalty: clamp(
+      config.summarizationParameters.repeatPenalty ??
+        DEFAULT_CONFIG.summarizationParameters.repeatPenalty,
+      LIMITS.repeatPenalty.min,
+      LIMITS.repeatPenalty.max
     )
   };
 }
 
-export function getSummarizationSettings(): SummarizationSettings {
-  const settings = getSettings();
+export async function getSummarizationModelParams(): Promise<SummarizationSettings> {
+  const settings = await getSettings();
   return {
     maxTokens: settings.maxTokens,
     temperature: settings.temperature,
@@ -105,61 +62,69 @@ export function getSummarizationSettings(): SummarizationSettings {
   };
 }
 
-export function getMinSummaryLength(): number {
-  return getSettings().minSummaryLength;
+export async function getMinSummaryLength(): Promise<number> {
+  const settings = await getSettings();
+  return settings.minSummaryLength;
 }
 
-export function saveSettings(settings: Partial<AppSettings>): void {
+export async function saveSettings(
+  settings: Partial<AppSettings>
+): Promise<void> {
+  const update: Partial<AppConfig> = {};
+
   if (settings.minSummaryLength !== undefined) {
-    const clamped = clamp(
-      settings.minSummaryLength,
-      LIMITS.minSummaryLength.min,
-      LIMITS.minSummaryLength.max
-    );
-    localStorage.setItem(STORAGE_KEYS.MIN_SUMMARY_LENGTH, String(clamped));
+    update.summarization = {
+      minSummaryLength: clamp(
+        settings.minSummaryLength,
+        LIMITS.minSummaryLength.min,
+        LIMITS.minSummaryLength.max
+      )
+    } as any;
   }
+
+  const params: Partial<AppConfig["summarizationParameters"]> = {};
+
   if (settings.maxTokens !== undefined) {
-    const clamped = clamp(
+    params.maxTokens = clamp(
       settings.maxTokens,
       LIMITS.maxTokens.min,
       LIMITS.maxTokens.max
     );
-    localStorage.setItem(STORAGE_KEYS.MAX_TOKENS, String(clamped));
   }
   if (settings.temperature !== undefined) {
-    const clamped = clamp(
+    params.temperature = clamp(
       settings.temperature,
       LIMITS.temperature.min,
       LIMITS.temperature.max
     );
-    localStorage.setItem(STORAGE_KEYS.TEMPERATURE, String(clamped));
   }
   if (settings.topP !== undefined) {
-    const clamped = clamp(settings.topP, LIMITS.topP.min, LIMITS.topP.max);
-    localStorage.setItem(STORAGE_KEYS.TOP_P, String(clamped));
+    params.topP = clamp(settings.topP, LIMITS.topP.min, LIMITS.topP.max);
   }
   if (settings.topK !== undefined) {
-    const clamped = clamp(settings.topK, LIMITS.topK.min, LIMITS.topK.max);
-    localStorage.setItem(STORAGE_KEYS.TOP_K, String(clamped));
+    params.topK = clamp(settings.topK, LIMITS.topK.min, LIMITS.topK.max);
   }
   if (settings.repeatPenalty !== undefined) {
-    const clamped = clamp(
+    params.repeatPenalty = clamp(
       settings.repeatPenalty,
       LIMITS.repeatPenalty.min,
       LIMITS.repeatPenalty.max
     );
-    localStorage.setItem(STORAGE_KEYS.REPEAT_PENALTY, String(clamped));
   }
+
+  if (Object.keys(params).length > 0) {
+    update.summarizationParameters = params as any;
+  }
+
+  await window.electronAPI.configSet(update);
 }
 
-export function resetSettings(): void {
-  Object.values(STORAGE_KEYS).forEach((key) => {
-    localStorage.removeItem(key);
-  });
+export async function resetSettings(): Promise<void> {
+  await window.electronAPI.configSet(DEFAULT_CONFIG);
 }
 
-function loadSettingsIntoUI(): void {
-  const settings = getSettings();
+async function loadSettingsIntoUI(): Promise<void> {
+  const settings = await getSettings();
 
   if (elements.minSummaryLengthInput) {
     elements.minSummaryLengthInput.value = String(settings.minSummaryLength);
@@ -185,41 +150,47 @@ function readSettingsFromUI(): AppSettings {
   return {
     minSummaryLength:
       parseFloat(elements.minSummaryLengthInput?.value) ||
-      DEFAULT_SETTINGS.minSummaryLength,
+      DEFAULT_CONFIG.summarization.minSummaryLength,
     maxTokens:
-      parseFloat(elements.maxTokensInput?.value) || DEFAULT_SETTINGS.maxTokens,
+      parseFloat(elements.maxTokensInput?.value) ||
+      DEFAULT_CONFIG.summarizationParameters.maxTokens,
     temperature:
       parseFloat(elements.temperatureInput?.value) ||
-      DEFAULT_SETTINGS.temperature,
-    topP: parseFloat(elements.topPInput?.value) || DEFAULT_SETTINGS.topP,
-    topK: parseFloat(elements.topKInput?.value) || DEFAULT_SETTINGS.topK,
+      DEFAULT_CONFIG.summarizationParameters.temperature,
+    topP:
+      parseFloat(elements.topPInput?.value) ||
+      DEFAULT_CONFIG.summarizationParameters.topP,
+    topK:
+      parseFloat(elements.topKInput?.value) ||
+      DEFAULT_CONFIG.summarizationParameters.topK,
     repeatPenalty:
       parseFloat(elements.repeatPenaltyInput?.value) ||
-      DEFAULT_SETTINGS.repeatPenalty
+      DEFAULT_CONFIG.summarizationParameters.repeatPenalty
   };
 }
 
-function handleSaveSettings(): void {
+async function handleSaveSettings(): Promise<void> {
   const settings = readSettingsFromUI();
-  saveSettings(settings);
+  await saveSettings(settings);
 
-  loadSettingsIntoUI();
+  await loadSettingsIntoUI();
 
   if (elements.saveSettingsBtn) {
     const originalText = elements.saveSettingsBtn.textContent;
-    elements.saveSettingsBtn.textContent = "✓ Saved!";
+    elements.saveSettingsBtn.textContent = "Saved!";
     setTimeout(() => {
       elements.saveSettingsBtn.textContent = originalText;
-    }, 2000);
+      closeSettingsModal();
+    }, 1500);
   }
 
   console.log("Settings saved:", settings);
 }
 
-function handleResetSettings(): void {
+async function handleResetSettings(): Promise<void> {
   if (confirm("Reset all settings to defaults? This cannot be undone.")) {
-    resetSettings();
-    loadSettingsIntoUI();
+    await resetSettings();
+    await loadSettingsIntoUI();
     console.log("Settings reset to defaults");
   }
 }
@@ -227,7 +198,6 @@ function handleResetSettings(): void {
 export function setupSettingsListeners(): void {
   loadSettingsIntoUI();
 
-  // Save/reset buttons
   if (elements.saveSettingsBtn) {
     elements.saveSettingsBtn.addEventListener("click", handleSaveSettings);
   }

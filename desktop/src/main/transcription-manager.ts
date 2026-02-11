@@ -8,19 +8,21 @@ import {
 import path from "node:path";
 import type {
   TranscriptionMessage,
-  TranscriptionResponse,
-  MemoryUsage
+  TranscriptionResponse
 } from "../transcription/utility-process";
 import { getTranscriptionModelsDir } from "./models";
+import { MemoryUsage } from "@/shared/utilityProcess";
 
 // TODO: Make these configurable via a settings page
 const MEMORY_CHECK_INTERVAL_MS = 10_000;
 const MEMORY_THRESHOLD_MB = 4096; // restart if RSS exceeds the specified threshold
 const RESTART_DELAY_MS = 1000;
+const PROCESS_RECYCLE_TIMEOUT_MS = 5 * 60 * 1000;
 
 let utilityProc: UtilityProcess | null = null;
 let memoryCheckTimer: NodeJS.Timeout | null = null;
-let pendingRequests: Map<
+let processRecycleTimer: NodeJS.Timeout | null = null;
+const pendingRequests: Map<
   string,
   {
     resolve: (value: any) => void;
@@ -30,13 +32,14 @@ let pendingRequests: Map<
 > = new Map();
 let requestIdCounter = 0;
 let isRestarting = false;
+let isRecycling = false;
 let modelsPathInitialized = false;
 
 function getUtilityProcessPath(): string {
   if (app.isPackaged) {
     return path.join(
       process.resourcesPath,
-      "app",
+      "app.asar",
       ".vite",
       "build",
       "transcription-utility.js"
@@ -128,6 +131,7 @@ function handleUtilityMessage(message: TranscriptionResponse): void {
       );
       handler.resolve(message.result);
       pendingRequests.delete(id);
+      resetProcessRecycleTimer();
     } else if (message.type === "error") {
       console.log(
         `[TranscriptionManager] Rejecting request ${id} with error:`,
@@ -135,6 +139,7 @@ function handleUtilityMessage(message: TranscriptionResponse): void {
       );
       handler.reject(new Error(message.error));
       pendingRequests.delete(id);
+      resetProcessRecycleTimer();
     }
   }
 
@@ -146,12 +151,12 @@ function handleProcessExit(code: number | null): void {
   modelsPathInitialized = false;
   stopMemoryMonitoring();
 
-  for (const [id, handler] of pendingRequests.entries()) {
+  for (const [_, handler] of pendingRequests.entries()) {
     handler.reject(new Error(`Utility process exited with code ${code}`));
   }
   pendingRequests.clear();
 
-  if (!isRestarting && code !== 0) {
+  if (!isRestarting && !isRecycling && code !== 0) {
     console.log("[TranscriptionManager] Scheduling automatic restart...");
     setTimeout(async () => {
       isRestarting = false;
@@ -220,6 +225,38 @@ async function restartProcess(): Promise<void> {
   }, RESTART_DELAY_MS);
 }
 
+function resetProcessRecycleTimer(): void {
+  if (processRecycleTimer) {
+    clearTimeout(processRecycleTimer);
+  }
+  processRecycleTimer = setTimeout(() => {
+    if (utilityProc && pendingRequests.size === 0) {
+      console.log(
+        "[TranscriptionManager] Process idle timeout reached, recycling utility process"
+      );
+      recycleProcess();
+    }
+  }, PROCESS_RECYCLE_TIMEOUT_MS);
+}
+
+function recycleProcess(): void {
+  if (processRecycleTimer) {
+    clearTimeout(processRecycleTimer);
+    processRecycleTimer = null;
+  }
+  stopMemoryMonitoring();
+  isRecycling = true;
+  if (utilityProc) {
+    utilityProc.kill();
+    utilityProc = null;
+  }
+  modelsPathInitialized = false;
+  isRecycling = false;
+  console.log(
+    "[TranscriptionManager] Utility process recycled, will respawn on next request"
+  );
+}
+
 function sendToUtility(message: TranscriptionMessage): void {
   if (!utilityProc) {
     console.warn("[TranscriptionManager] No utility process running");
@@ -230,7 +267,7 @@ function sendToUtility(message: TranscriptionMessage): void {
 
 function sendMessageAndWait(
   message: TranscriptionMessage,
-  timeoutMs: number = 300000
+  timeoutMs = 300000
 ): Promise<any> {
   return new Promise((resolve, reject) => {
     (async () => {
@@ -393,6 +430,10 @@ export async function healthCheck(): Promise<{
 }
 
 export function stopTranscriptionProcess(): void {
+  if (processRecycleTimer) {
+    clearTimeout(processRecycleTimer);
+    processRecycleTimer = null;
+  }
   stopMemoryMonitoring();
   if (utilityProc) {
     utilityProc.kill();

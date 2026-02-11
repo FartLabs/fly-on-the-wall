@@ -1,4 +1,4 @@
-import { elements, setUiLocked } from "./domNodes";
+import { elements } from "./domNodes";
 import { getActiveInputDeviceIds } from "./devices";
 import { formatSecondsToTime, isScreenSource } from "@/utils";
 import { refreshModelsList } from "./models";
@@ -23,6 +23,23 @@ function updateTimer(): void {
   elements.timerDisplay.textContent = formatSecondsToTime(elapsedSeconds);
 }
 
+function setUiLocked(locked: boolean): void {
+  elements.systemAudioToggle.disabled = locked;
+  elements.systemAudioItem.classList.toggle("disabled", locked);
+
+  // lock all microphone toggles
+  const micToggles = elements.devicesList.querySelectorAll(
+    ".mute-toggle input"
+  ) as NodeListOf<HTMLInputElement>;
+  micToggles.forEach((toggle) => {
+    toggle.disabled = locked;
+  });
+  elements.devicesList.classList.toggle("disabled", locked);
+
+  elements.refreshDevicesBtn.disabled = locked;
+  elements.refreshDevicesBtn.classList.toggle("disabled", locked);
+}
+
 export async function startRecording(
   onComplete: OnRecordingComplete
 ): Promise<void> {
@@ -43,7 +60,7 @@ export async function startRecording(
     if (systemAudioEnabled) {
       try {
         const sources = await window.electronAPI.getDesktopSources();
-        let screenSource = sources.find(isScreenSource) || sources[0];
+        const screenSource = sources.find(isScreenSource) || sources[0];
 
         if (screenSource) {
           const systemStream = await navigator.mediaDevices.getUserMedia({
@@ -191,6 +208,8 @@ async function processRecording(onComplete: OnRecordingComplete) {
   if (audioChunks.length === 0) return;
 
   const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+  // free the raw chunks now that we have the blob
+  audioChunks = [];
   const timestamp = recordingStartTime
     ? recordingStartTime.toISOString().replace(/[:.]/g, "-").slice(0, 19)
     : new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);

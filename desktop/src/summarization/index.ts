@@ -1,3 +1,8 @@
+import {
+  getSummarizationModelParams,
+  getMinSummaryLength
+} from "@/renderer/components/settings";
+
 export interface SummarizationProgress {
   status: "loading" | "downloading" | "summarizing" | "complete" | "error";
   progress?: number;
@@ -7,6 +12,7 @@ export interface SummarizationProgress {
 export interface SummarizationResult {
   summary: string;
   duration: number;
+  timestamp: string;
 }
 
 export interface SummarizeParams {
@@ -20,41 +26,26 @@ export interface SummarizeParams {
 
 type ProgressCallback = (progress: SummarizationProgress) => void;
 
-const DEFAULT_MIN_SUMMARY_LENGTH = 20;
-
-function getMinLengthForSummarization(): number {
-  const stored = localStorage.getItem("minSummaryLength");
-  if (stored) {
-    const parsed = parseInt(stored, 10);
-    if (!isNaN(parsed) && parsed >= 0) return parsed;
-  }
-  return DEFAULT_MIN_SUMMARY_LENGTH;
-}
-const STORAGE_KEY_CUSTOM_PROMPT = "customSummarizationPrompt";
-const STORAGE_KEY_MODEL_PATH = "selectedSummarizationModelPath";
-
-export function getCustomPrompt(): string | null {
-  return localStorage.getItem(STORAGE_KEY_CUSTOM_PROMPT);
+export async function getCustomPrompt(): Promise<string | null> {
+  const config = await window.electronAPI.configGet();
+  return config.summarization.customPrompt || null;
 }
 
-export function saveCustomPrompt(prompt: string): void {
-  if (prompt.trim()) {
-    localStorage.setItem(STORAGE_KEY_CUSTOM_PROMPT, prompt.trim());
-  } else {
-    localStorage.removeItem(STORAGE_KEY_CUSTOM_PROMPT);
-  }
+export async function saveCustomPrompt(prompt: string): Promise<void> {
+  await window.electronAPI.configSet({
+    summarization: { customPrompt: prompt.trim() } as any
+  });
 }
 
-export function getSelectedModelPath(): string | null {
-  return localStorage.getItem(STORAGE_KEY_MODEL_PATH);
+export async function getSelectedModelPath(): Promise<string | null> {
+  const config = await window.electronAPI.configGet();
+  return config.summarization.selectedModelPath || null;
 }
 
-export function saveSelectedModelPath(modelPath: string): void {
-  if (modelPath.trim()) {
-    localStorage.setItem(STORAGE_KEY_MODEL_PATH, modelPath.trim());
-  } else {
-    localStorage.removeItem(STORAGE_KEY_MODEL_PATH);
-  }
+export async function saveSelectedModelPath(modelPath: string): Promise<void> {
+  await window.electronAPI.configSet({
+    summarization: { selectedModelPath: modelPath.trim() } as any
+  });
 }
 
 export function getDefaultPromptTemplate(
@@ -67,7 +58,7 @@ export function getDefaultPromptTemplate(
 export async function checkSummarizationModelDownloaded(
   modelPath?: string
 ): Promise<boolean> {
-  const path = modelPath || getSelectedModelPath();
+  const path = modelPath || (await getSelectedModelPath());
   if (!path) {
     return false;
   }
@@ -138,18 +129,21 @@ export async function summarizeText(
   text: string,
   onProgress?: ProgressCallback,
   modelPath?: string | null,
-  participants: string[] = []
+  participants: string[] = [],
+  timestamp: string = new Date().toISOString()
 ): Promise<SummarizationResult> {
   const startTime = Date.now();
 
-  if (text.trim().length < getMinLengthForSummarization()) {
+  const minLength = await getMinSummaryLength();
+  if (text.trim().length < minLength) {
     return {
       summary: "This meeting concluded with no substantive discussion.",
-      duration: 0
+      duration: 0,
+      timestamp
     };
   }
 
-  const actualModelPath = modelPath || getSelectedModelPath();
+  const actualModelPath = modelPath || (await getSelectedModelPath());
   if (!actualModelPath) {
     throw new Error(
       "No summarization model selected. Please select a GGUF model file in settings."
@@ -184,7 +178,7 @@ export async function summarizeText(
       typeof removeListener === "function" ? removeListener : undefined;
   }
 
-  const customPrompt = getCustomPrompt();
+  const customPrompt = await getCustomPrompt();
   const prompt = customPrompt
     ? customPrompt
         .replace("{transcript}", text)
@@ -197,26 +191,16 @@ export async function summarizeText(
     `[Summarization] Raw transcript preview: ${text.substring(0, 200)}...`
   );
   console.log(`[Summarization] Final prompt length: ${prompt.length}`);
-  console.log(
-    `[Summarization] Final prompt preview: ${prompt.substring(0, 300)}...`
-  );
+  console.log(`[Summarization] Final prompt: ${prompt}...`);
 
   try {
-    // Load summarization parameters from settings
-    const maxTokens = parseInt(
-      localStorage.getItem("summarizationMaxTokens") || "1024",
-      10
-    );
-    const temperature = parseFloat(
-      localStorage.getItem("summarizationTemperature") || "0.7"
-    );
-    const topP = parseFloat(localStorage.getItem("summarizationTopP") || "0.9");
-    const topK = parseInt(
-      localStorage.getItem("summarizationTopK") || "40",
-      10
-    );
-    const repeatPenalty = parseFloat(
-      localStorage.getItem("summarizationRepeatPenalty") || "1.1"
+    const summarizationParams = await getSummarizationModelParams();
+
+    const { maxTokens, temperature, topP, topK, repeatPenalty } =
+      summarizationParams;
+
+    console.log(
+      `[Summarization] Parameters: maxTokens=${maxTokens}, temperature=${temperature}, topP=${topP}, topK=${topK}, repeatPenalty=${repeatPenalty}`
     );
 
     const result = await window.electronAPI.summarize({
@@ -246,7 +230,8 @@ export async function summarizeText(
 
     return {
       summary,
-      duration
+      duration,
+      timestamp
     };
   } catch (error) {
     console.error("Summarization error:", error);

@@ -3,6 +3,24 @@ import path from "node:path";
 import started from "electron-squirrel-startup";
 import fs from "node:fs";
 
+if (!app.isPackaged) {
+  app.setName("Fly on the Wall-dev");
+}
+
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    // focus current instance instead of opening a new one
+    const allWindows = BrowserWindow.getAllWindows();
+    if (allWindows.length > 0) {
+      const mainWindow = allWindows[0];
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
   app.quit();
@@ -21,17 +39,6 @@ protocol.registerSchemesAsPrivileged([
   }
 ]);
 
-// Get the project root (parent of desktop folder)
-export const getProjectRoot = (): string => {
-  // In development, __dirname is in .vite/build, so go up to desktop then to project root
-  // In production, adjust as needed
-  if (app.isPackaged) {
-    return path.join(app.getPath("userData"), "..");
-  }
-  // Development: go from desktop/.vite/build to project root
-  return path.resolve(__dirname, "..", "..", "..");
-};
-
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -47,7 +54,13 @@ const createWindow = () => {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
   } else {
     mainWindow.loadFile(
-      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)
+      path.join(
+        __dirname,
+        "..",
+        "renderer",
+        MAIN_WINDOW_VITE_NAME,
+        "index.html"
+      )
     );
   }
 

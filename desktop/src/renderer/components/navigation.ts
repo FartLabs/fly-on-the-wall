@@ -3,14 +3,11 @@ import { elements } from "./domNodes";
 // TODO: rather than having one html file to hold all pages like a SPA,
 // multiple html files can be used to split pages more cleanly.
 
-type Page = "main" | "history" | "settings";
-
-let currentPage: Page = "main";
+type Page = "main" | "history";
 
 export function navigateToPage(page: Page): void {
   elements.mainPage?.classList.add("hidden");
   elements.historyPage?.classList.add("hidden");
-  elements.settingsPage?.classList.add("hidden");
 
   switch (page) {
     case "main":
@@ -19,29 +16,51 @@ export function navigateToPage(page: Page): void {
     case "history":
       elements.historyPage?.classList.remove("hidden");
       break;
-    case "settings":
-      elements.settingsPage?.classList.remove("hidden");
-      break;
   }
 
-  currentPage = page;
   console.log(`Navigated to ${page} page`);
 }
 
-export function getCurrentPage(): Page {
-  return currentPage;
+export function openSettingsModal(): void {
+  elements.settingsModal?.classList.remove("hidden");
+  console.log("Settings modal opened");
+}
+
+export function closeSettingsModal(): void {
+  elements.settingsModal?.classList.add("hidden");
+  console.log("Settings modal closed");
 }
 
 export function setupNavigationListeners(): void {
   if (elements.viewSettingsBtn) {
     elements.viewSettingsBtn.addEventListener("click", () => {
-      navigateToPage("settings");
+      openSettingsModal();
     });
   }
 
-  if (elements.backToMainFromSettings) {
-    elements.backToMainFromSettings.addEventListener("click", () => {
-      navigateToPage("main");
+  if (elements.closeSettingsModal) {
+    elements.closeSettingsModal.addEventListener("click", () => {
+      closeSettingsModal();
     });
   }
+
+  // close modal when clicking outside
+  if (elements.settingsModal) {
+    elements.settingsModal.addEventListener("click", (e) => {
+      if (e.target === elements.settingsModal) {
+        closeSettingsModal();
+      }
+    });
+  }
+
+  // TODO: add keybindings tab in settings page
+  // close modal with Escape key
+  document.addEventListener("keydown", (e) => {
+    if (
+      e.key === "Escape" &&
+      !elements.settingsModal?.classList.contains("hidden")
+    ) {
+      closeSettingsModal();
+    }
+  });
 }

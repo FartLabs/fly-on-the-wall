@@ -1,38 +1,39 @@
 import fs from "node:fs";
+import {
+  UtilityProcessMessage,
+  UtilityProcessResponse
+} from "@/shared/utilityProcess";
 import { SummarizeParams } from ".";
 
 export type SummarizationProcessMessage =
+  | UtilityProcessMessage
   | {
       type: "summarize";
       text: string;
       modelPath: string;
       params?: SummarizeParams;
     }
-  | { type: "download-model"; modelId: string; targetPath: string }
-  | { type: "check-model"; modelPath: string }
-  | { type: "dispose" }
-  | { type: "get-memory-usage" }
-  | { type: "health-check" };
+  | {
+      type: "check-model";
+      modelPath: string;
+    }
+  | { type: "download-model"; modelId: string; targetPath: string };
 
 export type SummarizationProcessResponse =
-  | { type: "status"; status: string; progress?: number; message?: string }
-  | { type: "result"; result: any }
-  | { type: "error"; error: string }
-  | { type: "memory"; usage: MemoryUsage };
-
-export interface MemoryUsage {
-  heapUsed: number;
-  heapTotal: number;
-  external: number;
-  rss: number;
-}
+  | UtilityProcessResponse
+  | {
+      type: "status";
+      status: string;
+      progress?: number;
+      message?: string;
+    };
 
 let llamaInstance: any = null;
 let currentModel: any = null;
 let currentModelPath: string | null = null;
 let currentContext: any = null;
 
-const IDLE_TIMEOUT_MS = 1 * 60 * 1000;
+const IDLE_TIMEOUT_MS = 30 * 1000;
 let idleTimer: NodeJS.Timeout | null = null;
 
 function resetIdleTimer(): void {
@@ -45,11 +46,6 @@ function resetIdleTimer(): void {
       `[SummarizationProcess] Idle timeout reached, disposing model to free memory`
     );
     await disposeModel();
-
-    if (global.gc) {
-      console.log(`[SummarizationProcess] Running garbage collection`);
-      global.gc();
-    }
   }, IDLE_TIMEOUT_MS);
 }
 
@@ -66,7 +62,12 @@ async function loadModel(modelPath: string): Promise<void> {
 
   const { getLlama } = await import("node-llama-cpp");
 
-  llamaInstance = await getLlama();
+  llamaInstance = await getLlama({});
+
+  console.log(
+    `[SummarizationProcess] getLlama() succeeded: buildType=${llamaInstance.buildType} gpu=${llamaInstance.gpu}`
+  );
+
   currentModel = await llamaInstance.loadModel({ modelPath });
   currentContext = await currentModel.createContext();
   currentModelPath = modelPath;

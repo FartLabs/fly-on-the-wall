@@ -1,5 +1,30 @@
 // https://www.electronjs.org/docs/latest/tutorial/context-isolation#usage-with-typescript
+
+export interface AppConfig {
+  summarizationParameters: {
+    maxTokens: number;
+    temperature: number;
+    topP: number;
+    topK: number;
+    repeatPenalty: number;
+  };
+  summarization: {
+    minSummaryLength: number;
+    customPrompt: string;
+    selectedModelPath: string;
+  };
+  transcription: {
+    selectedModel: string;
+  };
+  app: {
+    introNoteCreated: boolean;
+  };
+}
+
 export default interface IElectronAPI {
+  configGet: () => Promise<AppConfig>;
+  configSet: (partialConfig: Partial<AppConfig>) => Promise<AppConfig>;
+
   saveRecording: (data: {
     buffer: ArrayBuffer;
     filename: string;
@@ -147,4 +172,48 @@ export default interface IElectronAPI {
   getRecordingBuffer: (
     filename: string
   ) => Promise<{ success: boolean; buffer?: ArrayBuffer; error?: string }>;
+
+  downloadGgufModel: (data: {
+    url?: string;
+    repo?: string;
+    filename?: string;
+    revision?: string;
+  }) => Promise<{
+    success: boolean;
+    path?: string;
+    fileName?: string;
+    error?: string;
+  }>;
+  checkGgufModelUrl: (data: {
+    url?: string;
+    repo?: string;
+    filename?: string;
+    revision?: string;
+  }) => Promise<{
+    success: boolean;
+    fileName?: string;
+    size?: number;
+    sizeFormatted?: string;
+    exists?: boolean;
+    existingSize?: number;
+    existingSizeFormatted?: string;
+    error?: string;
+  }>;
+  onGgufDownloadProgress: (
+    callback: (progress: {
+      percent: number;
+      transferredBytes: number;
+      totalBytes: number;
+      message: string;
+    }) => void
+  ) => () => void;
+
+  selectAudioFiles: () => Promise<{
+    canceled: boolean;
+    files: Array<{ path: string; name: string; size: number }>;
+  }>;
+  importAudioFile: (data: {
+    sourcePath: string;
+    mode: "copy" | "move";
+  }) => Promise<{ success: boolean; filename?: string; error?: string }>;
 }

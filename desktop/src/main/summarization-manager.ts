@@ -8,19 +8,21 @@ import {
 import path from "node:path";
 import type {
   SummarizationProcessMessage,
-  SummarizationProcessResponse,
-  MemoryUsage
+  SummarizationProcessResponse
 } from "../summarization/utility-process";
+import type { MemoryUsage } from "@/shared/utilityProcess";
 import { SummarizeParams } from "@/summarization";
 
 // TODO: Make these configurable via a settings page
 const MEMORY_CHECK_INTERVAL_MS = 10_000;
 const MEMORY_THRESHOLD_MB = 4096; // restart if RSS exceeds the specified threshold
 const RESTART_DELAY_MS = 1000;
+const PROCESS_RECYCLE_TIMEOUT_MS = 5 * 60 * 1000;
 
 let utilityProc: UtilityProcess | null = null;
 let memoryCheckTimer: NodeJS.Timeout | null = null;
-let pendingRequests: Map<
+let processRecycleTimer: NodeJS.Timeout | null = null;
+const pendingRequests: Map<
   string,
   {
     resolve: (value: any) => void;
@@ -30,12 +32,13 @@ let pendingRequests: Map<
 > = new Map();
 let requestIdCounter = 0;
 let isRestarting = false;
+let isRecycling = false;
 
 function getUtilityProcessPath(): string {
   if (app.isPackaged) {
     return path.join(
       process.resourcesPath,
-      "app",
+      "app.asar",
       ".vite",
       "build",
       "summarization-utility.js"
@@ -94,6 +97,12 @@ function handleUtilityMessage(message: SummarizationProcessResponse): void {
     return;
   }
 
+  if (message.type === "status") {
+    console.log(
+      `[SummarizationManager] Status: ${message.status}${message.message ? ` - ${message.message}` : ""}`
+    );
+  }
+
   // route to pending request handlers
   for (const [id, handler] of pendingRequests.entries()) {
     if (message.type === "status") {
@@ -101,9 +110,11 @@ function handleUtilityMessage(message: SummarizationProcessResponse): void {
     } else if (message.type === "result") {
       handler.resolve(message.result);
       pendingRequests.delete(id);
+      resetProcessRecycleTimer();
     } else if (message.type === "error") {
       handler.reject(new Error(message.error));
       pendingRequests.delete(id);
+      resetProcessRecycleTimer();
     }
   }
 
@@ -114,13 +125,13 @@ function handleProcessExit(code: number | null): void {
   utilityProc = null;
   stopMemoryMonitoring();
 
-  for (const [id, handler] of pendingRequests.entries()) {
+  for (const [_, handler] of pendingRequests.entries()) {
     handler.reject(new Error(`Utility process exited with code ${code}`));
   }
   pendingRequests.clear();
 
-  // auto-restart if not intentionally stopped
-  if (!isRestarting && code !== 0) {
+  // auto-restart if not intentionally stopped or recycled
+  if (!isRestarting && !isRecycling && code !== 0) {
     console.log("[SummarizationManager] Scheduling automatic restart...");
     setTimeout(() => {
       isRestarting = false;
@@ -187,6 +198,37 @@ async function restartProcess(): Promise<void> {
   }, RESTART_DELAY_MS);
 }
 
+function resetProcessRecycleTimer(): void {
+  if (processRecycleTimer) {
+    clearTimeout(processRecycleTimer);
+  }
+  processRecycleTimer = setTimeout(() => {
+    if (utilityProc && pendingRequests.size === 0) {
+      console.log(
+        "[SummarizationManager] Process idle timeout reached, recycling utility process"
+      );
+      recycleProcess();
+    }
+  }, PROCESS_RECYCLE_TIMEOUT_MS);
+}
+
+function recycleProcess(): void {
+  if (processRecycleTimer) {
+    clearTimeout(processRecycleTimer);
+    processRecycleTimer = null;
+  }
+  stopMemoryMonitoring();
+  isRecycling = true;
+  if (utilityProc) {
+    utilityProc.kill();
+    utilityProc = null;
+  }
+  isRecycling = false;
+  console.log(
+    "[SummarizationManager] Utility process recycled, will respawn on next request"
+  );
+}
+
 function sendToUtility(message: SummarizationProcessMessage): void {
   if (!utilityProc) {
     console.warn("[SummarizationManager] No utility process running");
@@ -197,7 +239,7 @@ function sendToUtility(message: SummarizationProcessMessage): void {
 
 function sendMessageAndWait(
   message: SummarizationProcessMessage,
-  timeoutMs: number = 30000
+  timeoutMs = 30000
 ): Promise<any> {
   return new Promise((resolve, reject) => {
     if (!utilityProc) {
@@ -287,6 +329,10 @@ export async function healthCheck(): Promise<{
 }
 
 export function stopSummarizationProcess(): void {
+  if (processRecycleTimer) {
+    clearTimeout(processRecycleTimer);
+    processRecycleTimer = null;
+  }
   stopMemoryMonitoring();
   if (utilityProc) {
     utilityProc.kill();

@@ -7,6 +7,9 @@ export default defineConfig({
       entry: "src/preload/preload.ts",
       fileName: "preload",
       formats: ["cjs"]
+    },
+    rollupOptions: {
+      external: ["node-llama-cpp", "@node-llama-cpp"]
     }
   }
 });

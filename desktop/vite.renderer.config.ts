@@ -19,6 +19,6 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: ".vite/renderer"
+    outDir: path.resolve(__dirname, ".vite/renderer/main_window")
   }
 });

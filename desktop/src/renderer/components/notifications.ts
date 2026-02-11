@@ -26,7 +26,7 @@ export type NotificationType = "success" | "error" | "info";
 export function showNotification(
   message: string,
   type: NotificationType = "info",
-  duration: number = 3000
+  duration = 3000
 ): void {
   const container = getOrCreateContainer();
 
