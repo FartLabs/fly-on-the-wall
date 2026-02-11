@@ -3,10 +3,12 @@ import { MakerSquirrel } from "@electron-forge/maker-squirrel";
 import { MakerZIP } from "@electron-forge/maker-zip";
 import { MakerDeb } from "@electron-forge/maker-deb";
 import { MakerRpm } from "@electron-forge/maker-rpm";
+import { MakerDMG } from "@electron-forge/maker-dmg";
 import { VitePlugin } from "@electron-forge/plugin-vite";
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
 import { AutoUnpackNativesPlugin } from "@electron-forge/plugin-auto-unpack-natives";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
+import { PublisherGithub } from "@electron-forge/publisher-github";
 import path from "node:path";
 import fs from "node:fs";
 
@@ -20,6 +22,10 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: {
       // https://node-llama-cpp.withcat.ai/guide/electron
+      // unpacking the following dependencies since they contain binaries or need to preserve file structure:
+      // 1. node-llama-cpp, @node-llama-cpp
+      // 2. onnxruntime-node, onnxruntime-common
+      // 3. sharp (and its dependency @img)
       unpack:
         "{**/node_modules/{node-llama-cpp,@node-llama-cpp}/**,**/node_modules/{onnxruntime-node,onnxruntime-common}/**,**/node_modules/sharp/**,**/node_modules/@img/**}"
     },
@@ -36,11 +42,26 @@ const config: ForgeConfig = {
   },
   rebuildConfig: {},
   // TODO: configure later when app is good enough for 1.0
+  // may need to look into flatpaks or other solutions to support other linux distros
+  // moreover, look over this github action for node-llama-cpp cross compilation:
+  // https://node-llama-cpp.withcat.ai/guide/electron#cross-compilation
   makers: [
-    // new MakerSquirrel({}),
-    new MakerZIP({})
-    // new MakerRpm({}),
-    // new MakerDeb({})
+    new MakerSquirrel(),
+    new MakerZIP(),
+    new MakerRpm(),
+    new MakerDeb(),
+    new MakerDMG()
+  ],
+  publishers: [
+    // TODO: configure later when app is good enough for 1.0
+    // https://www.electronforge.io/config/publishers/github
+    // new PublisherGithub({
+    //   repository: {
+    //     owner: 'me',
+    //     name: 'awesome-thing'
+    //   },
+    //   prerelease: true
+    // })
   ],
   hooks: {
     /**

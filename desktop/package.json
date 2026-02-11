@@ -2,7 +2,7 @@
   "name": "fly-on-the-wall",
   "productName": "Fly on the Wall",
   "version": "1.0.0",
-  "description": "My Electron application description",
+  "description": "An open source, local-first AI tool for recording, transcribing and summarizing meetings.",
   "main": ".vite/build/main.js",
   "private": true,
   "scripts": {
@@ -21,12 +21,14 @@
   "devDependencies": {
     "@electron-forge/cli": "^7.11.1",
     "@electron-forge/maker-deb": "^7.11.1",
+    "@electron-forge/maker-dmg": "^7.11.1",
     "@electron-forge/maker-rpm": "^7.11.1",
     "@electron-forge/maker-squirrel": "^7.11.1",
     "@electron-forge/maker-zip": "^7.11.1",
     "@electron-forge/plugin-auto-unpack-natives": "^7.11.1",
     "@electron-forge/plugin-fuses": "^7.11.1",
     "@electron-forge/plugin-vite": "^7.11.1",
+    "@electron-forge/publisher-github": "^7.11.1",
     "@electron/asar": "^4.0.1",
     "@electron/fuses": "^1.8.0",
     "@types/electron-squirrel-startup": "^1.0.2",
