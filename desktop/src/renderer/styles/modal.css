@@ -52,11 +52,11 @@
   color: #fff;
 }
 
-.modal-subtitle {
+/* .modal-subtitle {
   font-size: 0.9rem;
   color: rgba(255, 255, 255, 0.7);
   margin: 0.25rem 0 0 0;
-}
+} */
 
 .modal-close-btn {
   background: rgba(255, 255, 255, 0.1);
