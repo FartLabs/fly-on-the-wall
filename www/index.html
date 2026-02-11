@@ -107,7 +107,7 @@
             href="https://github.com/FartLabs/fly-on-the-wall/releases"
             class="bg-gray-900 text-white px-8 py-4 rounded-lg text-base font-medium hover:bg-gray-800 transition"
           >
-            Download for Windows & macOS
+            Download for Windows, macOS & Linux
           </a>
           <a
             href="https://github.com/FartLabs/fly-on-the-wall"
@@ -116,7 +116,7 @@
             View on GitHub →
           </a>
         </div>
-        <p id="hero-platform-text" class="text-sm text-gray-500">Available for Windows and macOS</p>
+        <p id="hero-platform-text" class="text-sm text-gray-500">Available for Windows, macOS and Linux</p>
       </div>
     </section>
 
@@ -310,6 +310,12 @@
           >
             Download for macOS
           </a>
+          <a
+            href="https://github.com/FartLabs/fly-on-the-wall/releases"
+            class="bg-gray-200 text-gray-900 px-8 py-4 rounded-lg text-base font-medium hover:bg-gray-300 transition"
+          >
+            Download for Linux
+          </a>
         </div>
         <a
           href="https://github.com/FartLabs/fly-on-the-wall"
@@ -387,6 +393,7 @@
         const heroPlatformText = document.getElementById('hero-platform-text');
         const isMac = /Mac/i.test(navigator.userAgent);
         const isWin = /Win/i.test(navigator.userAgent);
+        const isLinux = /Linux/i.test(navigator.userAgent);
 
         if (heroBtn && heroPlatformText) {
           if (isMac) {
@@ -395,6 +402,9 @@
           } else if (isWin) {
             heroBtn.textContent = 'Download for Windows';
             heroPlatformText.textContent = 'Available for Windows';
+          } else if (isLinux) {
+            heroBtn.textContent = 'Download for Linux';
+            heroPlatformText.textContent = 'Available for Linux';
           }
         }
       });
