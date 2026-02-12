@@ -3,7 +3,8 @@
     "start": "cd desktop && npm run start",
     "fmt": "prettier --write .",
     "fmt:check": "prettier --check .",
-    "make": "cd desktop && npm run make"
+    "make": "cd desktop && npm run make",
+    "lint": "cd desktop && npm run lint"
   },
   "dependencies": {
     "prettier": "^3.8.1"

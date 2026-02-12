@@ -7,9 +7,41 @@ import {
   type AppSettings,
   type SummarizationSettings
 } from "@/shared/config";
+import { refreshModelsList } from "./models";
 
 const AUTO_SAVE_DEBOUNCE_MS = 400;
 let autoSaveTimeoutId: number | undefined;
+
+function setModelPathHintText(
+  hintEl: HTMLSpanElement | null,
+  prefix: string,
+  currentPath: string
+) {
+  if (!hintEl) return;
+  hintEl.textContent = `${prefix} Current: ${currentPath}`;
+}
+
+async function refreshModelPathHints(): Promise<void> {
+  try {
+    const [transcriptionDir, summarizationDir] = await Promise.all([
+      window.electronAPI.getTranscriptionModelsDir(),
+      window.electronAPI.getSummarizationModelsDir()
+    ]);
+
+    setModelPathHintText(
+      elements.transcriptionModelPathHint,
+      "Directory used to store Whisper model files. Existing models are not moved automatically when this path changes.",
+      transcriptionDir
+    );
+    setModelPathHintText(
+      elements.summarizationModelPathHint,
+      "Directory used to store GGUF summarization models. Existing models are not moved automatically when this path changes.",
+      summarizationDir
+    );
+  } catch (error) {
+    console.warn("Failed to refresh model path hints:", error);
+  }
+}
 
 async function getSettings(): Promise<AppSettings> {
   const config = await window.electronAPI.configGet();
@@ -49,7 +81,9 @@ async function getSettings(): Promise<AppSettings> {
         DEFAULT_CONFIG.summarizationParameters.repeatPenalty,
       LIMITS.repeatPenalty.min,
       LIMITS.repeatPenalty.max
-    )
+    ),
+    transcriptionModelPath: config.transcription.modelStoragePath ?? "",
+    summarizationModelPath: config.summarization.modelStoragePath ?? ""
   };
 }
 
@@ -81,6 +115,19 @@ export async function saveSettings(
         LIMITS.minSummaryLength.min,
         LIMITS.minSummaryLength.max
       )
+    } as any;
+  }
+
+  if (settings.summarizationModelPath !== undefined) {
+    update.summarization = {
+      ...(update.summarization || {}),
+      modelStoragePath: settings.summarizationModelPath.trim()
+    } as any;
+  }
+
+  if (settings.transcriptionModelPath !== undefined) {
+    update.transcription = {
+      modelStoragePath: settings.transcriptionModelPath.trim()
     } as any;
   }
 
@@ -150,6 +197,14 @@ async function loadSettingsIntoUI(): Promise<void> {
   if (elements.repeatPenaltyInput) {
     elements.repeatPenaltyInput.value = String(settings.repeatPenalty);
   }
+  if (elements.transcriptionModelPathInput) {
+    elements.transcriptionModelPathInput.value =
+      settings.transcriptionModelPath;
+  }
+  if (elements.summarizationModelPathInput) {
+    elements.summarizationModelPathInput.value =
+      settings.summarizationModelPath;
+  }
 }
 
 function readSettingsFromUI(): AppSettings {
@@ -171,7 +226,9 @@ function readSettingsFromUI(): AppSettings {
       DEFAULT_CONFIG.summarizationParameters.topK,
     repeatPenalty:
       parseFloat(elements.repeatPenaltyInput?.value) ||
-      DEFAULT_CONFIG.summarizationParameters.repeatPenalty
+      DEFAULT_CONFIG.summarizationParameters.repeatPenalty,
+    transcriptionModelPath: elements.transcriptionModelPathInput?.value || "",
+    summarizationModelPath: elements.summarizationModelPathInput?.value || ""
   };
 }
 
@@ -183,6 +240,9 @@ async function persistSettingsFromUI(): Promise<void> {
   await window.electronAPI.configSet({
     summarization: { customPrompt } as any
   });
+
+  await refreshModelsList();
+  await refreshModelPathHints();
 
   console.log("Settings saved:", settings);
 }
@@ -202,16 +262,21 @@ async function handleResetSettings(): Promise<void> {
     return;
   await resetSettings();
   await loadSettingsIntoUI();
+  await refreshModelPathHints();
+  await refreshModelsList();
   console.log("Settings reset to defaults");
 }
 
 export function setupSettingsListeners() {
-  loadSettingsIntoUI();
+  loadSettingsIntoUI().then(() => {
+    refreshModelPathHints();
+  });
 
   if (elements.resetSettingsBtn) {
     elements.resetSettingsBtn.addEventListener("click", handleResetSettings);
   }
 
+  // TODO: might be better to dynamically retrieve all inputs here instead of hardcoding them
   const autoSaveInputs: Array<HTMLInputElement | HTMLTextAreaElement | null> = [
     elements.minSummaryLengthInput,
     elements.maxTokensInput,
@@ -219,6 +284,8 @@ export function setupSettingsListeners() {
     elements.topPInput,
     elements.topKInput,
     elements.repeatPenaltyInput,
+    elements.transcriptionModelPathInput,
+    elements.summarizationModelPathInput,
     elements.customPromptInput
   ];
 

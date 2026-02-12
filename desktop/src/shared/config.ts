@@ -11,13 +11,15 @@ export const DEFAULT_CONFIG: AppConfig = {
   summarization: {
     minSummaryLength: 20,
     customPrompt: "",
-    selectedModelPath: ""
+    selectedModelPath: "",
+    modelStoragePath: ""
   },
   transcription: {
-    selectedModel: ""
+    selectedModel: "",
+    modelStoragePath: ""
   },
   app: {
-    introNoteCreated: false
+    introNoteCreated: false // TODO: offload this to localstorage instead, no need to persist this in the config lol
   }
 };
 
@@ -32,6 +34,8 @@ export const LIMITS = {
 
 export interface AppSettings extends SummarizationSettings {
   minSummaryLength: number;
+  transcriptionModelPath: string;
+  summarizationModelPath: string;
 }
 
 export interface SummarizationSettings {

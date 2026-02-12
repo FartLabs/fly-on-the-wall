@@ -133,9 +133,22 @@ export const elements = {
   repeatPenaltyInput: document.getElementById(
     "repeatPenaltyInput"
   ) as HTMLInputElement,
+  transcriptionModelPathInput: document.getElementById(
+    "transcriptionModelPathInput"
+  ) as HTMLInputElement,
+  summarizationModelPathInput: document.getElementById(
+    "summarizationModelPathInput"
+  ) as HTMLInputElement,
   resetSettingsBtn: document.getElementById(
     "resetSettingsBtn"
   ) as HTMLButtonElement,
+
+  transcriptionModelPathHint: document.getElementById(
+    "transcriptionModelPathHint"
+  ) as HTMLSpanElement,
+  summarizationModelPathHint: document.getElementById(
+    "summarizationModelPathHint"
+  ) as HTMLSpanElement,
 
   importQueue: document.getElementById("importQueue") as HTMLDivElement,
   importQueueList: document.getElementById("importQueueList") as HTMLDivElement,

@@ -1,56 +1,51 @@
 import { app, ipcMain, dialog, shell, BrowserWindow } from "electron";
 import path from "node:path";
 import fs from "node:fs";
-import { formatBytes } from "../utils";
+import { formatBytes, ensureDir } from "../utils";
 import { exportNoteHtml } from "./exportedNote";
 import type { ModelDownloader } from "node-llama-cpp";
+import { readConfig } from "./config";
+
+function resolveConfiguredDir(
+  configuredPath: string,
+  fallbackPath: string
+): string {
+  const raw = configuredPath.trim();
+  if (!raw) return fallbackPath;
+  return path.isAbsolute(raw) ? raw : path.resolve(raw);
+}
 
 const getModelsDir = (): string => {
   const modelsDir = path.join(app.getPath("userData"), "models");
-  if (!fs.existsSync(modelsDir)) {
-    fs.mkdirSync(modelsDir, { recursive: true });
-  }
-  return modelsDir;
+  return ensureDir(modelsDir);
 };
 
 const getModelsCacheDir = (): string => {
   const cacheDir = path.join(app.getPath("userData"), "cache", "models");
-  if (!fs.existsSync(cacheDir)) {
-    fs.mkdirSync(cacheDir, { recursive: true });
-  }
-  return cacheDir;
+  return ensureDir(cacheDir);
 };
 
-const getSummarizationModelsDir = (): string => {
-  const summarizationDir = path.join(
-    app.getPath("userData"),
-    "models",
-    "summarization"
+export const getSummarizationModelsDir = (): string => {
+  const config = readConfig();
+  const summarizationDir = resolveConfiguredDir(
+    config.summarization.modelStoragePath || "",
+    path.join(app.getPath("userData"), "models", "summarization")
   );
-  if (!fs.existsSync(summarizationDir)) {
-    fs.mkdirSync(summarizationDir, { recursive: true });
-  }
-  return summarizationDir;
+  return ensureDir(summarizationDir);
 };
 
 export const getTranscriptionModelsDir = (): string => {
-  const transcriptionDir = path.join(
-    app.getPath("userData"),
-    "models",
-    "transcription"
+  const config = readConfig();
+  const transcriptionDir = resolveConfiguredDir(
+    config.transcription.modelStoragePath || "",
+    path.join(app.getPath("userData"), "models", "transcription")
   );
-  if (!fs.existsSync(transcriptionDir)) {
-    fs.mkdirSync(transcriptionDir, { recursive: true });
-  }
-  return transcriptionDir;
+  return ensureDir(transcriptionDir);
 };
 
 const getNotesDir = (): string => {
   const notesDir = path.join(app.getPath("userData"), "notes");
-  if (!fs.existsSync(notesDir)) {
-    fs.mkdirSync(notesDir, { recursive: true });
-  }
-  return notesDir;
+  return ensureDir(notesDir);
 };
 
 ipcMain.handle("get-models-dir", () => {
@@ -59,6 +54,14 @@ ipcMain.handle("get-models-dir", () => {
 
 ipcMain.handle("get-models-cache-dir", () => {
   return getModelsCacheDir();
+});
+
+ipcMain.handle("get-transcription-models-dir", () => {
+  return getTranscriptionModelsDir();
+});
+
+ipcMain.handle("get-summarization-models-dir", () => {
+  return getSummarizationModelsDir();
 });
 
 ipcMain.handle("open-models-folder", async () => {

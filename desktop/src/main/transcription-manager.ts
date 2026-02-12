@@ -33,7 +33,7 @@ const pendingRequests: Map<
 let requestIdCounter = 0;
 let isRestarting = false;
 let isRecycling = false;
-let modelsPathInitialized = false;
+let initializedModelsPath: string | null = null;
 
 function getUtilityProcessPath(): string {
   if (app.isPackaged) {
@@ -93,16 +93,15 @@ export async function spawnTranscriptionProcess(): Promise<UtilityProcess> {
 }
 
 async function initializeModelsPath(): Promise<void> {
-  if (modelsPathInitialized) return;
-
   const modelsDir = getTranscriptionModelsDir();
+  if (initializedModelsPath === modelsDir) return;
 
   try {
     await sendMessageAndWait(
       { type: "set-models-path", modelsPath: modelsDir },
       5000
     );
-    modelsPathInitialized = true;
+    initializedModelsPath = modelsDir;
     console.log(`[TranscriptionManager] Models path initialized: ${modelsDir}`);
   } catch (error) {
     console.error(
@@ -113,7 +112,7 @@ async function initializeModelsPath(): Promise<void> {
   }
 }
 
-function handleUtilityMessage(message: TranscriptionResponse): void {
+function handleUtilityMessage(message: TranscriptionResponse) {
   // console.log(`[TranscriptionManager] Received message:`, message);
 
   if (message.type === "memory") {
@@ -146,9 +145,9 @@ function handleUtilityMessage(message: TranscriptionResponse): void {
   broadcastToRenderers("transcription-status", message);
 }
 
-function handleProcessExit(code: number | null): void {
+function handleProcessExit(code: number | null) {
   utilityProc = null;
-  modelsPathInitialized = false;
+  initializedModelsPath = null;
   stopMemoryMonitoring();
 
   for (const [_, handler] of pendingRequests.entries()) {
@@ -166,7 +165,7 @@ function handleProcessExit(code: number | null): void {
   }
 }
 
-function startMemoryMonitoring(): void {
+function startMemoryMonitoring() {
   if (memoryCheckTimer) return;
 
   memoryCheckTimer = setInterval(() => {
@@ -178,7 +177,7 @@ function startMemoryMonitoring(): void {
   console.log("[TranscriptionManager] Memory monitoring started");
 }
 
-function stopMemoryMonitoring(): void {
+function stopMemoryMonitoring() {
   if (memoryCheckTimer) {
     clearInterval(memoryCheckTimer);
     memoryCheckTimer = null;
@@ -186,7 +185,7 @@ function stopMemoryMonitoring(): void {
   }
 }
 
-function checkMemoryThreshold(usage: MemoryUsage): void {
+function checkMemoryThreshold(usage: MemoryUsage) {
   const rssMb = usage.rss / (1024 * 1024);
   console.log(
     `[TranscriptionManager] Memory usage: ${rssMb.toFixed(1)} MB RSS`
@@ -217,7 +216,7 @@ async function restartProcess(): Promise<void> {
     utilityProc = null;
   }
 
-  modelsPathInitialized = false;
+  initializedModelsPath = null;
 
   setTimeout(async () => {
     isRestarting = false;
@@ -225,7 +224,7 @@ async function restartProcess(): Promise<void> {
   }, RESTART_DELAY_MS);
 }
 
-function resetProcessRecycleTimer(): void {
+function resetProcessRecycleTimer() {
   if (processRecycleTimer) {
     clearTimeout(processRecycleTimer);
   }
@@ -239,7 +238,7 @@ function resetProcessRecycleTimer(): void {
   }, PROCESS_RECYCLE_TIMEOUT_MS);
 }
 
-function recycleProcess(): void {
+function recycleProcess() {
   if (processRecycleTimer) {
     clearTimeout(processRecycleTimer);
     processRecycleTimer = null;
@@ -250,14 +249,14 @@ function recycleProcess(): void {
     utilityProc.kill();
     utilityProc = null;
   }
-  modelsPathInitialized = false;
+  initializedModelsPath = null;
   isRecycling = false;
   console.log(
     "[TranscriptionManager] Utility process recycled, will respawn on next request"
   );
 }
 
-function sendToUtility(message: TranscriptionMessage): void {
+function sendToUtility(message: TranscriptionMessage) {
   if (!utilityProc) {
     console.warn("[TranscriptionManager] No utility process running");
     return;
@@ -324,6 +323,7 @@ export async function transcribe(
   if (!utilityProc) {
     await spawnTranscriptionProcess();
   }
+  await initializeModelsPath();
 
   return new Promise((resolve, reject) => {
     const requestId = String(++requestIdCounter);
@@ -355,6 +355,7 @@ export async function downloadModel(
   if (!utilityProc) {
     await spawnTranscriptionProcess();
   }
+  await initializeModelsPath();
   console.log(
     `[TranscriptionManager] Sending download-model message to utility process`
   );
@@ -375,6 +376,7 @@ export async function checkModel(
   if (!utilityProc) {
     await spawnTranscriptionProcess();
   }
+  await initializeModelsPath();
   return sendMessageAndWait({ type: "check-model", modelId });
 }
 
@@ -439,7 +441,7 @@ export function stopTranscriptionProcess(): void {
     utilityProc.kill();
     utilityProc = null;
   }
-  modelsPathInitialized = false;
+  initializedModelsPath = null;
   pendingRequests.clear();
   console.log("[TranscriptionManager] Utility process stopped");
 }

@@ -12,9 +12,11 @@ export interface AppConfig {
     minSummaryLength: number;
     customPrompt: string;
     selectedModelPath: string;
+    modelStoragePath: string;
   };
   transcription: {
     selectedModel: string;
+    modelStoragePath: string;
   };
   app: {
     introNoteCreated: boolean;
@@ -44,6 +46,8 @@ export default interface IElectronAPI {
 
   getModelsDir: () => Promise<string>;
   getModelsCacheDir: () => Promise<string>;
+  getTranscriptionModelsDir: () => Promise<string>;
+  getSummarizationModelsDir: () => Promise<string>;
   openModelsFolder: () => Promise<{
     success: boolean;
     path?: string;
