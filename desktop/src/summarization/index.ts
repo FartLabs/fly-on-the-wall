@@ -82,14 +82,6 @@ export async function deleteSummarizationModel(): Promise<boolean> {
   }
 }
 
-export async function getModelsCacheDir(): Promise<string> {
-  return window.electronAPI.getModelsCacheDir();
-}
-
-export async function getModelsDir(): Promise<string> {
-  return window.electronAPI.getModelsDir();
-}
-
 function createDefaultPrompt(
   transcript: string,
   participants: string[] = []
