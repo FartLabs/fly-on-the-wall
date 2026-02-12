@@ -10,6 +10,12 @@
   gap: 0.75rem;
 }
 
+.model-section-title {
+  font-size: 0.9rem;
+  color: #888;
+  margin-bottom: 0.75rem;
+}
+
 .model-item {
   display: flex;
   align-items: center;
@@ -223,92 +229,6 @@
 .prompt-actions .action-btn.secondary:hover {
   background: rgba(255, 255, 255, 0.15);
   box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
-}
-
-.prompt-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  padding: 2rem;
-}
-
-.prompt-modal-content {
-  background: #1a1a1a;
-  border-radius: 16px;
-  max-width: 800px;
-  width: 100%;
-  max-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-}
-
-.prompt-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.prompt-modal-header h3 {
-  margin: 0;
-  color: #fff;
-  font-size: 1.25rem;
-}
-
-.close-modal {
-  background: none;
-  border: none;
-  color: #999;
-  font-size: 2rem;
-  cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-}
-
-.close-modal:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-}
-
-.prompt-modal-body {
-  padding: 1.5rem;
-  overflow-y: auto;
-}
-
-.default-prompt-display {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 1rem;
-  color: #ddd;
-  font-size: 0.85rem;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  overflow-x: auto;
-  font-family: "Courier New", monospace;
-}
-
-.prompt-modal-body code {
-  background: rgba(102, 126, 234, 0.2);
-  color: #a0b9ff;
-  padding: 0.2rem 0.4rem;
-  border-radius: 4px;
-  font-family: monospace;
 }
 
 .gguf-download-section {

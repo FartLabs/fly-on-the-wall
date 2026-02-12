@@ -81,13 +81,6 @@ export const elements = {
   customPromptInput: document.getElementById(
     "customPromptInput"
   ) as HTMLTextAreaElement,
-  savePromptBtn: document.getElementById("savePromptBtn") as HTMLButtonElement,
-  resetPromptBtn: document.getElementById(
-    "resetPromptBtn"
-  ) as HTMLButtonElement,
-  viewDefaultPromptBtn: document.getElementById(
-    "viewDefaultPromptBtn"
-  ) as HTMLButtonElement,
 
   sidebar: document.getElementById("sidebar") as HTMLDivElement,
   sidebarTrigger: document.getElementById("sidebarTrigger") as HTMLDivElement,
@@ -140,9 +133,6 @@ export const elements = {
   repeatPenaltyInput: document.getElementById(
     "repeatPenaltyInput"
   ) as HTMLInputElement,
-  saveSettingsBtn: document.getElementById(
-    "saveSettingsBtn"
-  ) as HTMLButtonElement,
   resetSettingsBtn: document.getElementById(
     "resetSettingsBtn"
   ) as HTMLButtonElement,
@@ -151,5 +141,9 @@ export const elements = {
   importQueueList: document.getElementById("importQueueList") as HTMLDivElement,
   importQueueCount: document.getElementById(
     "importQueueCount"
-  ) as HTMLSpanElement
+  ) as HTMLSpanElement,
+
+  meetingParticipantsInput: document.getElementById(
+    "meetingParticipantsInput"
+  ) as HTMLTextAreaElement
 };

@@ -11,33 +11,10 @@
     <div class="sidebar-container" id="sidebar">
       <div class="model-management-card" id="modelManagementCard">
         <div class="card-header">
-          <h2>AI Models</h2>
+          <h2>Transcription Models</h2>
         </div>
 
         <div class="models-list" id="modelsList"></div>
-
-        <div class="prompt-customization-section">
-          <h3 class="prompt-section-title">Summarization Prompt</h3>
-          <p class="prompt-section-description">
-            Customize how AI summarizes your meetings. Leave empty to use
-            default.
-          </p>
-          <textarea
-            id="customPromptInput"
-            class="custom-prompt-input"
-            placeholder="Enter custom prompt or leave empty for default..."
-            rows="6"
-          ></textarea>
-          <div class="prompt-actions">
-            <button class="action-btn" id="savePromptBtn">Save Prompt</button>
-            <button class="action-btn secondary" id="resetPromptBtn">
-              Reset to Default
-            </button>
-            <button class="action-btn secondary" id="viewDefaultPromptBtn">
-              View Default
-            </button>
-          </div>
-        </div>
       </div>
     </div>
     <div class="right-panel-trigger" id="rightPanelTrigger">
@@ -198,6 +175,26 @@
           </div>
           <div class="import-queue-list" id="importQueueList"></div>
         </div>
+      </div>
+
+      <div class="participants-card">
+        <div class="card-header">
+          <h2>Meeting Participants</h2>
+        </div>
+        <p class="participants-description">
+          Add participant names for use in summarization prompts via
+          <code>{participants}</code>. See Settings -> Summarization for prompt
+          customization.
+        </p>
+        <textarea
+          id="meetingParticipantsInput"
+          class="participants-input"
+          rows="3"
+          placeholder="e.g. Alice, Bob, Charlie"
+        ></textarea>
+        <p class="participants-hint">
+          Use commas, semicolons, or new lines to separate names.
+        </p>
       </div>
 
       <div class="audio-devices-card">
@@ -392,7 +389,7 @@
               </li> -->
               <li>
                 <button
-                  class="settings-nav-item"
+                  class="settings-nav-item active"
                   data-settings-section="summarization"
                 >
                   <span class="settings-nav-icon">📝</span>
@@ -506,6 +503,31 @@
                 Configure summarization model parameters and prompts.
               </p>
 
+              <div class="prompt-customization-section">
+                <h3 class="prompt-section-title">Summarization Prompt</h3>
+                <p class="prompt-section-description">
+                  Customize how AI summarizes your meetings. The following
+                  variables can be used: {transcript} and {participants}.
+                  {transcript} is the full transcription text, and
+                  {participants} is a list of meeting participants (if
+                  available).
+                </p>
+                <textarea
+                  id="customPromptInput"
+                  class="custom-prompt-input"
+                  placeholder="Enter custom prompt or leave empty for default..."
+                  rows="6"
+                ></textarea>
+              </div>
+
+              <div class="settings-model-manager">
+                <h3 class="settings-section-title">Summarization Model</h3>
+                <p class="settings-panel-description">
+                  Manage GGUF models used for summarization.
+                </p>
+                <div id="summarizationModelsContainer"></div>
+              </div>
+
               <!-- NOTE: would it be possible to use values from shared/config.ts? would like to use that file as single source of truth?  -->
 
               <div class="settings-group">
@@ -611,13 +633,13 @@
               </div>
 
               <div class="settings-actions">
-                <button class="action-btn" id="saveSettingsBtn">
-                  Save Settings
-                </button>
                 <button class="action-btn secondary" id="resetSettingsBtn">
                   Reset to Defaults
                 </button>
               </div>
+              <p class="settings-autosave-note">
+                Changes are saved automatically.
+              </p>
             </div>
           </div>
         </div>

@@ -7,7 +7,9 @@ import {
   type AppSettings,
   type SummarizationSettings
 } from "@/shared/config";
-import { closeSettingsModal } from "./navigation";
+
+const AUTO_SAVE_DEBOUNCE_MS = 400;
+let autoSaveTimeoutId: number | undefined;
 
 async function getSettings(): Promise<AppSettings> {
   const config = await window.electronAPI.configGet();
@@ -121,6 +123,10 @@ export async function saveSettings(
 
 export async function resetSettings(): Promise<void> {
   await window.electronAPI.configSet(DEFAULT_CONFIG);
+  if (elements.customPromptInput) {
+    const defaultPrompt = elements.customPromptInput.dataset.defaultPrompt;
+    elements.customPromptInput.value = defaultPrompt || "";
+  }
 }
 
 async function loadSettingsIntoUI(): Promise<void> {
@@ -169,46 +175,62 @@ function readSettingsFromUI(): AppSettings {
   };
 }
 
-async function handleSaveSettings(): Promise<void> {
+async function persistSettingsFromUI(): Promise<void> {
   const settings = readSettingsFromUI();
   await saveSettings(settings);
 
-  await loadSettingsIntoUI();
-
-  if (elements.saveSettingsBtn) {
-    const originalText = elements.saveSettingsBtn.textContent;
-    elements.saveSettingsBtn.textContent = "Saved!";
-    setTimeout(() => {
-      elements.saveSettingsBtn.textContent = originalText;
-      closeSettingsModal();
-    }, 1500);
-  }
+  const customPrompt = elements.customPromptInput?.value?.trim() ?? "";
+  await window.electronAPI.configSet({
+    summarization: { customPrompt } as any
+  });
 
   console.log("Settings saved:", settings);
 }
 
-async function handleResetSettings(): Promise<void> {
-  if (confirm("Reset all settings to defaults? This cannot be undone.")) {
-    await resetSettings();
-    await loadSettingsIntoUI();
-    console.log("Settings reset to defaults");
+function scheduleAutoSave() {
+  if (autoSaveTimeoutId !== undefined) {
+    window.clearTimeout(autoSaveTimeoutId);
   }
+
+  autoSaveTimeoutId = window.setTimeout(() => {
+    persistSettingsFromUI();
+  }, AUTO_SAVE_DEBOUNCE_MS);
 }
 
-export function setupSettingsListeners(): void {
+async function handleResetSettings(): Promise<void> {
+  if (!confirm("Reset all settings to defaults? This cannot be undone."))
+    return;
+  await resetSettings();
+  await loadSettingsIntoUI();
+  console.log("Settings reset to defaults");
+}
+
+export function setupSettingsListeners() {
   loadSettingsIntoUI();
 
-  if (elements.saveSettingsBtn) {
-    elements.saveSettingsBtn.addEventListener("click", handleSaveSettings);
-  }
   if (elements.resetSettingsBtn) {
     elements.resetSettingsBtn.addEventListener("click", handleResetSettings);
   }
 
+  const autoSaveInputs: Array<HTMLInputElement | HTMLTextAreaElement | null> = [
+    elements.minSummaryLengthInput,
+    elements.maxTokensInput,
+    elements.temperatureInput,
+    elements.topPInput,
+    elements.topKInput,
+    elements.repeatPenaltyInput,
+    elements.customPromptInput
+  ];
+
+  autoSaveInputs.forEach((input) => {
+    input?.addEventListener("input", scheduleAutoSave);
+    input?.addEventListener("change", scheduleAutoSave);
+  });
+
   setupSettingsNavigation();
 }
 
-function setupSettingsNavigation(): void {
+function setupSettingsNavigation() {
   const navItems =
     document.querySelectorAll<HTMLButtonElement>(".settings-nav-item");
 
