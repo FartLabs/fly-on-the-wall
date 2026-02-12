@@ -204,4 +204,28 @@ export function setupSettingsListeners(): void {
   if (elements.resetSettingsBtn) {
     elements.resetSettingsBtn.addEventListener("click", handleResetSettings);
   }
+
+  setupSettingsNavigation();
+}
+
+function setupSettingsNavigation(): void {
+  const navItems =
+    document.querySelectorAll<HTMLButtonElement>(".settings-nav-item");
+
+  navItems.forEach((item) => {
+    item.addEventListener("click", () => {
+      const sectionId = item.getAttribute("data-settings-section");
+      if (!sectionId) return;
+
+      navItems.forEach((nav) => nav.classList.remove("active"));
+      item.classList.add("active");
+
+      const panels =
+        document.querySelectorAll<HTMLDivElement>(".settings-panel");
+      panels.forEach((panel) => panel.classList.remove("active"));
+
+      const targetPanel = document.getElementById(`settingsPanel-${sectionId}`);
+      targetPanel?.classList.add("active");
+    });
+  });
 }

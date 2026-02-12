@@ -359,130 +359,265 @@
     </div>
 
     <div class="modal-overlay hidden" id="settingsModal">
-      <div class="modal-container">
+      <div class="modal-container settings-modal-container">
         <div class="modal-header">
           <div>
             <h2>Settings</h2>
-            <!-- <p class="modal-subtitle">Configure Application Settings</p> -->
           </div>
           <button class="modal-close-btn" id="closeSettingsModal" title="Close">
             ✕
           </button>
         </div>
 
-        <div class="modal-content">
-          <div class="settings-section">
-            <h3 class="settings-section-title">Summarization Settings</h3>
-
-            <div class="settings-group">
-              <label class="settings-label" for="minSummaryLengthInput">
-                Minimum Text Length
-                <span class="settings-hint"
-                  >Skip summarization for short transcripts</span
+        <div class="settings-layout">
+          <nav class="settings-nav">
+            <ul class="settings-nav-list">
+              <!-- <li>
+                <button class="settings-nav-item active" data-settings-section="general">
+                  <span class="settings-nav-icon">⚙️</span>
+                  <span>General</span>
+                </button>
+              </li>
+              <li>
+                <button class="settings-nav-item" data-settings-section="keybindings">
+                  <span class="settings-nav-icon">⌨️</span>
+                  <span>Keybindings</span>
+                </button>
+              </li>
+              <li>
+                <button class="settings-nav-item" data-settings-section="transcription">
+                  <span class="settings-nav-icon">🎙️</span>
+                  <span>Transcription</span>
+                </button>
+              </li> -->
+              <li>
+                <button
+                  class="settings-nav-item"
+                  data-settings-section="summarization"
                 >
-              </label>
-              <input
-                type="number"
-                id="minSummaryLengthInput"
-                class="settings-input"
-                min="0"
-                max="1000"
-                step="10"
-                value="20"
-              />
+                  <span class="settings-nav-icon">📝</span>
+                  <span>Summarization</span>
+                </button>
+              </li>
+            </ul>
+          </nav>
+
+          <div class="settings-panels">
+            <!-- <div class="settings-panel" id="settingsPanel-general">
+              <h3 class="settings-panel-title">General</h3>
+              <p class="settings-panel-description">General application preferences.</p>
+
+              <div class="settings-group">
+                <label class="settings-label">
+                  Application Theme
+                  <span class="settings-hint">Choose between light and dark mode</span>
+                </label>
+                <select class="settings-select" id="themeSelect" disabled>
+                  <option value="dark" selected>Dark (Default)</option>
+                  <option value="light">Light</option>
+                </select>
+              </div>
+
+              <div class="settings-group">
+                <label class="settings-label">
+                  Audio Format
+                  <span class="settings-hint">Default recording format</span>
+                </label>
+                <select class="settings-select" id="audioFormatSelect" disabled>
+                  <option value="wav" selected>WAV</option>
+                  <option value="mp3">MP3</option>
+                </select>
+              </div>
+
+              <p class="settings-hint" style="margin-top: 1rem; font-style: italic;">
+                More general settings coming soon.
+              </p>
             </div>
 
-            <div class="settings-group">
-              <label class="settings-label" for="maxTokensInput">
-                Max Tokens
-                <span class="settings-hint"
-                  >Maximum output length (128-4096)</span
-                >
-              </label>
-              <input
-                type="number"
-                id="maxTokensInput"
-                class="settings-input"
-                min="128"
-                max="4096"
-                step="64"
-                value="1024"
-              />
+            <div class="settings-panel" id="settingsPanel-keybindings">
+              <h3 class="settings-panel-title">Keybindings</h3>
+              <p class="settings-panel-description">Customize keyboard shortcuts.</p>
+
+              <div class="keybinding-list">
+                <div class="keybinding-item">
+                  <span class="keybinding-action">Start / Stop Recording</span>
+                  <kbd class="keybinding-key">Ctrl + Shift + R</kbd>
+                </div>
+                <div class="keybinding-item">
+                  <span class="keybinding-action">Pause / Resume Recording</span>
+                  <kbd class="keybinding-key">Ctrl + Shift + P</kbd>
+                </div>
+                <div class="keybinding-item">
+                  <span class="keybinding-action">Open Settings</span>
+                  <kbd class="keybinding-key">Ctrl + ,</kbd>
+                </div>
+                <div class="keybinding-item">
+                  <span class="keybinding-action">Close Modal / Go Back</span>
+                  <kbd class="keybinding-key">Escape</kbd>
+                </div>
+              </div>
+
+              <p class="settings-hint" style="margin-top: 1rem; font-style: italic;">
+                Custom keybinding configuration coming soon.
+              </p>
             </div>
 
-            <div class="settings-group">
-              <label class="settings-label" for="temperatureInput">
-                Temperature
-                <span class="settings-hint">Creativity level (0.0-2.0)</span>
-              </label>
-              <input
-                type="number"
-                id="temperatureInput"
-                class="settings-input"
-                min="0"
-                max="2"
-                step="0.1"
-                value="0.7"
-              />
-            </div>
+            <div class="settings-panel" id="settingsPanel-transcription">
+              <h3 class="settings-panel-title">Transcription</h3>
+              <p class="settings-panel-description">Configure transcription model and behavior.</p>
 
-            <div class="settings-group">
-              <label class="settings-label" for="topPInput">
-                Top P
-                <span class="settings-hint">Nucleus sampling (0.0-1.0)</span>
-              </label>
-              <input
-                type="number"
-                id="topPInput"
-                class="settings-input"
-                min="0"
-                max="1"
-                step="0.05"
-                value="0.9"
-              />
-            </div>
+              <div class="settings-group">
+                <label class="settings-label">
+                  Whisper Model
+                  <span class="settings-hint">Select the Whisper model used for transcription</span>
+                </label>
+                <select class="settings-select" id="whisperModelSelect" disabled>
+                  <option value="base" selected>Base</option>
+                  <option value="small">Small</option>
+                  <option value="medium">Medium</option>
+                  <option value="large">Large</option>
+                </select>
+              </div>
 
-            <div class="settings-group">
-              <label class="settings-label" for="topKInput">
-                Top K
-                <span class="settings-hint"
-                  >Token selection limit (0-100, 0 = disabled)</span
-                >
-              </label>
-              <input
-                type="number"
-                id="topKInput"
-                class="settings-input"
-                min="0"
-                max="100"
-                step="1"
-                value="40"
-              />
-            </div>
+              <div class="settings-group">
+                <label class="settings-label">
+                  Language
+                  <span class="settings-hint">Audio language for transcription (auto-detect if empty)</span>
+                </label>
+                <select class="settings-select" id="transcriptionLanguageSelect" disabled>
+                  <option value="auto" selected>Auto-detect</option>
+                  <option value="en">English</option>
+                  <option value="es">Spanish</option>
+                  <option value="fr">French</option>
+                  <option value="de">German</option>
+                  <option value="ja">Japanese</option>
+                  <option value="zh">Chinese</option>
+                </select>
+              </div>
 
-            <div class="settings-group">
-              <label class="settings-label" for="repeatPenaltyInput">
-                Repeat Penalty
-                <span class="settings-hint">Reduce repetition (1.0-2.0)</span>
-              </label>
-              <input
-                type="number"
-                id="repeatPenaltyInput"
-                class="settings-input"
-                min="1"
-                max="2"
-                step="0.05"
-                value="1.1"
-              />
-            </div>
+              <p class="settings-hint" style="margin-top: 1rem; font-style: italic;">
+                More transcription settings coming soon.
+              </p>
+            </div> -->
 
-            <div class="settings-actions">
-              <button class="action-btn" id="saveSettingsBtn">
-                Save Settings
-              </button>
-              <button class="action-btn secondary" id="resetSettingsBtn">
-                Reset to Defaults
-              </button>
+            <div class="settings-panel active" id="settingsPanel-summarization">
+              <h3 class="settings-panel-title">Summarization</h3>
+              <p class="settings-panel-description">
+                Configure summarization model parameters and prompts.
+              </p>
+
+              <!-- NOTE: would it be possible to use values from shared/config.ts? would like to use that file as single source of truth?  -->
+
+              <div class="settings-group">
+                <label class="settings-label" for="minSummaryLengthInput">
+                  Minimum Text Length
+                  <span class="settings-hint"
+                    >Skip summarization for short transcripts (0-1000)</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="minSummaryLengthInput"
+                  class="settings-input"
+                  min="0"
+                  max="1000"
+                  step="10"
+                  value="20"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label class="settings-label" for="maxTokensInput">
+                  Max Tokens
+                  <span class="settings-hint"
+                    >Maximum output length (128-4096)</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="maxTokensInput"
+                  class="settings-input"
+                  min="128"
+                  max="4096"
+                  step="64"
+                  value="1024"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label class="settings-label" for="temperatureInput">
+                  Temperature
+                  <span class="settings-hint">Creativity level (0.0-2.0)</span>
+                </label>
+                <input
+                  type="number"
+                  id="temperatureInput"
+                  class="settings-input"
+                  min="0"
+                  max="2"
+                  step="0.1"
+                  value="0.7"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label class="settings-label" for="topPInput">
+                  Top P
+                  <span class="settings-hint">Nucleus sampling (0.0-1.0)</span>
+                </label>
+                <input
+                  type="number"
+                  id="topPInput"
+                  class="settings-input"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value="0.9"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label class="settings-label" for="topKInput">
+                  Top K
+                  <span class="settings-hint"
+                    >Token selection limit (0-100, 0 = disabled)</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="topKInput"
+                  class="settings-input"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value="40"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label class="settings-label" for="repeatPenaltyInput">
+                  Repeat Penalty
+                  <span class="settings-hint">Reduce repetition (1.0-2.0)</span>
+                </label>
+                <input
+                  type="number"
+                  id="repeatPenaltyInput"
+                  class="settings-input"
+                  min="1"
+                  max="2"
+                  step="0.05"
+                  value="1.1"
+                />
+              </div>
+
+              <div class="settings-actions">
+                <button class="action-btn" id="saveSettingsBtn">
+                  Save Settings
+                </button>
+                <button class="action-btn secondary" id="resetSettingsBtn">
+                  Reset to Defaults
+                </button>
+              </div>
             </div>
           </div>
         </div>
