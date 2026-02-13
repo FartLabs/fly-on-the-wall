@@ -1,101 +1,25 @@
-import {
-  generateDateLabel,
-  convertToLocaleTime,
-  escapeHtml,
-  getBaseName
-} from "@/utils";
+import { escapeHtml } from "@/utils";
 import { navigateToPage } from "./navigation";
 import { elements } from "./domNodes";
-
-interface NoteFile {
-  name: string;
-  path: string;
-  size: number;
-  modified: string;
-  isJson?: boolean;
-}
+import {
+  loadSidebarNotes,
+  setActiveSidebarNote,
+  onSidebarNoteOpen
+} from "./sidebar";
 
 let currentNoteFilename: string | null = null;
-const selectedNotes: Set<string> = new Set();
 
-export function showHistoryPage(): void {
-  navigateToPage("history");
-  selectedNotes.clear();
-  loadHistory();
-}
-
-export function showMainPage(): void {
-  navigateToPage("main");
-  closeNoteViewer();
-}
-
-export async function loadHistory(): Promise<void> {
-  const historyList = document.getElementById("historyList");
-  if (!historyList) return;
-
-  historyList.innerHTML = '<p class="loading-text">Loading history...</p>';
-
-  try {
-    const result = await window.electronAPI.listNotes();
-
-    if (!result.success || result.files.length === 0) {
-      historyList.innerHTML =
-        '<p class="empty-text">No saved notes yet. Record a meeting to get started!</p>';
-      return;
-    }
-
-    historyList.innerHTML = "";
-
-    result.files.forEach((file: NoteFile) => {
-      const item = createHistoryItem(file);
-      historyList.appendChild(item);
-    });
-
-    updateBatchOperationsUI();
-  } catch (error) {
-    console.error("Error loading history:", error);
-    historyList.innerHTML =
-      '<p class="error-text">Failed to load history. Please try again.</p>';
-  }
-}
-
-function createHistoryItem(file: NoteFile): HTMLElement {
-  const item = document.createElement("div");
-  item.className = "history-item";
-  item.dataset.filename = file.name;
-
-  const filenameLabel = getBaseName(file.name);
-
-  const date = new Date(file.modified);
-  const formattedDate = generateDateLabel(date);
-  const formattedTime = convertToLocaleTime(date);
-
-  const isSelected = selectedNotes.has(file.name);
-
-  item.innerHTML = `
-    <label class="history-item-checkbox">
-      <input type="checkbox" class="note-checkbox" data-filename="${escapeHtml(file.name)}" ${isSelected ? "checked" : ""} />
-    </label>
-    <div class="history-item-info">
-      <div class="history-item-type">${filenameLabel}</div>
-      <div class="history-item-date">${formattedDate} at ${formattedTime}</div>
-    </div>
-    <button class="history-item-btn" title="View">👁️</button>
-  `;
-
-  const checkbox = item.querySelector(".note-checkbox") as HTMLInputElement;
-  checkbox?.addEventListener("change", (e) => {
-    e.stopPropagation();
-    handleNoteCheckboxChange(file.name, checkbox.checked);
+export function setupHistoryListeners(): void {
+  // Wire sidebar note clicks → open note in standalone viewer
+  onSidebarNoteOpen((filename) => {
+    openNoteInViewer(filename);
   });
-
-  const viewBtn = item.querySelector(".history-item-btn");
-  viewBtn?.addEventListener("click", () => openNote(file.name));
-
-  return item;
 }
 
-async function openNote(filename: string): Promise<void> {
+/**
+ * Open a note in the standalone note viewer page (not the history page).
+ */
+export async function openNoteInViewer(filename: string): Promise<void> {
   try {
     const result = await window.electronAPI.readNote(filename);
 
@@ -105,60 +29,43 @@ async function openNote(filename: string): Promise<void> {
     }
 
     currentNoteFilename = filename;
+    setActiveSidebarNote(filename);
+    navigateToPage("noteView");
 
-    const noteViewerCard = document.getElementById("noteViewerCard");
-    const noteViewerTitle = document.getElementById("noteViewerTitle");
-    const noteTranscription = document.getElementById("noteTranscription");
-    const noteSummary = document.getElementById("noteSummary");
+    const titleEl = elements.noteViewTitle;
+    const transcriptionEl = elements.noteViewTranscription;
+    const summaryEl = elements.noteViewSummary;
 
-    if (
-      !noteViewerCard ||
-      !noteViewerTitle ||
-      !noteTranscription ||
-      !noteSummary
-    )
-      return;
+    if (!titleEl || !transcriptionEl || !summaryEl) return;
 
-    noteTranscription.textContent = "";
-    noteSummary.textContent = "";
+    transcriptionEl.textContent = "";
+    summaryEl.textContent = "";
 
     if (result.content && typeof result.content === "object") {
-      // TODO: add typings, don't wanna rely on "any"
       const content = result.content as any;
       const noteId = content.id || filename.replace(/\.json$/, "");
-      noteViewerTitle.textContent = noteId;
-      noteViewerTitle.removeAttribute("contenteditable");
-      noteViewerTitle.classList.remove("editable");
 
-      noteTranscription.innerHTML = `<div>${escapeHtml(content.transcription || "")}</div>`;
-      noteSummary.innerHTML = `<div>${escapeHtml(content.summary || "")}</div>`;
-      noteTranscription.removeAttribute("contenteditable");
-      noteSummary.removeAttribute("contenteditable");
-      noteTranscription.classList.remove("editable-body");
-      noteSummary.classList.remove("editable-body");
+      titleEl.textContent = noteId;
+      titleEl.removeAttribute("contenteditable");
 
-      await handleRecordingPlayback(content.metadata);
-      displayOriginalFilename(content.metadata);
+      transcriptionEl.innerHTML = `<div>${escapeHtml(content.transcription || "")}</div>`;
+      summaryEl.innerHTML = `<div>${escapeHtml(content.summary || "")}</div>`;
 
-      const copyTransBtn = document.getElementById("copyTranscriptionBtn");
-      const copySummaryBtn = document.getElementById("copySummaryBtn");
+      // Recording playback
+      await handleNoteViewRecording(content.metadata);
+      displayNoteViewOriginalFilename(content.metadata);
 
-      noteTranscription.setAttribute("contenteditable", "true");
-      noteSummary.setAttribute("contenteditable", "true");
-      noteTranscription.classList.add("editable-body");
-      noteSummary.classList.add("editable-body");
-
-      const exportNoteBtn = document.getElementById("exportNoteBtn");
+      // Auto-save setup
       const autoSaveTimeoutRef = {
         current: null as ReturnType<typeof setTimeout> | null
       };
       const autoSaveDelayMs = 1500;
 
       const boundSaveEdits = (silent = false) =>
-        saveEdits(
-          noteViewerTitle,
-          noteTranscription,
-          noteSummary,
+        saveNoteViewEdits(
+          titleEl,
+          transcriptionEl,
+          summaryEl,
           filename,
           noteId,
           silent
@@ -171,58 +78,63 @@ async function openNote(filename: string): Promise<void> {
           autoSaveDelayMs
         );
 
-      noteViewerTitle.onclick = () => {
-        noteViewerTitle.setAttribute("contenteditable", "true");
-        noteViewerTitle.classList.add("editable");
-        noteViewerTitle.focus();
+      // Click to edit title
+      titleEl.onclick = () => {
+        titleEl.setAttribute("contenteditable", "true");
+        titleEl.focus();
       };
 
-      // save on Enter when editing title
-      noteViewerTitle.onkeydown = (e) => {
+      titleEl.onkeydown = (e) => {
         if (e.key === "Enter") {
           e.preventDefault();
-          // remove title editable styling after saving
           boundSaveEdits().then(() => {
-            noteViewerTitle.removeAttribute("contenteditable");
-            noteViewerTitle.classList.remove("editable");
+            titleEl.removeAttribute("contenteditable");
           });
         }
       };
 
-      noteTranscription.addEventListener("input", boundScheduleAutoSave);
-      noteSummary.addEventListener("input", boundScheduleAutoSave);
-      noteViewerTitle.addEventListener("input", boundScheduleAutoSave);
+      transcriptionEl.addEventListener("input", boundScheduleAutoSave);
+      summaryEl.addEventListener("input", boundScheduleAutoSave);
+      titleEl.addEventListener("input", boundScheduleAutoSave);
 
-      if (copyTransBtn) {
-        copyTransBtn.onclick = async () => {
+      // Copy buttons
+      if (elements.noteViewCopyTranscription) {
+        elements.noteViewCopyTranscription.onclick = async () => {
           try {
             await navigator.clipboard.writeText(
-              noteTranscription.textContent || ""
+              transcriptionEl.textContent || ""
             );
-            const orig = copyTransBtn.textContent;
-            copyTransBtn.textContent = "Copied!";
-            setTimeout(() => (copyTransBtn.textContent = orig), 2000);
+            const orig = elements.noteViewCopyTranscription.textContent;
+            elements.noteViewCopyTranscription.textContent = "Copied!";
+            setTimeout(
+              () => (elements.noteViewCopyTranscription.textContent = orig),
+              2000
+            );
           } catch (err) {
             console.error("Copy transcription failed:", err);
           }
         };
       }
 
-      if (copySummaryBtn) {
-        copySummaryBtn.onclick = async () => {
+      if (elements.noteViewCopySummary) {
+        elements.noteViewCopySummary.onclick = async () => {
           try {
-            await navigator.clipboard.writeText(noteSummary.textContent || "");
-            const orig = copySummaryBtn.textContent;
-            copySummaryBtn.textContent = "Copied!";
-            setTimeout(() => (copySummaryBtn.textContent = orig), 2000);
+            await navigator.clipboard.writeText(summaryEl.textContent || "");
+            const orig = elements.noteViewCopySummary.textContent;
+            elements.noteViewCopySummary.textContent = "Copied!";
+            setTimeout(
+              () => (elements.noteViewCopySummary.textContent = orig),
+              2000
+            );
           } catch (err) {
             console.error("Copy summary failed:", err);
           }
         };
       }
 
-      if (exportNoteBtn) {
-        exportNoteBtn.onclick = async () => {
+      // Export
+      if (elements.noteViewExportBtn) {
+        elements.noteViewExportBtn.onclick = async () => {
           try {
             const res = await window.electronAPI.exportNote({
               filename: filename,
@@ -230,10 +142,7 @@ async function openNote(filename: string): Promise<void> {
             });
             if (res && res.success) {
               const hasRecording =
-                result.content &&
-                (result.content as any).metadata &&
-                (result.content as any).metadata.recordingFilename;
-
+                content.metadata && content.metadata.recordingFilename;
               const message = hasRecording
                 ? `Exported PDF and audio recording to ${res.path}`
                 : `Exported to ${res.path}`;
@@ -247,66 +156,68 @@ async function openNote(filename: string): Promise<void> {
           }
         };
       }
+
+      // Delete
+      if (elements.noteViewDeleteBtn) {
+        elements.noteViewDeleteBtn.onclick = async () => {
+          if (!currentNoteFilename) return;
+          const confirmed = confirm(
+            "Are you sure you want to delete this note? This cannot be undone."
+          );
+          if (!confirmed) return;
+
+          try {
+            const delResult =
+              await window.electronAPI.deleteNote(currentNoteFilename);
+            if (!delResult.success) {
+              alert("Failed to delete note: " + delResult.error);
+              return;
+            }
+            currentNoteFilename = null;
+            setActiveSidebarNote(null);
+            navigateToPage("main");
+            loadSidebarNotes();
+          } catch (error) {
+            console.error("Error deleting note:", error);
+            alert("Failed to delete note");
+          }
+        };
+      }
     } else {
       alert("Note format not supported");
-      return;
     }
-
-    noteViewerCard.classList.remove("hidden");
   } catch (error) {
-    console.error("Error opening note:", error);
+    console.error("Error opening note in viewer:", error);
     alert("Failed to open note");
   }
 }
 
-async function handleRecordingPlayback(
+async function handleNoteViewRecording(
   metadata?: Record<string, any>
 ): Promise<void> {
-  console.log("[handleRecordingPlayback] Called with metadata:", metadata);
-
-  if (!elements.noteRecordingPlayer || !elements.noteAudioPlayer) {
-    console.log("[handleRecordingPlayback] Player elements not found");
+  if (!elements.noteViewRecordingPlayer || !elements.noteViewAudioPlayer)
     return;
-  }
 
-  elements.noteRecordingPlayer.classList.add("hidden");
-  elements.noteAudioPlayer.src = "";
+  elements.noteViewRecordingPlayer.classList.add("hidden");
+  elements.noteViewAudioPlayer.src = "";
 
-  if (!metadata || !metadata.recordingFilename) {
-    console.log("[handleRecordingPlayback] No recording filename in metadata");
-    return;
-  }
-
-  const recordingFilename = metadata.recordingFilename;
-  console.log(
-    "[handleRecordingPlayback] Found recording filename:",
-    recordingFilename
-  );
+  if (!metadata || !metadata.recordingFilename) return;
 
   try {
-    const result = await window.electronAPI.getRecordingPath(recordingFilename);
-    console.log(
-      "[handleRecordingPlayback] getRecordingPath result:",
-      result.success
+    const result = await window.electronAPI.getRecordingPath(
+      metadata.recordingFilename
     );
-
     if (result.success && result.path) {
-      elements.noteAudioPlayer.src = `recording://${encodeURIComponent(result.path)}`;
-      elements.noteRecordingPlayer.classList.remove("hidden");
-      console.log(`Loaded recording: ${recordingFilename}`);
-    } else {
-      console.warn(
-        `Recording file not found: ${recordingFilename}`,
-        result.error
-      );
+      elements.noteViewAudioPlayer.src = `recording://${encodeURIComponent(result.path)}`;
+      elements.noteViewRecordingPlayer.classList.remove("hidden");
     }
   } catch (error) {
     console.error("Error loading recording:", error);
   }
 }
 
-function displayOriginalFilename(metadata?: Record<string, any>): void {
-  const el = document.getElementById("noteOriginalFilename");
+function displayNoteViewOriginalFilename(metadata?: Record<string, any>): void {
+  const el = elements.noteViewOriginalFilename;
   if (!el) return;
 
   if (metadata && metadata.originalFilename) {
@@ -318,35 +229,18 @@ function displayOriginalFilename(metadata?: Record<string, any>): void {
   }
 }
 
-function closeNoteViewer(): void {
-  const noteViewerCard = document.getElementById("noteViewerCard");
-  if (noteViewerCard) {
-    noteViewerCard.classList.add("hidden");
-  }
-
-  if (elements.noteAudioPlayer) {
-    elements.noteAudioPlayer.pause();
-    elements.noteAudioPlayer.src = "";
-  }
-  if (elements.noteRecordingPlayer) {
-    elements.noteRecordingPlayer.classList.add("hidden");
-  }
-
-  currentNoteFilename = null;
-}
-
-async function saveEdits(
-  noteViewerTitle: HTMLElement,
-  noteTranscription: HTMLElement,
-  noteSummary: HTMLElement,
+async function saveNoteViewEdits(
+  titleEl: HTMLElement,
+  transcriptionEl: HTMLElement,
+  summaryEl: HTMLElement,
   filename: string,
   noteId: string,
   silent = false
 ): Promise<void> {
   try {
-    const newTitle = (noteViewerTitle.textContent || "").trim();
-    const newTrans = noteTranscription.textContent || "";
-    const newSum = noteSummary.textContent || "";
+    const newTitle = (titleEl.textContent || "").trim();
+    const newTrans = transcriptionEl.textContent || "";
+    const newSum = summaryEl.textContent || "";
 
     if (!newTrans && !newSum) {
       if (!silent) alert("Cannot save empty note.");
@@ -359,10 +253,29 @@ async function saveEdits(
       .replace(/\s+/g, "_");
     const newFilename = `${safeBase || noteId}.json`;
 
+    let existingMetadata: Record<string, any> = {};
+    try {
+      const readRes = await window.electronAPI.readNote(filename);
+      if (
+        readRes.success &&
+        readRes.content &&
+        typeof readRes.content === "object"
+      ) {
+        const existingContent = readRes.content as any;
+        existingMetadata = existingContent.metadata || {};
+      }
+    } catch (readErr) {
+      console.warn(
+        "Unable to read existing note metadata before save:",
+        readErr
+      );
+    }
+
     const res = await window.electronAPI.saveNote({
       transcription: newTrans,
       summary: newSum,
-      filename: newFilename
+      filename: newFilename,
+      metadata: existingMetadata
     });
 
     if (res && res.success) {
@@ -370,7 +283,7 @@ async function saveEdits(
         await window.electronAPI.deleteNote(filename);
         currentNoteFilename = newFilename;
       }
-      loadHistory();
+      loadSidebarNotes();
     } else {
       if (!silent) alert("Failed to save note: " + (res && res.error));
     }
@@ -391,148 +304,4 @@ function scheduleAutoSave(
   autoSaveTimeoutRef.current = setTimeout(() => {
     saveCallback();
   }, delayMs);
-}
-
-async function deleteCurrentNote(): Promise<void> {
-  if (!currentNoteFilename) return;
-
-  const confirmed = confirm(
-    "Are you sure you want to delete this note? This cannot be undone."
-  );
-  if (!confirmed) return;
-
-  try {
-    const result = await window.electronAPI.deleteNote(currentNoteFilename);
-
-    if (!result.success) {
-      alert("Failed to delete note: " + result.error);
-      return;
-    }
-
-    closeNoteViewer();
-    loadHistory();
-  } catch (error) {
-    console.error("Error deleting note:", error);
-    alert("Failed to delete note");
-  }
-}
-
-export function setupHistoryListeners(): void {
-  const viewHistoryBtn = document.getElementById("viewHistoryBtn");
-  const backToMainBtn = document.getElementById("backToMainBtn");
-  const refreshHistoryBtn = document.getElementById("refreshHistoryBtn");
-  const closeNoteBtn = document.getElementById("closeNoteBtn");
-  const deleteNoteBtn = document.getElementById("deleteNoteBtn");
-
-  viewHistoryBtn?.addEventListener("click", showHistoryPage);
-  backToMainBtn?.addEventListener("click", showMainPage);
-  refreshHistoryBtn?.addEventListener("click", () => {
-    refreshHistoryBtn.classList.add("spinning");
-    loadHistory().finally(() => {
-      setTimeout(() => refreshHistoryBtn.classList.remove("spinning"), 500);
-    });
-  });
-
-  closeNoteBtn?.addEventListener("click", closeNoteViewer);
-  deleteNoteBtn?.addEventListener("click", deleteCurrentNote);
-
-  elements.selectAllNotesCheckbox?.addEventListener("change", handleSelectAll);
-  elements.deleteSelectedBtn?.addEventListener("click", deleteSelectedNotes);
-}
-
-function handleNoteCheckboxChange(filename: string, checked: boolean): void {
-  if (checked) {
-    selectedNotes.add(filename);
-  } else {
-    selectedNotes.delete(filename);
-  }
-  updateBatchOperationsUI();
-}
-
-function handleSelectAll(e: Event): void {
-  const target = e.target as HTMLInputElement;
-  const checkboxes = document.querySelectorAll(
-    ".note-checkbox"
-  ) as NodeListOf<HTMLInputElement>;
-
-  checkboxes.forEach((checkbox) => {
-    checkbox.checked = target.checked;
-    const filename = checkbox.dataset.filename;
-    if (filename) {
-      if (target.checked) {
-        selectedNotes.add(filename);
-      } else {
-        selectedNotes.delete(filename);
-      }
-    }
-  });
-
-  updateBatchOperationsUI();
-}
-
-function updateBatchOperationsUI(): void {
-  const count = selectedNotes.size;
-  const hasNotes = document.querySelectorAll(".history-item").length > 0;
-
-  if (hasNotes && elements.batchOperationsToolbar) {
-    elements.batchOperationsToolbar.classList.remove("hidden");
-  } else if (elements.batchOperationsToolbar) {
-    elements.batchOperationsToolbar.classList.add("hidden");
-  }
-
-  if (elements.selectedCount) {
-    elements.selectedCount.textContent = `${count} selected`;
-  }
-
-  if (elements.selectAllNotesCheckbox) {
-    const totalCheckboxes = document.querySelectorAll(".note-checkbox").length;
-    const allSelected = count > 0 && count === totalCheckboxes;
-    const someSelected = count > 0 && count < totalCheckboxes;
-
-    elements.selectAllNotesCheckbox.checked = allSelected;
-    elements.selectAllNotesCheckbox.indeterminate = someSelected;
-  }
-
-  if (elements.deleteSelectedBtn) {
-    elements.deleteSelectedBtn.disabled = count === 0;
-  }
-}
-
-async function deleteSelectedNotes(): Promise<void> {
-  const count = selectedNotes.size;
-
-  if (count === 0) {
-    return;
-  }
-
-  const confirmed = confirm(
-    `Are you sure you want to delete ${count} note${count > 1 ? "s" : ""}? This cannot be undone.`
-  );
-
-  if (!confirmed) {
-    return;
-  }
-
-  try {
-    const deletePromises = Array.from(selectedNotes).map((filename) =>
-      window.electronAPI.deleteNote(filename)
-    );
-
-    const results = await Promise.all(deletePromises);
-
-    const failed = results.filter((r) => !r.success);
-
-    if (failed.length > 0) {
-      alert(
-        `Failed to delete ${failed.length} note${failed.length > 1 ? "s" : ""}`
-      );
-    }
-
-    selectedNotes.clear();
-    closeNoteViewer();
-    loadHistory();
-  } catch (error) {
-    console.error("Error deleting notes:", error);
-    alert("Failed to delete notes");
-  }
 }

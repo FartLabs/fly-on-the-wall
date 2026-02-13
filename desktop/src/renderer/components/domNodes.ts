@@ -87,7 +87,6 @@ export const elements = {
   exportNoteBtn: document.getElementById("exportNoteBtn") as HTMLButtonElement,
 
   mainPage: document.getElementById("mainPage") as HTMLDivElement,
-  historyPage: document.getElementById("historyPage") as HTMLDivElement,
 
   settingsModal: document.getElementById("settingsModal") as HTMLDivElement,
   closeSettingsModal: document.getElementById(
@@ -162,5 +161,66 @@ export const elements = {
 
   meetingParticipantsInput: document.getElementById(
     "meetingParticipantsInput"
-  ) as HTMLTextAreaElement
+  ) as HTMLTextAreaElement,
+
+  leftSidebar: document.getElementById("leftSidebar") as HTMLElement,
+  appContent: document.getElementById("appContent") as HTMLDivElement,
+  sidebarCollapseBtn: document.getElementById(
+    "sidebarCollapseBtn"
+  ) as HTMLButtonElement,
+  sidebarResizeHandle: document.getElementById(
+    "sidebarResizeHandle"
+  ) as HTMLDivElement,
+  sidebarNavRecorder: document.getElementById(
+    "sidebarNavRecorder"
+  ) as HTMLButtonElement,
+  sidebarNavSettings: document.getElementById(
+    "sidebarNavSettings"
+  ) as HTMLButtonElement,
+  sidebarRefreshBtn: document.getElementById(
+    "sidebarRefreshBtn"
+  ) as HTMLButtonElement,
+  sidebarSelectedCount: document.getElementById(
+    "sidebarSelectedCount"
+  ) as HTMLSpanElement,
+  sidebarSearchInput: document.getElementById(
+    "sidebarSearchInput"
+  ) as HTMLInputElement,
+  sidebarFileTree: document.getElementById("sidebarFileTree") as HTMLDivElement,
+  sidebarFilesSection: document.getElementById(
+    "sidebarFilesSection"
+  ) as HTMLDivElement,
+  sidebarContextMenu: document.getElementById(
+    "sidebarContextMenu"
+  ) as HTMLDivElement,
+  ctxRenameNote: document.getElementById("ctxRenameNote") as HTMLButtonElement,
+  ctxDeleteNote: document.getElementById("ctxDeleteNote") as HTMLButtonElement,
+
+  noteViewPage: document.getElementById("noteViewPage") as HTMLDivElement,
+  noteViewTitle: document.getElementById("noteViewTitle") as HTMLHeadingElement,
+  noteViewTranscription: document.getElementById(
+    "noteViewTranscription"
+  ) as HTMLDivElement,
+  noteViewSummary: document.getElementById("noteViewSummary") as HTMLDivElement,
+  noteViewRecordingPlayer: document.getElementById(
+    "noteViewRecordingPlayer"
+  ) as HTMLDivElement,
+  noteViewAudioPlayer: document.getElementById(
+    "noteViewAudioPlayer"
+  ) as HTMLAudioElement,
+  noteViewOriginalFilename: document.getElementById(
+    "noteViewOriginalFilename"
+  ) as HTMLDivElement,
+  noteViewExportBtn: document.getElementById(
+    "noteViewExportBtn"
+  ) as HTMLButtonElement,
+  noteViewDeleteBtn: document.getElementById(
+    "noteViewDeleteBtn"
+  ) as HTMLButtonElement,
+  noteViewCopyTranscription: document.getElementById(
+    "noteViewCopyTranscription"
+  ) as HTMLButtonElement,
+  noteViewCopySummary: document.getElementById(
+    "noteViewCopySummary"
+  ) as HTMLButtonElement
 };

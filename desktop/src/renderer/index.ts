@@ -53,6 +53,7 @@ import { setupSettingsListeners } from "./components/settings";
 import { setupNavigationListeners } from "./components/navigation";
 import { setupImportListeners } from "./components/importAudio";
 import { setupHotkeysListeners } from "./components/hotkeys";
+import { setupSidebarListeners } from "./components/sidebar";
 import IElectronAPI from "@/shared/electronAPI";
 
 declare global {
@@ -141,3 +142,4 @@ setupSettingsListeners();
 setupNavigationListeners();
 setupHotkeysListeners();
 setupImportListeners();
+setupSidebarListeners();
