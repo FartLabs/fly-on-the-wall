@@ -5,18 +5,6 @@
     <title>Fly on the Wall</title>
   </head>
   <body>
-    <div class="sidebar-trigger" id="sidebarTrigger">
-      <div class="sidebar-handle">||</div>
-    </div>
-    <div class="sidebar-container" id="sidebar">
-      <div class="model-management-card" id="modelManagementCard">
-        <div class="card-header">
-          <h2>Transcription Models</h2>
-        </div>
-
-        <div class="models-list" id="modelsList"></div>
-      </div>
-    </div>
     <div class="right-panel-trigger" id="rightPanelTrigger">
       <div class="right-panel-handle">||</div>
     </div>
@@ -380,6 +368,15 @@
               </li>
               <li>
                 <button
+                  class="settings-nav-item"
+                  data-settings-section="hotkeys"
+                >
+                  <span class="settings-nav-icon">⌨️</span>
+                  <span>Hotkeys</span>
+                </button>
+              </li>
+              <li>
+                <button
                   class="settings-nav-item active"
                   data-settings-section="summarization"
                 >
@@ -393,10 +390,6 @@
           <div class="settings-panels">
             <div class="settings-panel active" id="settingsPanel-transcription">
               <h3 class="settings-panel-title">Transcription</h3>
-              <p class="settings-panel-description">
-                Configure transcription model storage.
-              </p>
-
               <div class="settings-group">
                 <label class="settings-label" for="transcriptionModelPathInput">
                   Models Path
@@ -412,18 +405,44 @@
                 />
               </div>
 
-              <!-- <p class="settings-hint">
-                Existing models are not moved automatically when this path
-                changes.
-              </p> -->
+              <div
+                class="settings-model-manager settings-transcription-manager"
+              >
+                <h3 class="settings-section-title">Model Management</h3>
+                <p class="settings-panel-description">
+                  Download and select Whisper models for transcription.
+                </p>
+                <div id="transcriptionModelsContainer"></div>
+              </div>
+            </div>
+
+            <div class="settings-panel" id="settingsPanel-hotkeys">
+              <h3 class="settings-panel-title">Hotkeys</h3>
+              <div class="settings-group">
+                <label class="settings-label"> Open Settings </label>
+                <div class="hotkey-bindings-control">
+                  <div
+                    id="hotkeyOpenSettingsList"
+                    class="hotkey-bindings-list"
+                  ></div>
+                  <button
+                    type="button"
+                    id="hotkeyOpenSettingsAddBtn"
+                    class="hotkey-add-btn"
+                    title="Add hotkey"
+                    aria-label="Add hotkey"
+                  >
+                    +
+                  </button>
+                </div>
+                <span class="settings-hint" id="hotkeyCaptureHint"
+                  >Ready. Click + to record a new hotkey.</span
+                >
+              </div>
             </div>
 
             <div class="settings-panel" id="settingsPanel-summarization">
               <h3 class="settings-panel-title">Summarization</h3>
-              <p class="settings-panel-description">
-                Configure summarization model parameters and prompts.
-              </p>
-
               <div class="prompt-customization-section">
                 <h3 class="prompt-section-title">Prompt</h3>
                 <p class="prompt-section-description">

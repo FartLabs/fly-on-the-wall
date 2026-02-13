@@ -76,14 +76,9 @@ export const elements = {
     "rightPanelCopySummary"
   ) as HTMLButtonElement,
 
-  modelsList: document.getElementById("modelsList") as HTMLDivElement,
-
   customPromptInput: document.getElementById(
     "customPromptInput"
   ) as HTMLTextAreaElement,
-
-  sidebar: document.getElementById("sidebar") as HTMLDivElement,
-  sidebarTrigger: document.getElementById("sidebarTrigger") as HTMLDivElement,
 
   rightPanel: document.getElementById("rightPanel") as HTMLDivElement,
   rightPanelTrigger: document.getElementById(
@@ -136,6 +131,15 @@ export const elements = {
   transcriptionModelPathInput: document.getElementById(
     "transcriptionModelPathInput"
   ) as HTMLInputElement,
+  hotkeyOpenSettingsList: document.getElementById(
+    "hotkeyOpenSettingsList"
+  ) as HTMLDivElement,
+  hotkeyOpenSettingsAddBtn: document.getElementById(
+    "hotkeyOpenSettingsAddBtn"
+  ) as HTMLButtonElement,
+  hotkeyCaptureHint: document.getElementById(
+    "hotkeyCaptureHint"
+  ) as HTMLSpanElement,
   summarizationModelPathInput: document.getElementById(
     "summarizationModelPathInput"
   ) as HTMLInputElement,

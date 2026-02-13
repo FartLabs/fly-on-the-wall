@@ -1,4 +1,5 @@
 import { AppConfig } from "./electronAPI";
+import { HOTKEY_DEFAULTS } from "./hotkeys";
 
 export const DEFAULT_CONFIG: AppConfig = {
   summarizationParameters: {
@@ -18,6 +19,9 @@ export const DEFAULT_CONFIG: AppConfig = {
     selectedModel: "",
     modelStoragePath: ""
   },
+  hotkeys: {
+    ...HOTKEY_DEFAULTS
+  },
   app: {
     introNoteCreated: false // TODO: offload this to localstorage instead, no need to persist this in the config lol
   }
@@ -36,6 +40,7 @@ export interface AppSettings extends SummarizationSettings {
   minSummaryLength: number;
   transcriptionModelPath: string;
   summarizationModelPath: string;
+  hotkeyOpenSettings: string[];
 }
 
 export interface SummarizationSettings {

@@ -1,4 +1,3 @@
-import { elements } from "./domNodes";
 import {
   getAllModelStatus,
   downloadModel,
@@ -259,6 +258,9 @@ async function renderGgufModelsList(): Promise<void> {
 export async function refreshModelsList(): Promise<void> {
   try {
     const statuses = await getAllModelStatus();
+    const transcriptionContainer = document.getElementById(
+      "transcriptionModelsContainer"
+    );
 
     // auto-select first downloaded model if none selected
     const downloadedModels = statuses.filter((s) => s.downloaded);
@@ -271,15 +273,16 @@ export async function refreshModelsList(): Promise<void> {
       await saveSelectedTranscriptionModel(downloadedModels[0].modelSize);
     }
 
-    let html =
-      '<div class="model-section"><h3 class="model-section-title">Whisper Models</h3>';
+    let html = '<div class="model-section">';
     const selectedTranscription = await getSelectedTranscriptionModel();
     html += statuses
       .map((status) => createModelItemHTML(status, selectedTranscription))
       .join("");
     html += "</div>";
 
-    elements.modelsList.innerHTML = html;
+    if (transcriptionContainer) {
+      transcriptionContainer.innerHTML = html;
+    }
 
     const summarizationContainer = document.getElementById(
       "summarizationModelsContainer"
@@ -290,8 +293,8 @@ export async function refreshModelsList(): Promise<void> {
 
     await renderGgufModelsList();
 
-    elements.modelsList
-      .querySelectorAll(
+    transcriptionContainer
+      ?.querySelectorAll(
         '.model-item.selectable[data-model]:not([data-model="summary"])'
       )
       .forEach((item) => {
@@ -306,7 +309,7 @@ export async function refreshModelsList(): Promise<void> {
         });
       });
 
-    elements.modelsList.querySelectorAll(".download-btn").forEach((btn) => {
+    transcriptionContainer?.querySelectorAll(".download-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         if (isRecordingState() || isTranscribing) {
           e.preventDefault();
@@ -390,7 +393,7 @@ export async function refreshModelsList(): Promise<void> {
       });
     }
 
-    elements.modelsList.querySelectorAll(".delete-btn").forEach((btn) => {
+    transcriptionContainer?.querySelectorAll(".delete-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         if (isRecordingState() || isTranscribing) {
           e.preventDefault();
@@ -407,8 +410,13 @@ export async function refreshModelsList(): Promise<void> {
       });
     });
   } catch (error) {
-    elements.modelsList.innerHTML =
-      '<p class="error-text">Failed to load models</p>';
+    const transcriptionContainer = document.getElementById(
+      "transcriptionModelsContainer"
+    );
+    if (transcriptionContainer) {
+      transcriptionContainer.innerHTML =
+        '<p class="error-text">Failed to load models</p>';
+    }
   }
 }
 

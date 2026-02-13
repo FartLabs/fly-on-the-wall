@@ -27,20 +27,18 @@ const getModelsCacheDir = (): string => {
 
 export const getSummarizationModelsDir = (): string => {
   const config = readConfig();
-  const summarizationDir = resolveConfiguredDir(
+  return resolveConfiguredDir(
     config.summarization.modelStoragePath || "",
     path.join(app.getPath("userData"), "models", "summarization")
   );
-  return ensureDir(summarizationDir);
 };
 
 export const getTranscriptionModelsDir = (): string => {
   const config = readConfig();
-  const transcriptionDir = resolveConfiguredDir(
+  return resolveConfiguredDir(
     config.transcription.modelStoragePath || "",
     path.join(app.getPath("userData"), "models", "transcription")
   );
-  return ensureDir(transcriptionDir);
 };
 
 const getNotesDir = (): string => {
@@ -78,6 +76,9 @@ ipcMain.handle("open-models-folder", async () => {
 ipcMain.handle("list-gguf-models", async () => {
   try {
     const summarizationDir = getSummarizationModelsDir();
+    if (!fs.existsSync(summarizationDir)) {
+      return { success: true, models: [] };
+    }
     const files = fs.readdirSync(summarizationDir);
     const ggufFiles = files
       .filter((file) => file.toLowerCase().endsWith(".gguf"))
@@ -123,6 +124,7 @@ ipcMain.handle(
   async (_event, data: { sourcePath: string; copyMode?: "copy" | "move" }) => {
     try {
       const summarizationDir = getSummarizationModelsDir();
+      ensureDir(summarizationDir);
       const fileName = path.basename(data.sourcePath);
       const targetPath = path.join(summarizationDir, fileName);
 
@@ -556,6 +558,7 @@ ipcMain.handle(
       }
 
       const summarizationDir = getSummarizationModelsDir();
+      ensureDir(summarizationDir);
 
       console.log(`[Models] Downloading GGUF model: ${result.modelUri}`);
       console.log(`[Models] Target directory: ${summarizationDir}`);

@@ -1,4 +1,5 @@
 // https://www.electronjs.org/docs/latest/tutorial/context-isolation#usage-with-typescript
+import type { HotkeysConfig } from "./hotkeys";
 
 export interface AppConfig {
   summarizationParameters: {
@@ -18,6 +19,7 @@ export interface AppConfig {
     selectedModel: string;
     modelStoragePath: string;
   };
+  hotkeys: HotkeysConfig;
   app: {
     introNoteCreated: boolean;
   };
