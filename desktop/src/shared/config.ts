@@ -21,9 +21,6 @@ export const DEFAULT_CONFIG: AppConfig = {
   },
   hotkeys: {
     ...HOTKEY_DEFAULTS
-  },
-  app: {
-    introNoteCreated: false // TODO: offload this to localstorage instead, no need to persist this in the config lol
   }
 };
 

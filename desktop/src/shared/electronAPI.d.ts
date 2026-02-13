@@ -20,9 +20,6 @@ export interface AppConfig {
     modelStoragePath: string;
   };
   hotkeys: HotkeysConfig;
-  app: {
-    introNoteCreated: boolean;
-  };
 }
 
 export default interface IElectronAPI {
