@@ -120,26 +120,62 @@ function handleUtilityMessage(message: TranscriptionResponse) {
     return;
   }
 
-  for (const [id, handler] of pendingRequests.entries()) {
-    if (message.type === "status") {
-      handler.onStatus?.(message);
-    } else if (message.type === "result") {
-      console.log(
-        `[TranscriptionManager] Resolving request ${id} with result:`,
-        message.result
-      );
-      handler.resolve(message.result);
-      pendingRequests.delete(id);
-      resetProcessRecycleTimer();
-    } else if (message.type === "error") {
-      console.log(
-        `[TranscriptionManager] Rejecting request ${id} with error:`,
-        message.error
-      );
-      handler.reject(new Error(message.error));
-      pendingRequests.delete(id);
-      resetProcessRecycleTimer();
+  const requestId =
+    "requestId" in message && typeof message.requestId === "string"
+      ? message.requestId
+      : undefined;
+
+  if (message.type === "status") {
+    if (requestId) {
+      const handler = pendingRequests.get(requestId);
+      handler?.onStatus?.(message);
+    } else {
+      for (const [_, handler] of pendingRequests.entries()) {
+        handler.onStatus?.(message);
+      }
     }
+
+    broadcastToRenderers("transcription-status", message);
+    return;
+  }
+
+  if (!requestId) {
+    // Backward compatibility fallback: if a response has no requestId, only map it
+    // when there is exactly one pending request.
+    if (pendingRequests.size !== 1) {
+      console.warn(
+        "[TranscriptionManager] Received response without requestId while multiple requests are pending"
+      );
+      return;
+    }
+  }
+
+  const targetRequestId = requestId ?? pendingRequests.keys().next().value;
+  const handler = pendingRequests.get(targetRequestId);
+
+  if (!handler) {
+    console.warn(
+      `[TranscriptionManager] No pending request handler found for requestId=${String(targetRequestId)}`
+    );
+    return;
+  }
+
+  if (message.type === "result") {
+    console.log(
+      `[TranscriptionManager] Resolving request ${targetRequestId} with result:`,
+      message.result
+    );
+    handler.resolve(message.result);
+    pendingRequests.delete(targetRequestId);
+    resetProcessRecycleTimer();
+  } else if (message.type === "error") {
+    console.log(
+      `[TranscriptionManager] Rejecting request ${targetRequestId} with error:`,
+      message.error
+    );
+    handler.reject(new Error(message.error));
+    pendingRequests.delete(targetRequestId);
+    resetProcessRecycleTimer();
   }
 
   broadcastToRenderers("transcription-status", message);
@@ -300,7 +336,7 @@ function sendMessageAndWait(
         }
       });
 
-      sendToUtility(message);
+      sendToUtility({ ...message, requestId } as TranscriptionMessage);
     })();
   });
 }
@@ -340,7 +376,8 @@ async function transcribe(
       type: "transcribe",
       audioData: audioArray,
       modelId,
-      language
+      language,
+      requestId
     });
   });
 }

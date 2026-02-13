@@ -83,7 +83,7 @@ export async function downloadModel(
 
   let unsubscribe: (() => void) | undefined;
   if (onProgress) {
-    unsubscribe = window.electronAPI.onTranscriptionStatus((status: any) => {
+    unsubscribe = window.electronAPI.onTranscriptionStatus((status) => {
       if (status.type === "status") {
         if (status.status === "downloading") {
           onProgress({
@@ -157,7 +157,7 @@ export async function transcribeAudio(
 
   let unsubscribe: (() => void) | undefined;
   if (onProgress) {
-    unsubscribe = window.electronAPI.onTranscriptionStatus((status: any) => {
+    unsubscribe = window.electronAPI.onTranscriptionStatus((status) => {
       if (status.type === "status") {
         onProgress({
           status: status.status as TranscriptionProgress["status"],
@@ -184,7 +184,7 @@ export async function transcribeAudio(
       message: "Starting transcription..."
     });
 
-    let audioDataArray: number[] | null = Array.from(audioArray);
+    let audioDataArray: number[] = Array.from(audioArray);
     const transcribePayload = {
       audioData: audioDataArray,
       modelId,
@@ -196,10 +196,13 @@ export async function transcribeAudio(
 
     const result = await window.electronAPI.transcribe(transcribePayload);
 
+    console.log("Transcription result received:", result);
+
     if (!result.success) {
       throw new Error(result.error || "Transcription failed");
     }
 
+    // TODO: review this snippet, may need to double check the various different formats the result can be in
     // result can be: { text: "..." } or { text: { text: "..." } } or { text: [{ text: "..." }] }
     let transcription: string;
     const resultText: unknown = result.text;
@@ -231,7 +234,7 @@ export async function transcribeAudio(
       duration,
       model: modelId
     };
-  } catch (error: any) {
+  } catch (error) {
     onProgress?.({
       status: "error",
       message: `Transcription failed: ${error.message || error}`

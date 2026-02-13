@@ -4,6 +4,12 @@ import {
   UtilityProcessResponse
 } from "@/shared/utilityProcess";
 import { SummarizeParams } from ".";
+import type {
+  Llama,
+  LlamaModel,
+  LlamaContext,
+  LLamaChatPromptOptions
+} from "node-llama-cpp";
 
 export type SummarizationProcessMessage =
   | UtilityProcessMessage
@@ -28,15 +34,15 @@ export type SummarizationProcessResponse =
       message?: string;
     };
 
-let llamaInstance: any = null;
-let currentModel: any = null;
+let llamaInstance: Llama = null;
+let currentModel: LlamaModel = null;
 let currentModelPath: string | null = null;
-let currentContext: any = null;
+let currentContext: LlamaContext = null;
 
 const IDLE_TIMEOUT_MS = 30 * 1000;
 let idleTimer: NodeJS.Timeout | null = null;
 
-function resetIdleTimer(): void {
+function resetIdleTimer() {
   if (idleTimer) {
     clearTimeout(idleTimer);
   }
@@ -49,7 +55,7 @@ function resetIdleTimer(): void {
   }, IDLE_TIMEOUT_MS);
 }
 
-async function loadModel(modelPath: string): Promise<void> {
+async function loadModel(modelPath: string) {
   if (currentModel && currentModelPath !== modelPath) {
     await disposeModel();
   }
@@ -62,7 +68,7 @@ async function loadModel(modelPath: string): Promise<void> {
 
   const { getLlama } = await import("node-llama-cpp");
 
-  llamaInstance = await getLlama({});
+  llamaInstance = await getLlama();
 
   console.log(
     `[SummarizationProcess] getLlama() succeeded: buildType=${llamaInstance.buildType} gpu=${llamaInstance.gpu}`
@@ -75,7 +81,7 @@ async function loadModel(modelPath: string): Promise<void> {
   console.log(`[SummarizationProcess] Model loaded successfully`);
 }
 
-async function disposeModel(): Promise<void> {
+async function disposeModel() {
   if (idleTimer) {
     clearTimeout(idleTimer);
     idleTimer = null;
@@ -110,7 +116,7 @@ async function handleSummarize(data: {
   text: string;
   modelPath: string;
   params?: SummarizeParams;
-}): Promise<void> {
+}) {
   const { text, modelPath, params } = data;
 
   console.log(`[SummarizationProcess] Received summarization request`);
@@ -151,12 +157,15 @@ async function handleSummarize(data: {
 
   let summary = "";
 
+  const config = await window.electronAPI.configGet();
+
   try {
-    const promptOptions: Record<string, unknown> = {
-      maxTokens: params?.maxTokens ?? 1024,
-      temperature: params?.temperature ?? 0.7,
-      topP: params?.topP ?? 0.9,
-      topK: params?.topK ?? 40
+    const promptOptions: LLamaChatPromptOptions = {
+      maxTokens: params?.maxTokens ?? config.summarizationParameters.maxTokens,
+      temperature:
+        params?.temperature ?? config.summarizationParameters.temperature,
+      topP: params?.topP ?? config.summarizationParameters.topP,
+      topK: params?.topK ?? config.summarizationParameters.topK
     };
 
     // repeatPenalty in node-llama-cpp expects an object or false
@@ -167,7 +176,7 @@ async function handleSummarize(data: {
         presencePenalty: 0
       };
     }
-    summary = await session.prompt(text, promptOptions as any);
+    summary = await session.prompt(text, promptOptions);
   } finally {
     try {
       if (session && typeof session.dispose === "function") {
@@ -181,7 +190,7 @@ async function handleSummarize(data: {
   sendResponse({ type: "result", result: { summary } });
 }
 
-async function handleCheckModel(data: { modelPath: string }): Promise<void> {
+async function handleCheckModel(data: { modelPath: string }) {
   const exists = fs.existsSync(data.modelPath);
   const isFile = exists && fs.statSync(data.modelPath).isFile();
   const isGGUF = data.modelPath.toLowerCase().endsWith(".gguf");
@@ -196,7 +205,7 @@ async function handleCheckModel(data: { modelPath: string }): Promise<void> {
   });
 }
 
-async function handleDispose(): Promise<void> {
+async function handleDispose() {
   await disposeModel();
   if (llamaInstance) {
     try {
@@ -212,7 +221,7 @@ async function handleDispose(): Promise<void> {
   sendResponse({ type: "result", result: "disposed" });
 }
 
-function handleGetMemoryUsage(): void {
+function handleGetMemoryUsage() {
   const usage = process.memoryUsage();
   sendResponse({
     type: "memory",
@@ -225,7 +234,7 @@ function handleGetMemoryUsage(): void {
   });
 }
 
-function handleHealthCheck(): void {
+function handleHealthCheck() {
   sendResponse({
     type: "result",
     result: {
@@ -236,7 +245,7 @@ function handleHealthCheck(): void {
   });
 }
 
-function sendResponse(response: SummarizationProcessResponse): void {
+function sendResponse(response: SummarizationProcessResponse) {
   if (process.parentPort) {
     process.parentPort.postMessage(response);
   }
@@ -266,13 +275,11 @@ process.parentPort?.on(
           handleHealthCheck();
           break;
         default:
-          console.warn(
-            `[SummarizationProcess] Unknown message type: ${(data as any).type}`
-          );
+          console.warn(`[SummarizationProcess] Unknown message: ${data}`);
       }
-    } catch (err: any) {
-      console.error(`[SummarizationProcess] Error handling ${data.type}:`, err);
-      sendResponse({ type: "error", error: err.message || String(err) });
+    } catch (error) {
+      console.error(`[SummarizationProcess] Error handling ${data.type}:`, error);
+      sendResponse({ type: "error", error: error.message || String(error) });
     }
   }
 );

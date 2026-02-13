@@ -20,10 +20,11 @@ export type TranscriptionMessage =
       audioData: number[]; // Float32Array sent as normal array (will later be converted back)
       modelId: string;
       language?: string;
+      requestId?: string;
     }
-  | { type: "download-model"; modelId: string }
-  | { type: "check-model"; modelId: string }
-  | { type: "set-models-path"; modelsPath: string };
+  | { type: "download-model"; modelId: string; requestId?: string }
+  | { type: "check-model"; modelId: string; requestId?: string }
+  | { type: "set-models-path"; modelsPath: string; requestId?: string };
 
 export type TranscriptionResponse =
   | UtilityProcessResponse
@@ -33,6 +34,7 @@ export type TranscriptionResponse =
       progress?: number;
       message?: string;
       file?: string;
+      requestId?: string;
     };
 
 let transcriber: AutomaticSpeechRecognitionPipeline | null = null;
@@ -50,21 +52,22 @@ function sendStatus(
   status: string,
   message?: string,
   progress?: number,
-  file?: string
+  file?: string,
+  requestId?: string
 ) {
-  sendMessage({ type: "status", status, message, progress, file });
+  sendMessage({ type: "status", status, message, progress, file, requestId });
 }
 
 // anything serializable can be sent in the result
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function sendResult(result: any) {
+function sendResult(result: any, requestId?: string) {
   console.log(`[TranscriptionProcess] Sending result:`, result);
-  sendMessage({ type: "result", result });
+  sendMessage({ type: "result", result, requestId });
 }
 
-function sendError(error: string) {
+function sendError(error: string, requestId?: string) {
   console.log(`[TranscriptionProcess] Sending error:`, error);
-  sendMessage({ type: "error", error });
+  sendMessage({ type: "error", error, requestId });
 }
 
 function resetIdleTimer() {
@@ -150,13 +153,20 @@ async function handleTranscribe(data: {
   audioData: number[];
   modelId: string;
   language?: string;
+  requestId?: string;
 }) {
-  const { audioData, modelId, language } = data;
+  const { audioData, modelId, language, requestId } = data;
 
   try {
     resetIdleTimer();
     await loadModel(modelId);
-    sendStatus("transcribing", "Processing audio...");
+    sendStatus(
+      "transcribing",
+      "Processing audio...",
+      undefined,
+      undefined,
+      requestId
+    );
 
     let audioFloat32: Float32Array = new Float32Array(audioData);
 
@@ -173,26 +183,35 @@ async function handleTranscribe(data: {
       task: "transcribe",
       chunk_length_s: 30,
       stride_length_s: 5,
-      return_timestamps: false
+      return_timestamps: true
     });
 
     // no need to keep the audio in memory after transcription
     audioFloat32 = null;
 
     console.log(`[TranscriptionProcess] Transcription complete`);
-    sendResult(result);
+    sendResult(result, requestId);
   } catch (error) {
     console.error("[TranscriptionProcess] Transcription failed:", error);
-    sendError(error.message || String(error));
+    sendError(error.message || String(error), requestId);
   }
 }
 
-async function handleDownloadModel(data: { modelId: string }) {
+async function handleDownloadModel(data: {
+  modelId: string;
+  requestId?: string;
+}) {
   try {
     console.log(
       `[TranscriptionProcess] Starting download for model: ${data.modelId}`
     );
-    sendStatus("downloading", `Downloading model ${data.modelId}...`, 0);
+    sendStatus(
+      "downloading",
+      `Downloading model ${data.modelId}...`,
+      0,
+      undefined,
+      data.requestId
+    );
 
     if (modelsPath && !fs.existsSync(modelsPath)) {
       fs.mkdirSync(modelsPath, { recursive: true });
@@ -203,20 +222,20 @@ async function handleDownloadModel(data: { modelId: string }) {
     console.log(
       `[TranscriptionProcess] Download complete, sending result for: ${data.modelId}`
     );
-    sendResult({ success: true, modelId: data.modelId });
+    sendResult({ success: true, modelId: data.modelId }, data.requestId);
   } catch (error) {
     console.error("[TranscriptionProcess] Download failed:", error);
-    sendError(error.message || String(error));
+    sendError(error.message || String(error), data.requestId);
   }
 }
 
-async function handleCheckModel(data: { modelId: string }) {
+async function handleCheckModel(data: { modelId: string; requestId?: string }) {
   try {
     if (!modelsPath) {
       console.log(
         `[TranscriptionProcess] Models path not set, model ${data.modelId} not downloaded`
       );
-      sendResult({ exists: false, modelId: data.modelId });
+      sendResult({ exists: false, modelId: data.modelId }, data.requestId);
       return;
     }
 
@@ -270,20 +289,23 @@ async function handleCheckModel(data: { modelId: string }) {
       console.log(`[TranscriptionProcess] Checked paths:`, possiblePaths);
     }
 
-    sendResult({
-      exists,
-      modelId: data.modelId,
-      path: foundPath || possiblePaths[0]
-    });
+    sendResult(
+      {
+        exists,
+        modelId: data.modelId,
+        path: foundPath || possiblePaths[0]
+      },
+      data.requestId
+    );
   } catch (error) {
     console.error("[TranscriptionProcess] Check model failed:", error);
-    sendError(error.message || String(error));
+    sendError(error.message || String(error), data.requestId);
   }
 }
 
-async function handleDispose() {
+async function handleDispose(requestId?: string) {
   await disposeModel();
-  sendResult({ success: true });
+  sendResult({ success: true }, requestId);
 }
 
 function handleGetMemoryUsage() {
@@ -299,15 +321,21 @@ function handleGetMemoryUsage() {
   });
 }
 
-function handleHealthCheck() {
-  sendResult({
-    healthy: true,
-    modelLoaded: transcriber !== null,
-    currentModelId
-  });
+function handleHealthCheck(requestId?: string) {
+  sendResult(
+    {
+      healthy: true,
+      modelLoaded: transcriber !== null,
+      currentModelId
+    },
+    requestId
+  );
 }
 
-async function handleSetModelsPath(data: { modelsPath: string }) {
+async function handleSetModelsPath(data: {
+  modelsPath: string;
+  requestId?: string;
+}) {
   modelsPath = data.modelsPath;
   console.log(`[TranscriptionProcess] Models path set to: ${modelsPath}`);
 
@@ -326,7 +354,7 @@ async function handleSetModelsPath(data: { modelsPath: string }) {
     );
   }
 
-  sendResult({ success: true, modelsPath });
+  sendResult({ success: true, modelsPath }, data.requestId);
 }
 
 process.parentPort?.on(
@@ -347,13 +375,13 @@ process.parentPort?.on(
           await handleCheckModel(message);
           break;
         case "dispose":
-          await handleDispose();
+          await handleDispose(message.requestId);
           break;
         case "get-memory-usage":
           handleGetMemoryUsage();
           break;
         case "health-check":
-          handleHealthCheck();
+          handleHealthCheck(message.requestId);
           break;
         case "set-models-path":
           await handleSetModelsPath(message);
