@@ -71,7 +71,7 @@ function createDeviceElement(device: AudioDeviceInfo): HTMLElement {
   return deviceItem;
 }
 
-export async function loadAudioDevices(): Promise<void> {
+export async function loadAudioDevices() {
   elements.devicesList.innerHTML =
     '<p class="loading-text">Loading microphones...</p>';
 

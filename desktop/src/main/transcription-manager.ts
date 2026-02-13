@@ -10,7 +10,7 @@ import type {
   TranscriptionMessage,
   TranscriptionResponse
 } from "../transcription/utility-process";
-import { getTranscriptionModelsDir } from "./models";
+import { getTranscriptionModelsDir, broadcastToRenderer } from "./models";
 import { MemoryUsage } from "@/shared/utilityProcess";
 
 // TODO: Make these configurable via a settings page
@@ -135,7 +135,7 @@ function handleUtilityMessage(message: TranscriptionResponse) {
       }
     }
 
-    broadcastToRenderers("transcription-status", message);
+    broadcastToRenderer("transcription-status", message);
     return;
   }
 
@@ -178,7 +178,7 @@ function handleUtilityMessage(message: TranscriptionResponse) {
     resetProcessRecycleTimer();
   }
 
-  broadcastToRenderers("transcription-status", message);
+  broadcastToRenderer("transcription-status", message);
 }
 
 function handleProcessExit(code: number | null) {
@@ -235,7 +235,7 @@ function checkMemoryThreshold(usage: MemoryUsage) {
   }
 }
 
-async function restartProcess(): Promise<void> {
+async function restartProcess() {
   if (isRestarting) return;
   isRestarting = true;
 
@@ -341,15 +341,6 @@ function sendMessageAndWait(
   });
 }
 
-function broadcastToRenderers(channel: string, data: any): void {
-  const windows = BrowserWindow.getAllWindows();
-  for (const win of windows) {
-    if (!win.isDestroyed()) {
-      win.webContents.send(channel, data);
-    }
-  }
-}
-
 async function transcribe(
   audioData: Float32Array,
   modelId: string,
@@ -417,7 +408,7 @@ async function checkModel(
   return sendMessageAndWait({ type: "check-model", modelId });
 }
 
-async function disposeModel(): Promise<void> {
+async function disposeModel() {
   if (!utilityProc) return;
   await sendMessageAndWait({ type: "dispose" });
 }

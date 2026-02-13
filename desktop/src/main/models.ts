@@ -461,7 +461,8 @@ function buildModelUri(data: {
   return { error: "Provide either a URL, or a repo + filename" };
 }
 
-function broadcastToRenderer(channel: string, data: any): void {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function broadcastToRenderer(channel: string, data: any) {
   // there's only one window for this app
   const win = BrowserWindow.getAllWindows()[0];
   if (win && !win.isDestroyed()) {

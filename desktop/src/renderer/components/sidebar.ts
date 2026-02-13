@@ -1,5 +1,10 @@
 import { elements } from "./domNodes";
-import { generateDateLabel, getBaseName, escapeHtml } from "@/utils";
+import {
+  generateDateLabel,
+  getBaseName,
+  escapeHtml,
+  toSafeName
+} from "@/utils";
 import { navigateToPage, openSettingsModal } from "./navigation";
 
 interface NoteFile {
@@ -385,10 +390,7 @@ async function renameNote(filename: string): Promise<void> {
       return;
     }
 
-    const safeBase = newName
-      .replace(/[^a-zA-Z0-9-_ ]/g, "")
-      .trim()
-      .replace(/\s+/g, "_");
+    const safeBase = toSafeName(newName);
     const newFilename = `${safeBase || currentName}.json`;
 
     try {

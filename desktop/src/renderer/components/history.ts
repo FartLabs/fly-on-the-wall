@@ -1,4 +1,4 @@
-import { escapeHtml } from "@/utils";
+import { escapeHtml, toSafeName } from "@/utils";
 import { navigateToPage } from "./navigation";
 import { elements } from "./domNodes";
 import {
@@ -9,8 +9,8 @@ import {
 
 let currentNoteFilename: string | null = null;
 
-export function setupHistoryListeners(): void {
-  // Wire sidebar note clicks → open note in standalone viewer
+export function setupHistoryListeners() {
+  // open note from sidebar when clicked
   onSidebarNoteOpen((filename) => {
     openNoteInViewer(filename);
   });
@@ -19,7 +19,7 @@ export function setupHistoryListeners(): void {
 /**
  * Open a note in the standalone note viewer page (not the history page).
  */
-async function openNoteInViewer(filename: string): Promise<void> {
+async function openNoteInViewer(filename: string) {
   try {
     const result = await window.electronAPI.readNote(filename);
 
@@ -51,11 +51,9 @@ async function openNoteInViewer(filename: string): Promise<void> {
       transcriptionEl.innerHTML = `<div>${escapeHtml(content.transcription || "")}</div>`;
       summaryEl.innerHTML = `<div>${escapeHtml(content.summary || "")}</div>`;
 
-      // Recording playback
       await handleNoteViewRecording(content.metadata);
       displayNoteViewOriginalFilename(content.metadata);
 
-      // Auto-save setup
       const autoSaveTimeoutRef = {
         current: null as ReturnType<typeof setTimeout> | null
       };
@@ -78,7 +76,7 @@ async function openNoteInViewer(filename: string): Promise<void> {
           autoSaveDelayMs
         );
 
-      // Click to edit title
+      // click to edit title
       titleEl.onclick = () => {
         titleEl.setAttribute("contenteditable", "true");
         titleEl.focus();
@@ -97,7 +95,6 @@ async function openNoteInViewer(filename: string): Promise<void> {
       summaryEl.addEventListener("input", boundScheduleAutoSave);
       titleEl.addEventListener("input", boundScheduleAutoSave);
 
-      // Copy buttons
       if (elements.noteViewCopyTranscription) {
         elements.noteViewCopyTranscription.onclick = async () => {
           try {
@@ -132,7 +129,6 @@ async function openNoteInViewer(filename: string): Promise<void> {
         };
       }
 
-      // Export
       if (elements.noteViewExportBtn) {
         elements.noteViewExportBtn.onclick = async () => {
           try {
@@ -157,7 +153,6 @@ async function openNoteInViewer(filename: string): Promise<void> {
         };
       }
 
-      // Delete
       if (elements.noteViewDeleteBtn) {
         elements.noteViewDeleteBtn.onclick = async () => {
           if (!currentNoteFilename) return;
@@ -192,9 +187,7 @@ async function openNoteInViewer(filename: string): Promise<void> {
   }
 }
 
-async function handleNoteViewRecording(
-  metadata?: Record<string, any>
-): Promise<void> {
+async function handleNoteViewRecording(metadata?: Record<string, any>) {
   if (!elements.noteViewRecordingPlayer || !elements.noteViewAudioPlayer)
     return;
 
@@ -216,7 +209,7 @@ async function handleNoteViewRecording(
   }
 }
 
-function displayNoteViewOriginalFilename(metadata?: Record<string, any>): void {
+function displayNoteViewOriginalFilename(metadata?: Record<string, any>) {
   const el = elements.noteViewOriginalFilename;
   if (!el) return;
 
@@ -236,7 +229,7 @@ async function saveNoteViewEdits(
   filename: string,
   noteId: string,
   silent = false
-): Promise<void> {
+) {
   try {
     const newTitle = (titleEl.textContent || "").trim();
     const newTrans = transcriptionEl.textContent || "";
@@ -247,10 +240,7 @@ async function saveNoteViewEdits(
       return;
     }
 
-    const safeBase = (newTitle || noteId)
-      .replace(/[^a-zA-Z0-9-_ ]/g, "")
-      .trim()
-      .replace(/\s+/g, "_");
+    const safeBase = toSafeName(newTitle || noteId);
     const newFilename = `${safeBase || noteId}.json`;
 
     let existingMetadata: Record<string, any> = {};
@@ -297,7 +287,7 @@ function scheduleAutoSave(
   autoSaveTimeoutRef: { current: ReturnType<typeof setTimeout> | null },
   saveCallback: () => void,
   delayMs: number
-): void {
+) {
   if (autoSaveTimeoutRef.current) {
     clearTimeout(autoSaveTimeoutRef.current);
   }

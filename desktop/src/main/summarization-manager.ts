@@ -12,6 +12,7 @@ import type {
 } from "../summarization/utility-process";
 import type { MemoryUsage } from "@/shared/utilityProcess";
 import type { SummarizeParams } from "@/summarization";
+import { broadcastToRenderer } from "./models";
 
 // TODO: Make these configurable via a settings page
 const MEMORY_CHECK_INTERVAL_MS = 10_000;
@@ -89,7 +90,7 @@ function spawnSummarizationProcess(): UtilityProcess {
   return utilityProc;
 }
 
-function handleUtilityMessage(message: SummarizationProcessResponse): void {
+function handleUtilityMessage(message: SummarizationProcessResponse) {
   // handle memory response separately for monitoring
   if (message.type === "memory") {
     checkMemoryThreshold(message.usage);
@@ -117,10 +118,10 @@ function handleUtilityMessage(message: SummarizationProcessResponse): void {
     }
   }
 
-  broadcastToRenderers("summarization-status", message);
+  broadcastToRenderer("summarization-status", message);
 }
 
-function handleProcessExit(code: number | null): void {
+function handleProcessExit(code: number | null) {
   utilityProc = null;
   stopMemoryMonitoring();
 
@@ -140,7 +141,7 @@ function handleProcessExit(code: number | null): void {
   }
 }
 
-function startMemoryMonitoring(): void {
+function startMemoryMonitoring() {
   if (memoryCheckTimer) return;
 
   memoryCheckTimer = setInterval(() => {
@@ -152,7 +153,7 @@ function startMemoryMonitoring(): void {
   console.log("[SummarizationManager] Memory monitoring started");
 }
 
-function stopMemoryMonitoring(): void {
+function stopMemoryMonitoring() {
   if (memoryCheckTimer) {
     clearInterval(memoryCheckTimer);
     memoryCheckTimer = null;
@@ -160,7 +161,7 @@ function stopMemoryMonitoring(): void {
   }
 }
 
-function checkMemoryThreshold(usage: MemoryUsage): void {
+function checkMemoryThreshold(usage: MemoryUsage) {
   const rssMb = usage.rss / (1024 * 1024);
   console.log(
     `[SummarizationManager] Memory usage: ${rssMb.toFixed(1)} MB RSS`
@@ -174,7 +175,7 @@ function checkMemoryThreshold(usage: MemoryUsage): void {
   }
 }
 
-async function restartProcess(): Promise<void> {
+async function restartProcess() {
   if (isRestarting) return;
   isRestarting = true;
 
@@ -197,7 +198,7 @@ async function restartProcess(): Promise<void> {
   }, RESTART_DELAY_MS);
 }
 
-function resetProcessRecycleTimer(): void {
+function resetProcessRecycleTimer() {
   if (processRecycleTimer) {
     clearTimeout(processRecycleTimer);
   }
@@ -211,7 +212,7 @@ function resetProcessRecycleTimer(): void {
   }, PROCESS_RECYCLE_TIMEOUT_MS);
 }
 
-function recycleProcess(): void {
+function recycleProcess() {
   if (processRecycleTimer) {
     clearTimeout(processRecycleTimer);
     processRecycleTimer = null;
@@ -228,7 +229,7 @@ function recycleProcess(): void {
   );
 }
 
-function sendToUtility(message: SummarizationProcessMessage): void {
+function sendToUtility(message: SummarizationProcessMessage) {
   if (!utilityProc) {
     console.warn("[SummarizationManager] No utility process running");
     return;
@@ -267,15 +268,6 @@ function sendMessageAndWait(
   });
 }
 
-function broadcastToRenderers(channel: string, data: any): void {
-  const windows = BrowserWindow.getAllWindows();
-  for (const win of windows) {
-    if (!win.isDestroyed()) {
-      win.webContents.send(channel, data);
-    }
-  }
-}
-
 // public API for main process
 async function summarize(
   text: string,
@@ -311,7 +303,7 @@ async function checkModel(modelPath: string): Promise<{
   return sendMessageAndWait({ type: "check-model", modelPath });
 }
 
-async function disposeModel(): Promise<void> {
+async function disposeModel() {
   if (!utilityProc) return;
   await sendMessageAndWait({ type: "dispose" });
 }

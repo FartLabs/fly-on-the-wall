@@ -84,3 +84,15 @@ export type DeepPartial<T> = T extends object
       [P in keyof T]?: DeepPartial<T[P]>;
     }
   : T;
+
+export function toSafeName(input: string) {
+  if (!input) return "";
+  return (
+    input
+      // remove all characters except alphanumeric, hyphen, underscore, and space
+      .replace(/[^a-zA-Z0-9-_\s]/g, "")
+      .trim()
+      // replace remaining spaces (including multiple in a row) with a single underscore
+      .replace(/\s+/g, "_")
+  );
+}
