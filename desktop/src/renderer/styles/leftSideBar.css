@@ -24,7 +24,8 @@
 
 .left-sidebar.collapsed .sidebar-nav-label,
 .left-sidebar.collapsed .sidebar-title,
-.left-sidebar.collapsed .sidebar-files-section {
+.left-sidebar.collapsed .sidebar-files-section,
+.left-sidebar.collapsed .sidebar-footer .sidebar-nav-label {
   opacity: 0;
   pointer-events: none;
   width: 0;
@@ -51,6 +52,14 @@
 
 .left-sidebar.collapsed .sidebar-divider {
   display: none;
+}
+
+.left-sidebar.collapsed .sidebar-footer {
+  justify-content: center;
+}
+
+.left-sidebar.collapsed .sidebar-footer-item {
+  justify-content: center;
 }
 
 .app-content {
@@ -553,4 +562,22 @@ body.sidebar-resizing * {
 .note-view-section .note-section-body:focus {
   outline: 2px dashed rgba(102, 126, 234, 0.4);
   border-radius: 4px;
+}
+
+.sidebar-footer {
+  padding: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sidebar-footer-item {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0.4rem 0.75rem;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.75rem;
+}
+
+.sidebar-footer-item .sidebar-nav-icon {
+  font-size: 0.8rem;
 }

@@ -1,7 +1,6 @@
 /* mainly in charge of importing every component */
 
 @import "./base.css";
-@import "./sidebar.css";
 @import "./common.css";
 @import "./recorder.css";
 @import "./devices.css";
@@ -9,5 +8,6 @@
 @import "./transcription.css";
 @import "./summarization.css";
 @import "./rightSideBar.css";
+@import "./leftSideBar.css";
 @import "./importAudio.css";
 @import "./modal.css";

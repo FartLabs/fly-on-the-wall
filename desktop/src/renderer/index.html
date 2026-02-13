@@ -75,13 +75,6 @@
         </div>
       </div>
 
-      <div class="sidebar-footer">
-        <div class="sidebar-footer-item" id="sidebarVersion">
-          <span class="sidebar-nav-icon">ℹ️</span>
-          <span class="sidebar-nav-label">v1.0</span>
-        </div>
-      </div>
-
       <div
         class="sidebar-resize-handle"
         id="sidebarResizeHandle"
@@ -89,102 +82,7 @@
       ></div>
     </aside>
 
-    <!-- Main App Content -->
     <div class="app-content" id="appContent">
-      <div class="right-panel-trigger" id="rightPanelTrigger">
-        <div class="right-panel-handle">||</div>
-      </div>
-      <div class="right-panel-container" id="rightPanel">
-        <h2 class="right-panel-title">Transcription & Summary</h2>
-
-        <div
-          class="right-panel-transcription-card hidden"
-          id="rightPanelTranscriptionCard"
-        >
-          <div class="card-header">
-            <h2>Transcription</h2>
-          </div>
-
-          <div
-            class="transcription-progress hidden"
-            id="rightPanelTranscriptionProgress"
-          >
-            <div class="progress-bar">
-              <div class="progress-fill" id="rightPanelProgressFill"></div>
-            </div>
-            <p class="progress-text" id="rightPanelProgressText">
-              Loading model...
-            </p>
-          </div>
-
-          <div
-            class="transcription-result hidden"
-            id="rightPanelTranscriptionResult"
-          >
-            <div
-              class="transcription-text"
-              id="rightPanelTranscriptionText"
-            ></div>
-            <div class="transcription-actions">
-              <button
-                class="action-btn"
-                id="rightPanelCopyTranscription"
-                title="Copy to clipboard"
-              >
-                Copy
-              </button>
-            </div>
-          </div>
-
-          <div class="transcription-empty" id="rightPanelTranscriptionEmpty">
-            <p>Record a meeting to see the transcription here.</p>
-          </div>
-        </div>
-
-        <div class="right-panel-summary-card hidden" id="rightPanelSummaryCard">
-          <div class="card-header">
-            <h2>Summary</h2>
-          </div>
-
-          <div class="summary-progress hidden" id="rightPanelSummaryProgress">
-            <div class="progress-bar">
-              <div
-                class="progress-fill"
-                id="rightPanelSummaryProgressFill"
-              ></div>
-            </div>
-            <p class="progress-text" id="rightPanelSummaryProgressText">
-              Generating summary...
-            </p>
-          </div>
-
-          <div class="summary-result hidden" id="rightPanelSummaryResult">
-            <div class="summary-text" id="rightPanelSummaryText"></div>
-            <div class="summary-actions">
-              <button
-                class="action-btn"
-                id="rightPanelCopySummary"
-                title="Copy summary"
-              >
-                Copy
-              </button>
-            </div>
-          </div>
-
-          <div class="summary-empty hidden" id="rightPanelSummaryEmpty">
-            <p>Summary will appear here after transcription.</p>
-          </div>
-        </div>
-        <div class="right-panel-save-wrapper">
-          <button
-            class="action-btn primary hidden"
-            id="rightPanelSaveNote"
-            title="Save transcription + summary as note"
-          >
-            Save Note
-          </button>
-        </div>
-      </div>
       <div class="container" id="mainPage">
         <!-- <div class="header-with-nav">
           <div>
@@ -379,6 +277,122 @@
       </div>
     </div>
     <!-- end .app-content -->
+
+    <aside class="right-sidebar collapsed" id="rightSidebar">
+      <div class="right-sidebar-header">
+        <button
+          class="right-sidebar-collapse-btn"
+          id="rightSidebarCollapseBtn"
+          title="Collapse sidebar"
+        >
+          ▶
+        </button>
+        <h2 class="right-sidebar-title">Transcription & Summarization</h2>
+      </div>
+
+      <div class="right-sidebar-content" id="rightSidebarContent">
+        <div class="right-sidebar-empty" id="rightSidebarEmpty">
+          <p>
+            Start a recording or import audio to see processing status here.
+          </p>
+        </div>
+
+        <div
+          class="right-panel-transcription-card hidden"
+          id="rightPanelTranscriptionCard"
+        >
+          <div class="card-header">
+            <h2>Transcription</h2>
+          </div>
+
+          <div
+            class="transcription-progress hidden"
+            id="rightPanelTranscriptionProgress"
+          >
+            <div class="progress-bar">
+              <div class="progress-fill" id="rightPanelProgressFill"></div>
+            </div>
+            <p class="progress-text" id="rightPanelProgressText">
+              Loading model...
+            </p>
+          </div>
+
+          <div
+            class="transcription-result hidden"
+            id="rightPanelTranscriptionResult"
+          >
+            <div
+              class="transcription-text"
+              id="rightPanelTranscriptionText"
+            ></div>
+            <div class="transcription-actions">
+              <button
+                class="action-btn"
+                id="rightPanelCopyTranscription"
+                title="Copy to clipboard"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+
+          <div class="transcription-empty" id="rightPanelTranscriptionEmpty">
+            <p>Record a meeting to see the transcription here.</p>
+          </div>
+        </div>
+
+        <div class="right-panel-summary-card hidden" id="rightPanelSummaryCard">
+          <div class="card-header">
+            <h2>Summary</h2>
+          </div>
+
+          <div class="summary-progress hidden" id="rightPanelSummaryProgress">
+            <div class="progress-bar">
+              <div
+                class="progress-fill"
+                id="rightPanelSummaryProgressFill"
+              ></div>
+            </div>
+            <p class="progress-text" id="rightPanelSummaryProgressText">
+              Generating summary...
+            </p>
+          </div>
+
+          <div class="summary-result hidden" id="rightPanelSummaryResult">
+            <div class="summary-text" id="rightPanelSummaryText"></div>
+            <div class="summary-actions">
+              <button
+                class="action-btn"
+                id="rightPanelCopySummary"
+                title="Copy summary"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+
+          <div class="summary-empty hidden" id="rightPanelSummaryEmpty">
+            <p>Summary will appear here after transcription.</p>
+          </div>
+        </div>
+
+        <div class="right-panel-save-wrapper">
+          <button
+            class="action-btn primary hidden"
+            id="rightPanelSaveNote"
+            title="Save transcription + summary as note"
+          >
+            Save Note
+          </button>
+        </div>
+      </div>
+
+      <div
+        class="right-sidebar-resize-handle"
+        id="rightSidebarResizeHandle"
+        title="Resize right sidebar"
+      ></div>
+    </aside>
 
     <div class="modal-overlay hidden" id="settingsModal">
       <div class="modal-container settings-modal-container">

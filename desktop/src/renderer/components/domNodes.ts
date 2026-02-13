@@ -80,9 +80,18 @@ export const elements = {
     "customPromptInput"
   ) as HTMLTextAreaElement,
 
-  rightPanel: document.getElementById("rightPanel") as HTMLDivElement,
-  rightPanelTrigger: document.getElementById(
-    "rightPanelTrigger"
+  rightSidebar: document.getElementById("rightSidebar") as HTMLElement,
+  rightSidebarCollapseBtn: document.getElementById(
+    "rightSidebarCollapseBtn"
+  ) as HTMLButtonElement,
+  rightSidebarResizeHandle: document.getElementById(
+    "rightSidebarResizeHandle"
+  ) as HTMLDivElement,
+  rightSidebarContent: document.getElementById(
+    "rightSidebarContent"
+  ) as HTMLDivElement,
+  rightSidebarEmpty: document.getElementById(
+    "rightSidebarEmpty"
   ) as HTMLDivElement,
   exportNoteBtn: document.getElementById("exportNoteBtn") as HTMLButtonElement,
 
