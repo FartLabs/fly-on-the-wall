@@ -183,6 +183,10 @@ async function handleDownloadModel(data: { modelId: string }): Promise<void> {
     );
     sendStatus("downloading", `Downloading model ${data.modelId}...`, 0);
 
+    if (modelsPath && !fs.existsSync(modelsPath)) {
+      fs.mkdirSync(modelsPath, { recursive: true });
+    }
+
     await loadModel(data.modelId);
 
     console.log(
@@ -295,10 +299,6 @@ async function handleSetModelsPath(data: {
 }): Promise<void> {
   modelsPath = data.modelsPath;
   console.log(`[TranscriptionProcess] Models path set to: ${modelsPath}`);
-
-  if (!fs.existsSync(modelsPath)) {
-    fs.mkdirSync(modelsPath, { recursive: true });
-  }
 
   try {
     const { env } = await import("@huggingface/transformers");

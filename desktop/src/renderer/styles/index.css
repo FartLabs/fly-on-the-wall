@@ -7,8 +7,7 @@
 @import "./models.css";
 @import "./transcription.css";
 @import "./summarization.css";
-@import "./history.css";
-@import "./leftSideBar.css";
 @import "./rightSideBar.css";
+@import "./leftSideBar.css";
 @import "./importAudio.css";
 @import "./modal.css";

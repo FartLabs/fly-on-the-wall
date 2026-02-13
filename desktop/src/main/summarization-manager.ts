@@ -54,7 +54,7 @@ function getUtilityProcessPath(): string {
   );
 }
 
-export function spawnSummarizationProcess(): UtilityProcess {
+function spawnSummarizationProcess(): UtilityProcess {
   if (utilityProc) {
     console.log("[SummarizationManager] Process already running");
     return utilityProc;
@@ -278,7 +278,7 @@ function broadcastToRenderers(channel: string, data: any): void {
 }
 
 // public API for main process
-export async function summarize(
+async function summarize(
   text: string,
   modelPath: string,
   params?: SummarizeParams,
@@ -301,7 +301,7 @@ export async function summarize(
   });
 }
 
-export async function checkModel(modelPath: string): Promise<{
+async function checkModel(modelPath: string): Promise<{
   exists: boolean;
   isValid: boolean;
   path: string;
@@ -312,12 +312,12 @@ export async function checkModel(modelPath: string): Promise<{
   return sendMessageAndWait({ type: "check-model", modelPath });
 }
 
-export async function disposeModel(): Promise<void> {
+async function disposeModel(): Promise<void> {
   if (!utilityProc) return;
   await sendMessageAndWait({ type: "dispose" });
 }
 
-export async function healthCheck(): Promise<{
+async function healthCheck(): Promise<{
   healthy: boolean;
   modelLoaded: boolean;
   currentModelPath: string | null;
@@ -328,7 +328,7 @@ export async function healthCheck(): Promise<{
   return sendMessageAndWait({ type: "health-check" });
 }
 
-export function stopSummarizationProcess(): void {
+function stopSummarizationProcess(): void {
   if (processRecycleTimer) {
     clearTimeout(processRecycleTimer);
     processRecycleTimer = null;

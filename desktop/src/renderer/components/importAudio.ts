@@ -162,7 +162,7 @@ function showLargeFileDialog(
   });
 }
 
-export async function openImportDialog(): Promise<void> {
+async function openImportDialog(): Promise<void> {
   if (isProcessing) {
     showNotification(
       "An import is already in progress. Please wait for it to finish.",

@@ -1,4 +1,5 @@
 // https://www.electronjs.org/docs/latest/tutorial/context-isolation#usage-with-typescript
+import type { HotkeysConfig } from "./hotkeys";
 
 export interface AppConfig {
   summarizationParameters: {
@@ -12,13 +13,13 @@ export interface AppConfig {
     minSummaryLength: number;
     customPrompt: string;
     selectedModelPath: string;
+    modelStoragePath: string;
   };
   transcription: {
     selectedModel: string;
+    modelStoragePath: string;
   };
-  app: {
-    introNoteCreated: boolean;
-  };
+  hotkeys: HotkeysConfig;
 }
 
 export default interface IElectronAPI {
@@ -44,6 +45,8 @@ export default interface IElectronAPI {
 
   getModelsDir: () => Promise<string>;
   getModelsCacheDir: () => Promise<string>;
+  getTranscriptionModelsDir: () => Promise<string>;
+  getSummarizationModelsDir: () => Promise<string>;
   openModelsFolder: () => Promise<{
     success: boolean;
     path?: string;

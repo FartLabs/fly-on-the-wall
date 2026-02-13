@@ -18,7 +18,7 @@ export interface TranscriptionProgress {
   message: string;
 }
 
-export interface TranscriptionResult {
+interface TranscriptionResult {
   text: string;
   duration: number;
   model: string;

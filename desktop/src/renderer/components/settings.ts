@@ -7,10 +7,81 @@ import {
   type AppSettings,
   type SummarizationSettings
 } from "@/shared/config";
-import { closeSettingsModal } from "./navigation";
+import {
+  HOTKEY_DEFAULTS,
+  type HotkeyModifier,
+  normalizeHotkeyBindings,
+  normalizeHotkeyShortcut
+} from "@/shared/hotkeys";
+import { refreshModelsList } from "./models";
+import { refreshHotkeysFromConfig } from "./hotkeys";
+
+const AUTO_SAVE_DEBOUNCE_MS = 400;
+let autoSaveTimeoutId: number | undefined;
+let hotkeyOpenSettingsBindings: string[] = [];
+let isRecordingOpenSettingsHotkey = false;
+let recordingModifierOrder: HotkeyModifier[] = [];
+
+const MODIFIER_KEYS = new Set(["Control", "Alt", "Shift", "Meta"]);
+
+function getModifierFromKey(key: string): HotkeyModifier | null {
+  if (key === "Control") return "Ctrl";
+  if (key === "Alt") return "Alt";
+  if (key === "Shift") return "Shift";
+  if (key === "Meta") return "Meta";
+  return null;
+}
+
+function isModifierActive(
+  modifier: HotkeyModifier,
+  event: KeyboardEvent
+): boolean {
+  if (modifier === "Ctrl") return event.ctrlKey;
+  if (modifier === "Alt") return event.altKey;
+  if (modifier === "Shift") return event.shiftKey;
+  return event.metaKey;
+}
+
+function setModelPathHintText(
+  hintEl: HTMLSpanElement | null,
+  prefix: string,
+  currentPath: string
+) {
+  if (!hintEl) return;
+  hintEl.textContent = `${prefix} Current: ${currentPath}`;
+}
+
+async function refreshModelPathHints(): Promise<void> {
+  try {
+    const [transcriptionDir, summarizationDir] = await Promise.all([
+      window.electronAPI.getTranscriptionModelsDir(),
+      window.electronAPI.getSummarizationModelsDir()
+    ]);
+
+    setModelPathHintText(
+      elements.transcriptionModelPathHint,
+      "Directory used to store Whisper model files. Existing models are not moved automatically when this path changes.",
+      transcriptionDir
+    );
+    setModelPathHintText(
+      elements.summarizationModelPathHint,
+      "Directory used to store GGUF summarization models. Existing models are not moved automatically when this path changes.",
+      summarizationDir
+    );
+  } catch (error) {
+    console.warn("Failed to refresh model path hints:", error);
+  }
+}
 
 async function getSettings(): Promise<AppSettings> {
   const config = await window.electronAPI.configGet();
+  const rawOpenSettings = (
+    config.hotkeys as { openSettings?: string | string[] }
+  )?.openSettings;
+  const normalizedOpenSettings = normalizeHotkeyBindings(rawOpenSettings);
+  const hasExplicitOpenSettingsValue =
+    Array.isArray(rawOpenSettings) || typeof rawOpenSettings === "string";
+
   return {
     minSummaryLength: clamp(
       config.summarization.minSummaryLength ??
@@ -47,7 +118,12 @@ async function getSettings(): Promise<AppSettings> {
         DEFAULT_CONFIG.summarizationParameters.repeatPenalty,
       LIMITS.repeatPenalty.min,
       LIMITS.repeatPenalty.max
-    )
+    ),
+    transcriptionModelPath: config.transcription.modelStoragePath ?? "",
+    summarizationModelPath: config.summarization.modelStoragePath ?? "",
+    hotkeyOpenSettings: hasExplicitOpenSettingsValue
+      ? normalizedOpenSettings
+      : [...HOTKEY_DEFAULTS.openSettings]
   };
 }
 
@@ -67,9 +143,7 @@ export async function getMinSummaryLength(): Promise<number> {
   return settings.minSummaryLength;
 }
 
-export async function saveSettings(
-  settings: Partial<AppSettings>
-): Promise<void> {
+async function saveSettings(settings: Partial<AppSettings>): Promise<void> {
   const update: Partial<AppConfig> = {};
 
   if (settings.minSummaryLength !== undefined) {
@@ -80,6 +154,25 @@ export async function saveSettings(
         LIMITS.minSummaryLength.max
       )
     } as any;
+  }
+
+  if (settings.summarizationModelPath !== undefined) {
+    update.summarization = {
+      ...(update.summarization || {}),
+      modelStoragePath: settings.summarizationModelPath.trim()
+    } as any;
+  }
+
+  if (settings.transcriptionModelPath !== undefined) {
+    update.transcription = {
+      modelStoragePath: settings.transcriptionModelPath.trim()
+    } as any;
+  }
+
+  if (settings.hotkeyOpenSettings !== undefined) {
+    update.hotkeys = {
+      openSettings: normalizeHotkeyBindings(settings.hotkeyOpenSettings)
+    };
   }
 
   const params: Partial<AppConfig["summarizationParameters"]> = {};
@@ -119,8 +212,12 @@ export async function saveSettings(
   await window.electronAPI.configSet(update);
 }
 
-export async function resetSettings(): Promise<void> {
+async function resetSettings(): Promise<void> {
   await window.electronAPI.configSet(DEFAULT_CONFIG);
+  if (elements.customPromptInput) {
+    const defaultPrompt = elements.customPromptInput.dataset.defaultPrompt;
+    elements.customPromptInput.value = defaultPrompt || "";
+  }
 }
 
 async function loadSettingsIntoUI(): Promise<void> {
@@ -144,6 +241,17 @@ async function loadSettingsIntoUI(): Promise<void> {
   if (elements.repeatPenaltyInput) {
     elements.repeatPenaltyInput.value = String(settings.repeatPenalty);
   }
+  if (elements.transcriptionModelPathInput) {
+    elements.transcriptionModelPathInput.value =
+      settings.transcriptionModelPath;
+  }
+  if (elements.summarizationModelPathInput) {
+    elements.summarizationModelPathInput.value =
+      settings.summarizationModelPath;
+  }
+
+  hotkeyOpenSettingsBindings = [...settings.hotkeyOpenSettings];
+  renderHotkeyOpenSettingsBindings();
 }
 
 function readSettingsFromUI(): AppSettings {
@@ -165,43 +273,258 @@ function readSettingsFromUI(): AppSettings {
       DEFAULT_CONFIG.summarizationParameters.topK,
     repeatPenalty:
       parseFloat(elements.repeatPenaltyInput?.value) ||
-      DEFAULT_CONFIG.summarizationParameters.repeatPenalty
+      DEFAULT_CONFIG.summarizationParameters.repeatPenalty,
+    transcriptionModelPath: elements.transcriptionModelPathInput?.value || "",
+    summarizationModelPath: elements.summarizationModelPathInput?.value || "",
+    hotkeyOpenSettings: [...hotkeyOpenSettingsBindings]
   };
 }
 
-async function handleSaveSettings(): Promise<void> {
+function getHotkeyFromKeyboardEvent(event: KeyboardEvent): string {
+  const key = event.key;
+  if (!key || MODIFIER_KEYS.has(key)) return "";
+
+  const modifiers = recordingModifierOrder.filter((modifier) =>
+    isModifierActive(modifier, event)
+  );
+
+  const activeInFallbackOrder: HotkeyModifier[] = [];
+  if (event.ctrlKey) activeInFallbackOrder.push("Ctrl");
+  if (event.altKey) activeInFallbackOrder.push("Alt");
+  if (event.shiftKey) activeInFallbackOrder.push("Shift");
+  if (event.metaKey) activeInFallbackOrder.push("Meta");
+
+  activeInFallbackOrder.forEach((modifier) => {
+    if (!modifiers.includes(modifier)) {
+      modifiers.push(modifier);
+    }
+  });
+
+  return normalizeHotkeyShortcut([...modifiers, key].join("+"));
+}
+
+function setHotkeyCaptureHint(message: string): void {
+  if (!elements.hotkeyCaptureHint) return;
+  elements.hotkeyCaptureHint.textContent = message;
+}
+
+function updateAddHotkeyButtonState(): void {
+  if (!elements.hotkeyOpenSettingsAddBtn) return;
+  elements.hotkeyOpenSettingsAddBtn.textContent = isRecordingOpenSettingsHotkey
+    ? "•"
+    : "+";
+  elements.hotkeyOpenSettingsAddBtn.classList.toggle(
+    "recording",
+    isRecordingOpenSettingsHotkey
+  );
+  elements.hotkeyOpenSettingsAddBtn.title = isRecordingOpenSettingsHotkey
+    ? "Recording..."
+    : "Add hotkey";
+}
+
+function renderHotkeyOpenSettingsBindings(): void {
+  const listEl = elements.hotkeyOpenSettingsList;
+  if (!listEl) return;
+
+  listEl.replaceChildren();
+
+  if (hotkeyOpenSettingsBindings.length === 0) {
+    const emptyEl = document.createElement("span");
+    emptyEl.className = "hotkey-bindings-empty";
+    emptyEl.textContent = "No hotkeys assigned";
+    listEl.appendChild(emptyEl);
+    updateAddHotkeyButtonState();
+    return;
+  }
+
+  hotkeyOpenSettingsBindings.forEach((binding) => {
+    const itemEl = document.createElement("div");
+    itemEl.className = "hotkey-chip";
+
+    const keyEl = document.createElement("span");
+    keyEl.className = "hotkey-chip-key";
+    keyEl.textContent = binding;
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "hotkey-chip-remove";
+    removeBtn.setAttribute("aria-label", `Remove ${binding}`);
+    removeBtn.textContent = "×";
+    removeBtn.addEventListener("click", () => {
+      hotkeyOpenSettingsBindings = hotkeyOpenSettingsBindings.filter(
+        (value) => value !== binding
+      );
+      renderHotkeyOpenSettingsBindings();
+      scheduleAutoSave();
+      setHotkeyCaptureHint("Ready. Click + to record a new hotkey.");
+    });
+
+    itemEl.appendChild(keyEl);
+    itemEl.appendChild(removeBtn);
+    listEl.appendChild(itemEl);
+  });
+
+  updateAddHotkeyButtonState();
+}
+
+function startHotkeyRecording(): void {
+  isRecordingOpenSettingsHotkey = true;
+  recordingModifierOrder = [];
+  updateAddHotkeyButtonState();
+  setHotkeyCaptureHint("Recording...");
+}
+
+function stopHotkeyRecording(message?: string): void {
+  isRecordingOpenSettingsHotkey = false;
+  recordingModifierOrder = [];
+  updateAddHotkeyButtonState();
+  if (message) {
+    setHotkeyCaptureHint(message);
+  }
+}
+
+function setupHotkeyEditorListeners(): void {
+  elements.hotkeyOpenSettingsAddBtn?.addEventListener("click", () => {
+    if (isRecordingOpenSettingsHotkey) {
+      stopHotkeyRecording("Recording canceled.");
+      return;
+    }
+    startHotkeyRecording();
+  });
+
+  document.addEventListener(
+    "keydown",
+    (event) => {
+      if (!isRecordingOpenSettingsHotkey) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (event.key === "Escape") {
+        stopHotkeyRecording("Recording canceled.");
+        return;
+      }
+
+      const modifier = getModifierFromKey(event.key);
+      if (modifier) {
+        if (!recordingModifierOrder.includes(modifier)) {
+          recordingModifierOrder.push(modifier);
+        }
+        setHotkeyCaptureHint("Recording... now press the final key.");
+        return;
+      }
+
+      if (!(event.ctrlKey || event.altKey || event.shiftKey || event.metaKey)) {
+        setHotkeyCaptureHint(
+          "Invalid shortcut. Include at least one modifier key."
+        );
+        return;
+      }
+
+      const shortcut = getHotkeyFromKeyboardEvent(event);
+      if (!shortcut) return;
+
+      if (hotkeyOpenSettingsBindings.includes(shortcut)) {
+        stopHotkeyRecording("That hotkey already exists.");
+        return;
+      }
+
+      hotkeyOpenSettingsBindings.push(shortcut);
+      renderHotkeyOpenSettingsBindings();
+      stopHotkeyRecording(`Added ${shortcut}.`);
+      scheduleAutoSave();
+    },
+    true
+  );
+}
+
+async function persistSettingsFromUI(): Promise<void> {
   const settings = readSettingsFromUI();
   await saveSettings(settings);
 
-  await loadSettingsIntoUI();
+  const customPrompt = elements.customPromptInput?.value?.trim() ?? "";
+  await window.electronAPI.configSet({
+    summarization: { customPrompt } as any
+  });
 
-  if (elements.saveSettingsBtn) {
-    const originalText = elements.saveSettingsBtn.textContent;
-    elements.saveSettingsBtn.textContent = "Saved!";
-    setTimeout(() => {
-      elements.saveSettingsBtn.textContent = originalText;
-      closeSettingsModal();
-    }, 1500);
-  }
+  await refreshModelsList();
+  await refreshModelPathHints();
+  await refreshHotkeysFromConfig();
 
   console.log("Settings saved:", settings);
 }
 
-async function handleResetSettings(): Promise<void> {
-  if (confirm("Reset all settings to defaults? This cannot be undone.")) {
-    await resetSettings();
-    await loadSettingsIntoUI();
-    console.log("Settings reset to defaults");
+function scheduleAutoSave() {
+  if (autoSaveTimeoutId !== undefined) {
+    window.clearTimeout(autoSaveTimeoutId);
   }
+
+  autoSaveTimeoutId = window.setTimeout(() => {
+    persistSettingsFromUI();
+  }, AUTO_SAVE_DEBOUNCE_MS);
 }
 
-export function setupSettingsListeners(): void {
-  loadSettingsIntoUI();
+async function handleResetSettings(): Promise<void> {
+  if (!confirm("Reset all settings to defaults? This cannot be undone."))
+    return;
+  await resetSettings();
+  await loadSettingsIntoUI();
+  await refreshModelPathHints();
+  await refreshModelsList();
+  await refreshHotkeysFromConfig();
+  console.log("Settings reset to defaults");
+}
 
-  if (elements.saveSettingsBtn) {
-    elements.saveSettingsBtn.addEventListener("click", handleSaveSettings);
-  }
+export function setupSettingsListeners() {
+  loadSettingsIntoUI().then(() => {
+    refreshModelPathHints();
+  });
+
+  setupHotkeyEditorListeners();
+
   if (elements.resetSettingsBtn) {
     elements.resetSettingsBtn.addEventListener("click", handleResetSettings);
   }
+
+  // TODO: might be better to dynamically retrieve all inputs here instead of hardcoding them
+  const autoSaveInputs: Array<HTMLInputElement | HTMLTextAreaElement | null> = [
+    elements.minSummaryLengthInput,
+    elements.maxTokensInput,
+    elements.temperatureInput,
+    elements.topPInput,
+    elements.topKInput,
+    elements.repeatPenaltyInput,
+    elements.transcriptionModelPathInput,
+    elements.summarizationModelPathInput,
+    elements.customPromptInput
+  ];
+
+  autoSaveInputs.forEach((input) => {
+    input?.addEventListener("input", scheduleAutoSave);
+    input?.addEventListener("change", scheduleAutoSave);
+  });
+
+  setupSettingsNavigation();
+}
+
+function setupSettingsNavigation() {
+  const navItems =
+    document.querySelectorAll<HTMLButtonElement>(".settings-nav-item");
+
+  navItems.forEach((item) => {
+    item.addEventListener("click", () => {
+      const sectionId = item.getAttribute("data-settings-section");
+      if (!sectionId) return;
+
+      navItems.forEach((nav) => nav.classList.remove("active"));
+      item.classList.add("active");
+
+      const panels =
+        document.querySelectorAll<HTMLDivElement>(".settings-panel");
+      panels.forEach((panel) => panel.classList.remove("active"));
+
+      const targetPanel = document.getElementById(`settingsPanel-${sectionId}`);
+      targetPanel?.classList.add("active");
+    });
+  });
 }

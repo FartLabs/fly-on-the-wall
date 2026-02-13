@@ -5,484 +5,648 @@
     <title>Fly on the Wall</title>
   </head>
   <body>
-    <div class="sidebar-trigger" id="sidebarTrigger">
-      <div class="sidebar-handle">||</div>
-    </div>
-    <div class="sidebar-container" id="sidebar">
-      <div class="model-management-card" id="modelManagementCard">
-        <div class="card-header">
-          <h2>AI Models</h2>
-        </div>
-
-        <div class="models-list" id="modelsList"></div>
-
-        <div class="prompt-customization-section">
-          <h3 class="prompt-section-title">Summarization Prompt</h3>
-          <p class="prompt-section-description">
-            Customize how AI summarizes your meetings. Leave empty to use
-            default.
-          </p>
-          <textarea
-            id="customPromptInput"
-            class="custom-prompt-input"
-            placeholder="Enter custom prompt or leave empty for default..."
-            rows="6"
-          ></textarea>
-          <div class="prompt-actions">
-            <button class="action-btn" id="savePromptBtn">Save Prompt</button>
-            <button class="action-btn secondary" id="resetPromptBtn">
-              Reset to Default
-            </button>
-            <button class="action-btn secondary" id="viewDefaultPromptBtn">
-              View Default
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="right-panel-trigger" id="rightPanelTrigger">
-      <div class="right-panel-handle">||</div>
-    </div>
-    <div class="right-panel-container" id="rightPanel">
-      <h2 class="right-panel-title">Transcription & Summary</h2>
-
-      <div
-        class="right-panel-transcription-card hidden"
-        id="rightPanelTranscriptionCard"
-      >
-        <div class="card-header">
-          <h2>Transcription</h2>
-        </div>
-
-        <div
-          class="transcription-progress hidden"
-          id="rightPanelTranscriptionProgress"
-        >
-          <div class="progress-bar">
-            <div class="progress-fill" id="rightPanelProgressFill"></div>
-          </div>
-          <p class="progress-text" id="rightPanelProgressText">
-            Loading model...
-          </p>
-        </div>
-
-        <div
-          class="transcription-result hidden"
-          id="rightPanelTranscriptionResult"
-        >
-          <div
-            class="transcription-text"
-            id="rightPanelTranscriptionText"
-          ></div>
-          <div class="transcription-actions">
-            <button
-              class="action-btn"
-              id="rightPanelCopyTranscription"
-              title="Copy to clipboard"
-            >
-              Copy
-            </button>
-          </div>
-        </div>
-
-        <div class="transcription-empty" id="rightPanelTranscriptionEmpty">
-          <p>Record a meeting to see the transcription here.</p>
-        </div>
-      </div>
-
-      <div class="right-panel-summary-card hidden" id="rightPanelSummaryCard">
-        <div class="card-header">
-          <h2>Summary</h2>
-        </div>
-
-        <div class="summary-progress hidden" id="rightPanelSummaryProgress">
-          <div class="progress-bar">
-            <div class="progress-fill" id="rightPanelSummaryProgressFill"></div>
-          </div>
-          <p class="progress-text" id="rightPanelSummaryProgressText">
-            Generating summary...
-          </p>
-        </div>
-
-        <div class="summary-result hidden" id="rightPanelSummaryResult">
-          <div class="summary-text" id="rightPanelSummaryText"></div>
-          <div class="summary-actions">
-            <button
-              class="action-btn"
-              id="rightPanelCopySummary"
-              title="Copy summary"
-            >
-              Copy
-            </button>
-          </div>
-        </div>
-
-        <div class="summary-empty hidden" id="rightPanelSummaryEmpty">
-          <p>Summary will appear here after transcription.</p>
-        </div>
-      </div>
-      <div class="right-panel-save-wrapper">
+    <!-- Left Sidebar -->
+    <aside class="left-sidebar" id="leftSidebar">
+      <div class="sidebar-header">
+        <h2 class="sidebar-title">Fly on the Wall</h2>
         <button
-          class="action-btn primary hidden"
-          id="rightPanelSaveNote"
-          title="Save transcription + summary as note"
+          class="sidebar-collapse-btn"
+          id="sidebarCollapseBtn"
+          title="Collapse sidebar"
         >
-          Save Note
+          ◀
         </button>
       </div>
-    </div>
-    <div class="container" id="mainPage">
-      <div class="header-with-nav">
-        <div>
-          <h1>Fly on the Wall</h1>
-          <p class="subtitle">Meeting Recorder</p>
-        </div>
-        <div class="nav-buttons">
-          <button
-            class="nav-btn"
-            id="viewSettingsBtn"
-            title="Configure settings"
-          >
-            <span>Settings</span>
-          </button>
-          <button
-            class="nav-btn"
-            id="viewHistoryBtn"
-            title="View past recordings"
-          >
-            <span>History</span>
-          </button>
-        </div>
-      </div>
 
-      <div class="recorder-card">
-        <div class="status-indicator" id="statusIndicator">
-          <span class="status-dot"></span>
-          <span class="status-text" id="statusText">Ready to record</span>
-        </div>
-
-        <div class="timer" id="timer">00:00:00</div>
-
-        <button class="record-btn" id="recordBtn">
-          <span class="btn-icon" id="btnIcon">⏺</span>
-          <span class="btn-text" id="btnText">Start Recording</span>
+      <nav class="sidebar-nav">
+        <button
+          class="sidebar-nav-item active"
+          id="sidebarNavRecorder"
+          data-page="main"
+          title="Recorder"
+        >
+          <span class="sidebar-nav-icon">⏺</span>
+          <span class="sidebar-nav-label">Recorder</span>
         </button>
-
-        <div class="recording-controls hidden" id="recordingControls">
-          <button class="control-btn pause-btn" id="pauseBtn">
-            <span class="btn-icon">⏸</span>
-            <span>Pause</span>
-          </button>
-          <button class="control-btn resume-btn hidden" id="resumeBtn">
-            <span class="btn-icon">▶</span>
-            <span>Resume</span>
-          </button>
-          <button class="control-btn stop-btn" id="stopBtn">
-            <span class="btn-icon">⏹</span>
-            <span>Stop</span>
-          </button>
-        </div>
-
-        <div class="import-divider">
-          <span class="import-divider-text">or</span>
-        </div>
-
-        <button class="import-btn" id="importAudioBtn">
-          <span class="btn-text">Import Audio Files</span>
+        <button
+          class="sidebar-nav-item"
+          id="sidebarNavSettings"
+          data-action="settings"
+          title="Settings"
+        >
+          <span class="sidebar-nav-icon">⚙️</span>
+          <span class="sidebar-nav-label">Settings</span>
         </button>
+      </nav>
 
-        <div class="import-queue hidden" id="importQueue">
-          <div class="import-queue-header">
-            <h3>Import Queue</h3>
-            <span class="import-queue-count" id="importQueueCount"></span>
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-files-section" id="sidebarFilesSection">
+        <div class="sidebar-files-header">
+          <div class="sidebar-files-title-wrap">
+            <h3 class="sidebar-files-title">Notes</h3>
+            <span
+              class="sidebar-selected-count hidden"
+              id="sidebarSelectedCount"
+            >
+              0 selected
+            </span>
           </div>
-          <div class="import-queue-list" id="importQueueList"></div>
-        </div>
-      </div>
-
-      <div class="audio-devices-card">
-        <div class="card-header">
-          <h2>Audio Sources</h2>
           <button
-            class="refresh-btn"
-            id="refreshDevices"
-            title="Refresh devices"
+            class="sidebar-refresh-btn"
+            id="sidebarRefreshBtn"
+            title="Refresh notes"
           >
             ↻
           </button>
         </div>
 
-        <div class="system-audio-section">
-          <div class="device-item system-audio" id="systemAudioItem">
-            <div class="device-info">
-              <span class="device-icon">🖥️</span>
-              <div class="device-details">
-                <div class="device-name">System Audio</div>
-                <div class="device-type">Desktop / Meeting Audio</div>
-              </div>
+        <div class="sidebar-search">
+          <input
+            type="text"
+            class="sidebar-search-input"
+            id="sidebarSearchInput"
+            placeholder="Search notes..."
+          />
+        </div>
+
+        <div class="sidebar-file-tree" id="sidebarFileTree">
+          <p class="sidebar-loading">Loading...</p>
+        </div>
+      </div>
+
+      <div
+        class="sidebar-resize-handle"
+        id="sidebarResizeHandle"
+        title="Resize sidebar"
+      ></div>
+    </aside>
+
+    <div class="app-content" id="appContent">
+      <div class="container" id="mainPage">
+        <!-- <div class="header-with-nav">
+          <div>
+            <h1>Fly on the Wall</h1>
+            <p class="subtitle">Meeting Recorder</p>
+          </div>
+        </div> -->
+
+        <div class="recorder-card">
+          <div class="status-indicator" id="statusIndicator">
+            <span class="status-dot"></span>
+            <span class="status-text" id="statusText">Ready to record</span>
+          </div>
+
+          <div class="timer" id="timer">00:00:00</div>
+
+          <button class="record-btn" id="recordBtn">
+            <span class="btn-icon" id="btnIcon">⏺</span>
+            <span class="btn-text" id="btnText">Start Recording</span>
+          </button>
+
+          <div class="recording-controls hidden" id="recordingControls">
+            <button class="control-btn pause-btn" id="pauseBtn">
+              <span class="btn-icon">⏸</span>
+              <span>Pause</span>
+            </button>
+            <button class="control-btn resume-btn hidden" id="resumeBtn">
+              <span class="btn-icon">▶</span>
+              <span>Resume</span>
+            </button>
+            <button class="control-btn stop-btn" id="stopBtn">
+              <span class="btn-icon">⏹</span>
+              <span>Stop</span>
+            </button>
+          </div>
+
+          <div class="import-divider">
+            <span class="import-divider-text">or</span>
+          </div>
+
+          <button class="import-btn" id="importAudioBtn">
+            <span class="btn-text">Import Audio Files</span>
+          </button>
+
+          <div class="import-queue hidden" id="importQueue">
+            <div class="import-queue-header">
+              <h3>Import Queue</h3>
+              <span class="import-queue-count" id="importQueueCount"></span>
             </div>
-            <label class="mute-toggle" title="Enable system audio">
-              <input type="checkbox" id="systemAudioToggle" checked />
-              <span class="mute-slider"></span>
-            </label>
+            <div class="import-queue-list" id="importQueueList"></div>
           </div>
         </div>
 
-        <div class="section-divider">Microphones (Optional)</div>
-
-        <div class="devices-list" id="devicesList">
-          <p class="loading-text">Loading audio devices...</p>
+        <div class="participants-card">
+          <div class="card-header">
+            <h2>Meeting Participants</h2>
+          </div>
+          <p class="participants-description">
+            Add participant names for use in summarization prompts via
+            <code>{participants}</code>. See Settings -> Summarization for
+            prompt customization.
+          </p>
+          <textarea
+            id="meetingParticipantsInput"
+            class="participants-input"
+            rows="3"
+            placeholder="e.g. Alice, Bob, Charlie"
+          ></textarea>
+          <p class="participants-hint">
+            Use commas, semicolons, or new lines to separate names.
+          </p>
         </div>
-      </div>
-    </div>
 
-    <div class="container hidden" id="historyPage">
-      <div class="header-with-nav">
-        <div>
-          <h1>History</h1>
-          <p class="subtitle">Past Transcriptions & Summaries</p>
-        </div>
-        <button class="nav-btn" id="backToMainBtn" title="Back to recorder">
-          <span>Recorder</span>
-        </button>
-      </div>
-
-      <div class="history-card">
-        <div class="card-header">
-          <h2>Saved Notes</h2>
-          <div class="history-header-actions">
+        <div class="audio-devices-card">
+          <div class="card-header">
+            <h2>Audio Sources</h2>
             <button
               class="refresh-btn"
-              id="refreshHistoryBtn"
-              title="Refresh list"
+              id="refreshDevices"
+              title="Refresh devices"
             >
               ↻
             </button>
           </div>
-        </div>
 
-        <div
-          class="batch-operations-toolbar hidden"
-          id="batchOperationsToolbar"
-        >
-          <div class="batch-selection-info">
-            <label class="batch-select-all">
-              <input type="checkbox" id="selectAllNotesCheckbox" />
-              <span>Select All</span>
-            </label>
-            <span class="selected-count" id="selectedCount">0 selected</span>
+          <div class="system-audio-section">
+            <div class="device-item system-audio" id="systemAudioItem">
+              <div class="device-info">
+                <span class="device-icon">🖥️</span>
+                <div class="device-details">
+                  <div class="device-name">System Audio</div>
+                  <div class="device-type">Desktop / Meeting Audio</div>
+                </div>
+              </div>
+              <label class="mute-toggle" title="Enable system audio">
+                <input type="checkbox" id="systemAudioToggle" checked />
+                <span class="mute-slider"></span>
+              </label>
+            </div>
           </div>
-          <div class="batch-actions">
-            <button
-              class="action-btn danger"
-              id="deleteSelectedBtn"
-              title="Delete selected notes"
-            >
-              Delete Selected
-            </button>
-          </div>
-        </div>
 
-        <div class="history-list" id="historyList">
-          <p class="loading-text">Loading history...</p>
+          <div class="section-divider">Microphones (Optional)</div>
+
+          <div class="devices-list" id="devicesList">
+            <p class="loading-text">Loading audio devices...</p>
+          </div>
         </div>
       </div>
 
-      <div class="note-viewer-card hidden" id="noteViewerCard">
-        <div class="card-header">
-          <h2 id="noteViewerTitle">Note</h2>
-          <div class="viewer-actions">
-            <button
-              class="action-btn"
-              id="exportNoteBtn"
-              title="Export this note"
-            >
-              Export
-            </button>
-            <button
-              class="action-btn delete-btn"
-              id="deleteNoteBtn"
-              title="Delete this note"
-            >
-              Delete
-            </button>
-            <button class="close-btn" id="closeNoteBtn" title="Close">✕</button>
-          </div>
-        </div>
-        <div class="note-content" id="noteContent">
-          <div class="note-recording-player hidden" id="noteRecordingPlayer">
-            <div class="recording-header">
-              <h4>Original Recording</h4>
+      <div class="container hidden" id="noteViewPage">
+        <div class="note-view-wrapper">
+          <div class="note-view-header">
+            <h2 class="note-view-title" id="noteViewTitle">Note</h2>
+            <div class="note-view-actions">
+              <button
+                class="action-btn"
+                id="noteViewExportBtn"
+                title="Export this note"
+              >
+                Export
+              </button>
+              <button
+                class="action-btn delete-btn"
+                id="noteViewDeleteBtn"
+                title="Delete this note"
+              >
+                Delete
+              </button>
             </div>
+          </div>
+
+          <div class="note-view-recording hidden" id="noteViewRecordingPlayer">
+            <div class="recording-header"><h4>Recording</h4></div>
             <div
               class="note-original-filename hidden"
-              id="noteOriginalFilename"
+              id="noteViewOriginalFilename"
             ></div>
-            <audio controls id="noteAudioPlayer" class="note-audio">
+            <audio controls id="noteViewAudioPlayer" class="note-audio">
               Your browser does not support the audio element.
             </audio>
           </div>
-          <div class="note-sections" id="noteSections">
-            <section class="note-section transcription-section">
+
+          <div class="note-view-body">
+            <section class="note-view-section">
               <div class="section-header">
                 <h3 class="note-section-title">Transcription</h3>
                 <div class="section-actions">
                   <button
                     class="action-btn"
-                    id="copyTranscriptionBtn"
+                    id="noteViewCopyTranscription"
                     title="Copy transcription"
                   >
                     Copy
                   </button>
                 </div>
               </div>
-              <div class="note-section-body" id="noteTranscription"></div>
+              <div
+                class="note-section-body editable-body"
+                id="noteViewTranscription"
+                contenteditable="true"
+              ></div>
             </section>
-            <section class="note-section summary-section">
+            <section class="note-view-section">
               <div class="section-header">
                 <h3 class="note-section-title">Summary</h3>
                 <div class="section-actions">
                   <button
                     class="action-btn"
-                    id="copySummaryBtn"
+                    id="noteViewCopySummary"
                     title="Copy summary"
                   >
                     Copy
                   </button>
                 </div>
               </div>
-              <div class="note-section-body" id="noteSummary"></div>
+              <div
+                class="note-section-body editable-body"
+                id="noteViewSummary"
+                contenteditable="true"
+              ></div>
             </section>
           </div>
         </div>
       </div>
+
+      <!-- Sidebar context menu -->
+      <div class="sidebar-context-menu hidden" id="sidebarContextMenu">
+        <button class="context-menu-item" id="ctxRenameNote">Rename</button>
+        <button class="context-menu-item danger" id="ctxDeleteNote">
+          Delete
+        </button>
+      </div>
     </div>
+    <!-- end .app-content -->
+
+    <aside class="right-sidebar collapsed" id="rightSidebar">
+      <div class="right-sidebar-header">
+        <button
+          class="right-sidebar-collapse-btn"
+          id="rightSidebarCollapseBtn"
+          title="Collapse sidebar"
+        >
+          ▶
+        </button>
+        <h2 class="right-sidebar-title">Transcription & Summarization</h2>
+      </div>
+
+      <div class="right-sidebar-content" id="rightSidebarContent">
+        <div class="right-sidebar-empty" id="rightSidebarEmpty">
+          <p>
+            Start a recording or import audio to see processing status here.
+          </p>
+        </div>
+
+        <div
+          class="right-panel-transcription-card hidden"
+          id="rightPanelTranscriptionCard"
+        >
+          <div class="card-header">
+            <h2>Transcription</h2>
+          </div>
+
+          <div
+            class="transcription-progress hidden"
+            id="rightPanelTranscriptionProgress"
+          >
+            <div class="progress-bar">
+              <div class="progress-fill" id="rightPanelProgressFill"></div>
+            </div>
+            <p class="progress-text" id="rightPanelProgressText">
+              Loading model...
+            </p>
+          </div>
+
+          <div
+            class="transcription-result hidden"
+            id="rightPanelTranscriptionResult"
+          >
+            <div
+              class="transcription-text"
+              id="rightPanelTranscriptionText"
+            ></div>
+            <div class="transcription-actions">
+              <button
+                class="action-btn"
+                id="rightPanelCopyTranscription"
+                title="Copy to clipboard"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+
+          <div class="transcription-empty" id="rightPanelTranscriptionEmpty">
+            <p>Record a meeting to see the transcription here.</p>
+          </div>
+        </div>
+
+        <div class="right-panel-summary-card hidden" id="rightPanelSummaryCard">
+          <div class="card-header">
+            <h2>Summary</h2>
+          </div>
+
+          <div class="summary-progress hidden" id="rightPanelSummaryProgress">
+            <div class="progress-bar">
+              <div
+                class="progress-fill"
+                id="rightPanelSummaryProgressFill"
+              ></div>
+            </div>
+            <p class="progress-text" id="rightPanelSummaryProgressText">
+              Generating summary...
+            </p>
+          </div>
+
+          <div class="summary-result hidden" id="rightPanelSummaryResult">
+            <div class="summary-text" id="rightPanelSummaryText"></div>
+            <div class="summary-actions">
+              <button
+                class="action-btn"
+                id="rightPanelCopySummary"
+                title="Copy summary"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+
+          <div class="summary-empty hidden" id="rightPanelSummaryEmpty">
+            <p>Summary will appear here after transcription.</p>
+          </div>
+        </div>
+
+        <div class="right-panel-save-wrapper">
+          <button
+            class="action-btn primary hidden"
+            id="rightPanelSaveNote"
+            title="Save transcription + summary as note"
+          >
+            Save Note
+          </button>
+        </div>
+      </div>
+
+      <div
+        class="right-sidebar-resize-handle"
+        id="rightSidebarResizeHandle"
+        title="Resize right sidebar"
+      ></div>
+    </aside>
 
     <div class="modal-overlay hidden" id="settingsModal">
-      <div class="modal-container">
+      <div class="modal-container settings-modal-container">
         <div class="modal-header">
           <div>
             <h2>Settings</h2>
-            <!-- <p class="modal-subtitle">Configure Application Settings</p> -->
           </div>
           <button class="modal-close-btn" id="closeSettingsModal" title="Close">
             ✕
           </button>
         </div>
 
-        <div class="modal-content">
-          <div class="settings-section">
-            <h3 class="settings-section-title">Summarization Settings</h3>
-
-            <div class="settings-group">
-              <label class="settings-label" for="minSummaryLengthInput">
-                Minimum Text Length
-                <span class="settings-hint"
-                  >Skip summarization for short transcripts</span
+        <div class="settings-layout">
+          <nav class="settings-nav">
+            <ul class="settings-nav-list">
+              <li>
+                <button
+                  class="settings-nav-item"
+                  data-settings-section="transcription"
                 >
-              </label>
-              <input
-                type="number"
-                id="minSummaryLengthInput"
-                class="settings-input"
-                min="0"
-                max="1000"
-                step="10"
-                value="20"
-              />
-            </div>
-
-            <div class="settings-group">
-              <label class="settings-label" for="maxTokensInput">
-                Max Tokens
-                <span class="settings-hint"
-                  >Maximum output length (128-4096)</span
+                  <span class="settings-nav-icon">🎙️</span>
+                  <span>Transcription</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  class="settings-nav-item"
+                  data-settings-section="hotkeys"
                 >
-              </label>
-              <input
-                type="number"
-                id="maxTokensInput"
-                class="settings-input"
-                min="128"
-                max="4096"
-                step="64"
-                value="1024"
-              />
-            </div>
-
-            <div class="settings-group">
-              <label class="settings-label" for="temperatureInput">
-                Temperature
-                <span class="settings-hint">Creativity level (0.0-2.0)</span>
-              </label>
-              <input
-                type="number"
-                id="temperatureInput"
-                class="settings-input"
-                min="0"
-                max="2"
-                step="0.1"
-                value="0.7"
-              />
-            </div>
-
-            <div class="settings-group">
-              <label class="settings-label" for="topPInput">
-                Top P
-                <span class="settings-hint">Nucleus sampling (0.0-1.0)</span>
-              </label>
-              <input
-                type="number"
-                id="topPInput"
-                class="settings-input"
-                min="0"
-                max="1"
-                step="0.05"
-                value="0.9"
-              />
-            </div>
-
-            <div class="settings-group">
-              <label class="settings-label" for="topKInput">
-                Top K
-                <span class="settings-hint"
-                  >Token selection limit (0-100, 0 = disabled)</span
+                  <span class="settings-nav-icon">⌨️</span>
+                  <span>Hotkeys</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  class="settings-nav-item active"
+                  data-settings-section="summarization"
                 >
-              </label>
-              <input
-                type="number"
-                id="topKInput"
-                class="settings-input"
-                min="0"
-                max="100"
-                step="1"
-                value="40"
-              />
+                  <span class="settings-nav-icon">📝</span>
+                  <span>Summarization</span>
+                </button>
+              </li>
+            </ul>
+          </nav>
+
+          <div class="settings-panels">
+            <div class="settings-panel active" id="settingsPanel-transcription">
+              <h3 class="settings-panel-title">Transcription</h3>
+              <div class="settings-group">
+                <label class="settings-label" for="transcriptionModelPathInput">
+                  Models Path
+                  <span class="settings-hint" id="transcriptionModelPathHint">
+                    Directory used to store Whisper model files.
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  id="transcriptionModelPathInput"
+                  class="settings-input"
+                  placeholder="Leave empty to use the default app path"
+                />
+              </div>
+
+              <div
+                class="settings-model-manager settings-transcription-manager"
+              >
+                <h3 class="settings-section-title">Model Management</h3>
+                <p class="settings-panel-description">
+                  Download and select Whisper models for transcription.
+                </p>
+                <div id="transcriptionModelsContainer"></div>
+              </div>
             </div>
 
-            <div class="settings-group">
-              <label class="settings-label" for="repeatPenaltyInput">
-                Repeat Penalty
-                <span class="settings-hint">Reduce repetition (1.0-2.0)</span>
-              </label>
-              <input
-                type="number"
-                id="repeatPenaltyInput"
-                class="settings-input"
-                min="1"
-                max="2"
-                step="0.05"
-                value="1.1"
-              />
+            <div class="settings-panel" id="settingsPanel-hotkeys">
+              <h3 class="settings-panel-title">Hotkeys</h3>
+              <div class="settings-group">
+                <label class="settings-label"> Open Settings </label>
+                <div class="hotkey-bindings-control">
+                  <div
+                    id="hotkeyOpenSettingsList"
+                    class="hotkey-bindings-list"
+                  ></div>
+                  <button
+                    type="button"
+                    id="hotkeyOpenSettingsAddBtn"
+                    class="hotkey-add-btn"
+                    title="Add hotkey"
+                    aria-label="Add hotkey"
+                  >
+                    +
+                  </button>
+                </div>
+                <span class="settings-hint" id="hotkeyCaptureHint"
+                  >Ready. Click + to record a new hotkey.</span
+                >
+              </div>
             </div>
 
-            <div class="settings-actions">
-              <button class="action-btn" id="saveSettingsBtn">
-                Save Settings
-              </button>
-              <button class="action-btn secondary" id="resetSettingsBtn">
-                Reset to Defaults
-              </button>
+            <div class="settings-panel" id="settingsPanel-summarization">
+              <h3 class="settings-panel-title">Summarization</h3>
+              <div class="prompt-customization-section">
+                <h3 class="prompt-section-title">Prompt</h3>
+                <p class="prompt-section-description">
+                  Customize how AI summarizes your meetings. The following
+                  variables can be used: {transcript} and {participants}.
+                  {transcript} is the full transcription text, and
+                  {participants} is a list of meeting participants (if
+                  available).
+                </p>
+                <textarea
+                  id="customPromptInput"
+                  class="custom-prompt-input"
+                  placeholder="Some cool prompt here."
+                  rows="6"
+                ></textarea>
+              </div>
+
+              <div class="settings-model-manager">
+                <div class="settings-group">
+                  <label
+                    class="settings-label"
+                    for="summarizationModelPathInput"
+                  >
+                    Models Path
+                    <span class="settings-hint" id="summarizationModelPathHint">
+                      Directory used to store GGUF summarization models.
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    id="summarizationModelPathInput"
+                    class="settings-input"
+                    placeholder="Leave empty to use the default app path"
+                  />
+                </div>
+
+                <h3 class="settings-section-title">Model Management</h3>
+                <p class="settings-panel-description">
+                  Manage GGUF models used for summarization.
+                </p>
+
+                <div id="summarizationModelsContainer"></div>
+              </div>
+
+              <!-- NOTE: would it be possible to use values from shared/config.ts? would like to use that file as single source of truth?  -->
+
+              <div class="settings-group">
+                <label class="settings-label" for="minSummaryLengthInput">
+                  Minimum Text Length
+                  <span class="settings-hint"
+                    >Skip summarization for short transcripts (0-1000)</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="minSummaryLengthInput"
+                  class="settings-input"
+                  min="0"
+                  max="1000"
+                  step="10"
+                  value="20"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label class="settings-label" for="maxTokensInput">
+                  Max Tokens
+                  <span class="settings-hint"
+                    >Maximum output length (128-4096)</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="maxTokensInput"
+                  class="settings-input"
+                  min="128"
+                  max="4096"
+                  step="64"
+                  value="1024"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label class="settings-label" for="temperatureInput">
+                  Temperature
+                  <span class="settings-hint">Creativity level (0.0-2.0)</span>
+                </label>
+                <input
+                  type="number"
+                  id="temperatureInput"
+                  class="settings-input"
+                  min="0"
+                  max="2"
+                  step="0.1"
+                  value="0.7"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label class="settings-label" for="topPInput">
+                  Top P
+                  <span class="settings-hint">Nucleus sampling (0.0-1.0)</span>
+                </label>
+                <input
+                  type="number"
+                  id="topPInput"
+                  class="settings-input"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value="0.9"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label class="settings-label" for="topKInput">
+                  Top K
+                  <span class="settings-hint"
+                    >Token selection limit (0-100, 0 = disabled)</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="topKInput"
+                  class="settings-input"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value="40"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label class="settings-label" for="repeatPenaltyInput">
+                  Repeat Penalty
+                  <span class="settings-hint">Reduce repetition (1.0-2.0)</span>
+                </label>
+                <input
+                  type="number"
+                  id="repeatPenaltyInput"
+                  class="settings-input"
+                  min="1"
+                  max="2"
+                  step="0.05"
+                  value="1.1"
+                />
+              </div>
+
+              <div class="settings-actions">
+                <button class="action-btn secondary" id="resetSettingsBtn">
+                  Reset to Defaults
+                </button>
+              </div>
             </div>
           </div>
         </div>

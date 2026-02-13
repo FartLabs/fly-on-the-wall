@@ -24,6 +24,10 @@ const electronAPI: IElectronAPI = {
 
   getModelsDir: () => ipcRenderer.invoke("get-models-dir"),
   getModelsCacheDir: () => ipcRenderer.invoke("get-models-cache-dir"),
+  getTranscriptionModelsDir: () =>
+    ipcRenderer.invoke("get-transcription-models-dir"),
+  getSummarizationModelsDir: () =>
+    ipcRenderer.invoke("get-summarization-models-dir"),
   openModelsFolder: () => ipcRenderer.invoke("open-models-folder"),
   listGgufModels: () => ipcRenderer.invoke("list-gguf-models"),
   importGgufModel: (data: { sourcePath: string; copyMode?: "copy" | "move" }) =>

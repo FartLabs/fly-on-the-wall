@@ -1,3 +1,5 @@
+import fs from "fs";
+
 export function formatSecondsToTime(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -38,14 +40,6 @@ export function generateDateLabel(date: Date, locale = "en-US"): string {
   });
 }
 
-export function convertToLocaleTime(date: Date, locale = "en-US"): string {
-  return date.toLocaleTimeString(locale, {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true
-  });
-}
-
 export function escapeHtml(unsafe: string): string {
   return unsafe
     .replace(/&/g, "&amp;")
@@ -74,4 +68,11 @@ export function formatBytes(bytes: number): string {
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
+}
+
+export function ensureDir(dirPath: string): string {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+  return dirPath;
 }

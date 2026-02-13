@@ -76,30 +76,26 @@ export const elements = {
     "rightPanelCopySummary"
   ) as HTMLButtonElement,
 
-  modelsList: document.getElementById("modelsList") as HTMLDivElement,
-
   customPromptInput: document.getElementById(
     "customPromptInput"
   ) as HTMLTextAreaElement,
-  savePromptBtn: document.getElementById("savePromptBtn") as HTMLButtonElement,
-  resetPromptBtn: document.getElementById(
-    "resetPromptBtn"
-  ) as HTMLButtonElement,
-  viewDefaultPromptBtn: document.getElementById(
-    "viewDefaultPromptBtn"
-  ) as HTMLButtonElement,
 
-  sidebar: document.getElementById("sidebar") as HTMLDivElement,
-  sidebarTrigger: document.getElementById("sidebarTrigger") as HTMLDivElement,
-
-  rightPanel: document.getElementById("rightPanel") as HTMLDivElement,
-  rightPanelTrigger: document.getElementById(
-    "rightPanelTrigger"
+  rightSidebar: document.getElementById("rightSidebar") as HTMLElement,
+  rightSidebarCollapseBtn: document.getElementById(
+    "rightSidebarCollapseBtn"
+  ) as HTMLButtonElement,
+  rightSidebarResizeHandle: document.getElementById(
+    "rightSidebarResizeHandle"
+  ) as HTMLDivElement,
+  rightSidebarContent: document.getElementById(
+    "rightSidebarContent"
+  ) as HTMLDivElement,
+  rightSidebarEmpty: document.getElementById(
+    "rightSidebarEmpty"
   ) as HTMLDivElement,
   exportNoteBtn: document.getElementById("exportNoteBtn") as HTMLButtonElement,
 
   mainPage: document.getElementById("mainPage") as HTMLDivElement,
-  historyPage: document.getElementById("historyPage") as HTMLDivElement,
 
   settingsModal: document.getElementById("settingsModal") as HTMLDivElement,
   closeSettingsModal: document.getElementById(
@@ -140,16 +136,100 @@ export const elements = {
   repeatPenaltyInput: document.getElementById(
     "repeatPenaltyInput"
   ) as HTMLInputElement,
-  saveSettingsBtn: document.getElementById(
-    "saveSettingsBtn"
+  transcriptionModelPathInput: document.getElementById(
+    "transcriptionModelPathInput"
+  ) as HTMLInputElement,
+  hotkeyOpenSettingsList: document.getElementById(
+    "hotkeyOpenSettingsList"
+  ) as HTMLDivElement,
+  hotkeyOpenSettingsAddBtn: document.getElementById(
+    "hotkeyOpenSettingsAddBtn"
   ) as HTMLButtonElement,
+  hotkeyCaptureHint: document.getElementById(
+    "hotkeyCaptureHint"
+  ) as HTMLSpanElement,
+  summarizationModelPathInput: document.getElementById(
+    "summarizationModelPathInput"
+  ) as HTMLInputElement,
   resetSettingsBtn: document.getElementById(
     "resetSettingsBtn"
   ) as HTMLButtonElement,
+
+  transcriptionModelPathHint: document.getElementById(
+    "transcriptionModelPathHint"
+  ) as HTMLSpanElement,
+  summarizationModelPathHint: document.getElementById(
+    "summarizationModelPathHint"
+  ) as HTMLSpanElement,
 
   importQueue: document.getElementById("importQueue") as HTMLDivElement,
   importQueueList: document.getElementById("importQueueList") as HTMLDivElement,
   importQueueCount: document.getElementById(
     "importQueueCount"
-  ) as HTMLSpanElement
+  ) as HTMLSpanElement,
+
+  meetingParticipantsInput: document.getElementById(
+    "meetingParticipantsInput"
+  ) as HTMLTextAreaElement,
+
+  leftSidebar: document.getElementById("leftSidebar") as HTMLElement,
+  appContent: document.getElementById("appContent") as HTMLDivElement,
+  sidebarCollapseBtn: document.getElementById(
+    "sidebarCollapseBtn"
+  ) as HTMLButtonElement,
+  sidebarResizeHandle: document.getElementById(
+    "sidebarResizeHandle"
+  ) as HTMLDivElement,
+  sidebarNavRecorder: document.getElementById(
+    "sidebarNavRecorder"
+  ) as HTMLButtonElement,
+  sidebarNavSettings: document.getElementById(
+    "sidebarNavSettings"
+  ) as HTMLButtonElement,
+  sidebarRefreshBtn: document.getElementById(
+    "sidebarRefreshBtn"
+  ) as HTMLButtonElement,
+  sidebarSelectedCount: document.getElementById(
+    "sidebarSelectedCount"
+  ) as HTMLSpanElement,
+  sidebarSearchInput: document.getElementById(
+    "sidebarSearchInput"
+  ) as HTMLInputElement,
+  sidebarFileTree: document.getElementById("sidebarFileTree") as HTMLDivElement,
+  sidebarFilesSection: document.getElementById(
+    "sidebarFilesSection"
+  ) as HTMLDivElement,
+  sidebarContextMenu: document.getElementById(
+    "sidebarContextMenu"
+  ) as HTMLDivElement,
+  ctxRenameNote: document.getElementById("ctxRenameNote") as HTMLButtonElement,
+  ctxDeleteNote: document.getElementById("ctxDeleteNote") as HTMLButtonElement,
+
+  noteViewPage: document.getElementById("noteViewPage") as HTMLDivElement,
+  noteViewTitle: document.getElementById("noteViewTitle") as HTMLHeadingElement,
+  noteViewTranscription: document.getElementById(
+    "noteViewTranscription"
+  ) as HTMLDivElement,
+  noteViewSummary: document.getElementById("noteViewSummary") as HTMLDivElement,
+  noteViewRecordingPlayer: document.getElementById(
+    "noteViewRecordingPlayer"
+  ) as HTMLDivElement,
+  noteViewAudioPlayer: document.getElementById(
+    "noteViewAudioPlayer"
+  ) as HTMLAudioElement,
+  noteViewOriginalFilename: document.getElementById(
+    "noteViewOriginalFilename"
+  ) as HTMLDivElement,
+  noteViewExportBtn: document.getElementById(
+    "noteViewExportBtn"
+  ) as HTMLButtonElement,
+  noteViewDeleteBtn: document.getElementById(
+    "noteViewDeleteBtn"
+  ) as HTMLButtonElement,
+  noteViewCopyTranscription: document.getElementById(
+    "noteViewCopyTranscription"
+  ) as HTMLButtonElement,
+  noteViewCopySummary: document.getElementById(
+    "noteViewCopySummary"
+  ) as HTMLButtonElement
 };

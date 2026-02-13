@@ -9,6 +9,10 @@ import {
   getSelectedTranscriptionModel,
   setTranscriptionInProgress
 } from "./models";
+import {
+  autoOpenForRecording,
+  showRightSidebarProcessing
+} from "./rightSideBar";
 
 let lastTranscription: string | null = null;
 let lastRecordingFilename: string | null = null;
@@ -89,6 +93,10 @@ export async function runTranscription(
   elements.transcriptionCard.classList.remove("hidden");
   elements.transcriptionProgress.classList.remove("hidden");
   elements.progressFill.style.width = "0%";
+
+  // Auto-open the right sidebar for this recording (once per recording)
+  showRightSidebarProcessing();
+  autoOpenForRecording(lastRecordingFilename);
 
   setTranscriptionInProgress(true);
 

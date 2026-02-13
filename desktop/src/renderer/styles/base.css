@@ -11,14 +11,20 @@ body {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   min-height: 100vh;
   display: flex;
-  align-items: center;
-  justify-content: center;
   color: #fff;
 }
 
 .container {
   text-align: center;
   padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.app-content {
+  flex: 1;
 }
 
 h1 {
@@ -35,10 +41,10 @@ h1 {
   display: none !important;
 }
 
-.header-with-nav {
+/* .header-with-nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
   width: 100%;
-}
+} */

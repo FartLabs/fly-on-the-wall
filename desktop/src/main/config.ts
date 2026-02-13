@@ -4,11 +4,11 @@ import fs from "node:fs";
 import { AppConfig } from "@/shared/electronAPI";
 import { DEFAULT_CONFIG } from "@/shared/config";
 
-function getConfigPath(): string {
+function getConfigPath() {
   return path.join(app.getPath("userData"), "config.json");
 }
 
-function readConfig(): AppConfig {
+export function readConfig(): AppConfig {
   const configPath = getConfigPath();
   try {
     if (fs.existsSync(configPath)) {
@@ -24,7 +24,7 @@ function readConfig(): AppConfig {
   return structuredClone(DEFAULT_CONFIG);
 }
 
-function writeConfig(config: AppConfig): void {
+function writeConfig(config: AppConfig) {
   const configPath = getConfigPath();
   try {
     const dir = path.dirname(configPath);

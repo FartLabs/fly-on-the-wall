@@ -1,4 +1,5 @@
 import { AppConfig } from "./electronAPI";
+import { HOTKEY_DEFAULTS } from "./hotkeys";
 
 export const DEFAULT_CONFIG: AppConfig = {
   summarizationParameters: {
@@ -11,13 +12,15 @@ export const DEFAULT_CONFIG: AppConfig = {
   summarization: {
     minSummaryLength: 20,
     customPrompt: "",
-    selectedModelPath: ""
+    selectedModelPath: "",
+    modelStoragePath: ""
   },
   transcription: {
-    selectedModel: ""
+    selectedModel: "",
+    modelStoragePath: ""
   },
-  app: {
-    introNoteCreated: false
+  hotkeys: {
+    ...HOTKEY_DEFAULTS
   }
 };
 
@@ -32,6 +35,9 @@ export const LIMITS = {
 
 export interface AppSettings extends SummarizationSettings {
   minSummaryLength: number;
+  transcriptionModelPath: string;
+  summarizationModelPath: string;
+  hotkeyOpenSettings: string[];
 }
 
 export interface SummarizationSettings {

@@ -9,6 +9,18 @@ import { saveNote } from "./saveNote";
 
 let lastSummary: string | null = null;
 
+function getMeetingParticipants(): string[] {
+  const raw = elements.meetingParticipantsInput?.value || "";
+  return (
+    raw
+      // split by either newlines, commas, or semicolons
+      // semicolons are faster to press (pinky is right on its key) than commas imo
+      .split(/[\n,;]+/)
+      .map((name) => name.trim())
+      .filter((name) => name.length > 0)
+  );
+}
+
 export function clearSummary(): void {
   if (elements.summaryCard) {
     elements.summaryCard.classList.add("hidden");
@@ -64,7 +76,7 @@ export async function runSummarization(
     console.log("No summarization model selected");
     if (elements.summaryEmpty) {
       elements.summaryEmpty.classList.remove("hidden");
-      elements.summaryEmpty.innerHTML = `<p style="color: #ff9800;">No summarization model selected. Please select a GGUF model in the Models section.</p>`;
+      elements.summaryEmpty.innerHTML = `<p style="color: #ff9800;">No summarization model selected. Please select a GGUF model in Settings → Summarization.</p>`;
     }
     return;
   }
@@ -98,10 +110,12 @@ export async function runSummarization(
 
   try {
     console.log("Calling summarizeText...");
+    const participants = getMeetingParticipants();
     const result = await summarizeText(
       transcription,
       updateSummaryProgress,
-      selectedModelPath
+      selectedModelPath,
+      participants
     );
     lastSummary = result.summary;
 
