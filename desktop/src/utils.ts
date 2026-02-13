@@ -76,3 +76,11 @@ export function ensureDir(dirPath: string): string {
   }
   return dirPath;
 }
+
+// a recursive variant of Partial<T> for use in updating settings
+// https://stackoverflow.com/a/61132308
+export type DeepPartial<T> = T extends object
+  ? {
+      [P in keyof T]?: DeepPartial<T[P]>;
+    }
+  : T;

@@ -26,7 +26,7 @@ export interface SummarizeParams {
 
 type ProgressCallback = (progress: SummarizationProgress) => void;
 
-export async function getCustomPrompt(): Promise<string | null> {
+async function getCustomPrompt(): Promise<string | null> {
   const config = await window.electronAPI.configGet();
   return config.summarization.customPrompt || null;
 }
@@ -45,13 +45,6 @@ export async function saveSelectedModelPath(modelPath: string) {
       selectedModelPath: modelPath.trim()
     }
   });
-}
-
-export function getDefaultPromptTemplate(
-  transcript: string,
-  participants: string[] = []
-): string {
-  return createDefaultPrompt(transcript, participants);
 }
 
 export async function checkSummarizationModelDownloaded(

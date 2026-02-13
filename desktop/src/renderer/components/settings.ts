@@ -1,5 +1,5 @@
 import { elements } from "./domNodes";
-import { clamp } from "@/utils";
+import { clamp, type DeepPartial } from "@/utils";
 import { AppConfig } from "@/shared/electronAPI";
 import {
   DEFAULT_CONFIG,
@@ -23,6 +23,60 @@ let isRecordingOpenSettingsHotkey = false;
 let recordingModifierOrder: HotkeyModifier[] = [];
 
 const MODIFIER_KEYS = new Set(["Control", "Alt", "Shift", "Meta"]);
+
+function getDefaultPromptTemplate(
+  transcript: string,
+  participants: string[] = []
+): string {
+  const participantsStr =
+    participants.length > 0 ? participants.join(", ") : "Not specified";
+
+  return `You are a highly efficient and helpful assistant specializing in summarizing meeting transcripts.
+Please analyze the following raw text from a meeting and provide a structured summary. 
+Ignore filler words (e.g., 'um', 'ah', 'like'), repeated sentences, and conversational pleasantries. 
+Focus only on the substantive content. If no action items or decisions were made, explicitly state
+"No specific action items or decisions were recorded." 
+
+**IF** the transcript is empty, contains only filler words (e.g., 'um', 'ah'), or consists solely of conversational pleasantries with no substance:
+    - Your **ENTIRE** output should be a single, specific statement: "This meeting concluded with no substantive discussion."
+
+**ELSE** (if the transcript contains substantive discussion):
+    - Proceed as usual with the summarization.
+
+Participants in the meeting: ${participantsStr}
+
+The summary should include:
+1. A concise, one-paragraph overview of the meeting's purpose and key discussions.
+2. A bulleted list of the main topics discussed. Go into detail about each topic based on what was said.
+3. A bulleted list of any action items or decisions made.
+
+If nothing was discussed at all, state that clearly in the overview.
+
+Here is the transcript:
+---
+${transcript}
+---
+`;
+}
+
+async function loadCustomPromptIntoUI() {
+  if (!elements.customPromptInput) return;
+
+  const defaultPrompt = getDefaultPromptTemplate("{transcript}", [
+    "{participants}"
+  ]);
+  elements.customPromptInput.dataset.defaultPrompt = defaultPrompt;
+
+  const config = await window.electronAPI.configGet();
+  const savedPrompt = config.summarization.customPrompt;
+
+  if (savedPrompt) {
+    elements.customPromptInput.value = savedPrompt;
+    return;
+  }
+
+  elements.customPromptInput.value = defaultPrompt;
+}
 
 function getModifierFromKey(key: string): HotkeyModifier | null {
   if (key === "Control") return "Ctrl";
@@ -51,7 +105,7 @@ function setModelPathHintText(
   hintEl.textContent = `${prefix} Current: ${currentPath}`;
 }
 
-async function refreshModelPathHints(): Promise<void> {
+async function refreshModelPathHints() {
   try {
     const [transcriptionDir, summarizationDir] = await Promise.all([
       window.electronAPI.getTranscriptionModelsDir(),
@@ -143,8 +197,10 @@ export async function getMinSummaryLength(): Promise<number> {
   return settings.minSummaryLength;
 }
 
-async function saveSettings(settings: Partial<AppSettings>): Promise<void> {
-  const update: Partial<AppConfig> = {};
+async function saveSettings(settings: Partial<AppSettings>) {
+  // i've never heard of deeppartial until now, and it seems useful if
+  // i wanted to only update parts of an object
+  const update: DeepPartial<AppConfig> = {};
 
   if (settings.minSummaryLength !== undefined) {
     update.summarization = {
@@ -153,20 +209,20 @@ async function saveSettings(settings: Partial<AppSettings>): Promise<void> {
         LIMITS.minSummaryLength.min,
         LIMITS.minSummaryLength.max
       )
-    } as any;
+    };
   }
 
   if (settings.summarizationModelPath !== undefined) {
     update.summarization = {
       ...(update.summarization || {}),
       modelStoragePath: settings.summarizationModelPath.trim()
-    } as any;
+    };
   }
 
   if (settings.transcriptionModelPath !== undefined) {
     update.transcription = {
       modelStoragePath: settings.transcriptionModelPath.trim()
-    } as any;
+    };
   }
 
   if (settings.hotkeyOpenSettings !== undefined) {
@@ -206,22 +262,26 @@ async function saveSettings(settings: Partial<AppSettings>): Promise<void> {
   }
 
   if (Object.keys(params).length > 0) {
-    update.summarizationParameters = params as any;
+    update.summarizationParameters = params;
   }
 
-  await window.electronAPI.configSet(update);
+  await window.electronAPI.configSet(update as Partial<AppConfig>);
 }
 
-async function resetSettings(): Promise<void> {
+async function resetSettings() {
   await window.electronAPI.configSet(DEFAULT_CONFIG);
   if (elements.customPromptInput) {
-    const defaultPrompt = elements.customPromptInput.dataset.defaultPrompt;
-    elements.customPromptInput.value = defaultPrompt || "";
+    const defaultPrompt =
+      elements.customPromptInput.dataset.defaultPrompt ||
+      getDefaultPromptTemplate("{transcript}", ["{participants}"]);
+    elements.customPromptInput.dataset.defaultPrompt = defaultPrompt;
+    elements.customPromptInput.value = defaultPrompt;
   }
 }
 
-async function loadSettingsIntoUI(): Promise<void> {
+async function loadSettingsIntoUI() {
   const settings = await getSettings();
+  await loadCustomPromptIntoUI();
 
   if (elements.minSummaryLengthInput) {
     elements.minSummaryLengthInput.value = String(settings.minSummaryLength);
@@ -303,12 +363,12 @@ function getHotkeyFromKeyboardEvent(event: KeyboardEvent): string {
   return normalizeHotkeyShortcut([...modifiers, key].join("+"));
 }
 
-function setHotkeyCaptureHint(message: string): void {
+function setHotkeyCaptureHint(message: string) {
   if (!elements.hotkeyCaptureHint) return;
   elements.hotkeyCaptureHint.textContent = message;
 }
 
-function updateAddHotkeyButtonState(): void {
+function updateAddHotkeyButtonState() {
   if (!elements.hotkeyOpenSettingsAddBtn) return;
   elements.hotkeyOpenSettingsAddBtn.textContent = isRecordingOpenSettingsHotkey
     ? "•"
@@ -322,7 +382,7 @@ function updateAddHotkeyButtonState(): void {
     : "Add hotkey";
 }
 
-function renderHotkeyOpenSettingsBindings(): void {
+function renderHotkeyOpenSettingsBindings() {
   const listEl = elements.hotkeyOpenSettingsList;
   if (!listEl) return;
 
@@ -349,7 +409,7 @@ function renderHotkeyOpenSettingsBindings(): void {
     removeBtn.type = "button";
     removeBtn.className = "hotkey-chip-remove";
     removeBtn.setAttribute("aria-label", `Remove ${binding}`);
-    removeBtn.textContent = "×";
+    removeBtn.textContent = "x";
     removeBtn.addEventListener("click", () => {
       hotkeyOpenSettingsBindings = hotkeyOpenSettingsBindings.filter(
         (value) => value !== binding
@@ -367,14 +427,14 @@ function renderHotkeyOpenSettingsBindings(): void {
   updateAddHotkeyButtonState();
 }
 
-function startHotkeyRecording(): void {
+function startHotkeyRecording() {
   isRecordingOpenSettingsHotkey = true;
   recordingModifierOrder = [];
   updateAddHotkeyButtonState();
   setHotkeyCaptureHint("Recording...");
 }
 
-function stopHotkeyRecording(message?: string): void {
+function stopHotkeyRecording(message?: string) {
   isRecordingOpenSettingsHotkey = false;
   recordingModifierOrder = [];
   updateAddHotkeyButtonState();
@@ -383,7 +443,7 @@ function stopHotkeyRecording(message?: string): void {
   }
 }
 
-function setupHotkeyEditorListeners(): void {
+function setupHotkeyEditorListeners() {
   elements.hotkeyOpenSettingsAddBtn?.addEventListener("click", () => {
     if (isRecordingOpenSettingsHotkey) {
       stopHotkeyRecording("Recording canceled.");
@@ -438,7 +498,7 @@ function setupHotkeyEditorListeners(): void {
   );
 }
 
-async function persistSettingsFromUI(): Promise<void> {
+async function persistSettingsFromUI() {
   const settings = readSettingsFromUI();
   await saveSettings(settings);
 
@@ -464,7 +524,7 @@ function scheduleAutoSave() {
   }, AUTO_SAVE_DEBOUNCE_MS);
 }
 
-async function handleResetSettings(): Promise<void> {
+async function handleResetSettings() {
   if (!confirm("Reset all settings to defaults? This cannot be undone."))
     return;
   await resetSettings();
