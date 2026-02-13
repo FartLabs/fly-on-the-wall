@@ -40,14 +40,6 @@ export function generateDateLabel(date: Date, locale = "en-US"): string {
   });
 }
 
-export function convertToLocaleTime(date: Date, locale = "en-US"): string {
-  return date.toLocaleTimeString(locale, {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true
-  });
-}
-
 export function escapeHtml(unsafe: string): string {
   return unsafe
     .replace(/&/g, "&amp;")

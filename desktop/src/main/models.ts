@@ -25,7 +25,7 @@ const getModelsCacheDir = (): string => {
   return ensureDir(cacheDir);
 };
 
-export const getSummarizationModelsDir = (): string => {
+const getSummarizationModelsDir = (): string => {
   const config = readConfig();
   return resolveConfiguredDir(
     config.summarization.modelStoragePath || "",

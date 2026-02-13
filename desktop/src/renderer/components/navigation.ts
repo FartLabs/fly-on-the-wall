@@ -42,7 +42,7 @@ export function openSettingsModal(): void {
   console.log("Settings modal opened");
 }
 
-export function closeSettingsModal(): void {
+function closeSettingsModal(): void {
   elements.settingsModal?.classList.add("hidden");
   console.log("Settings modal closed");
 }

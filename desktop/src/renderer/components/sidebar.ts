@@ -421,7 +421,7 @@ async function renameNote(filename: string): Promise<void> {
         await window.electronAPI.deleteNote(filename);
       }
 
-      loadSidebarNotes();
+      await loadSidebarNotes();
 
       // If this note is currently open, re-open with new name
       if (onNoteOpen && newFilename !== filename) {

@@ -18,7 +18,7 @@ let isTranscribing = false;
 let isDownloadingGguf = false;
 let ggufDownloadProgressUnsub: (() => void) | null = null;
 
-export async function saveSelectedTranscriptionModel(
+async function saveSelectedTranscriptionModel(
   modelSize: WhisperModelSize
 ): Promise<void> {
   await window.electronAPI.configSet({

@@ -19,7 +19,7 @@ export function setupHistoryListeners(): void {
 /**
  * Open a note in the standalone note viewer page (not the history page).
  */
-export async function openNoteInViewer(filename: string): Promise<void> {
+async function openNoteInViewer(filename: string): Promise<void> {
   try {
     const result = await window.electronAPI.readNote(filename);
 

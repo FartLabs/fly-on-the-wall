@@ -1,3 +1,5 @@
+// TODO: leverage native desktop notifications instead of custom html
+
 let notificationContainer: HTMLDivElement | null = null;
 
 // wonder if there's a way to apply styles via CSS rather than inline styles
@@ -21,7 +23,7 @@ function getOrCreateContainer(): HTMLDivElement {
   return notificationContainer;
 }
 
-export type NotificationType = "success" | "error" | "info";
+type NotificationType = "success" | "error" | "info";
 
 export function showNotification(
   message: string,

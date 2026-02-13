@@ -1,15 +1,15 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "tags": [
-    "-lintignore"
-  ],
+  "tags": ["-lintignore"],
   "entry": [
     "src/main/main.ts",
     "src/renderer/index.ts",
     "src/preload/preload.ts",
     "src/summarization/utility-process.ts",
-    "src/transcription/utility-process.ts"
+    "src/transcription/utility-process.ts",
+    "forge.config.ts"
   ],
+  "project": ["**/*.{js,ts}"],
   "ignore": [
     "vite.main.config.ts",
     "vite.renderer.config.ts",

@@ -55,7 +55,7 @@ function getUtilityProcessPath(): string {
   );
 }
 
-export async function spawnTranscriptionProcess(): Promise<UtilityProcess> {
+async function spawnTranscriptionProcess(): Promise<UtilityProcess> {
   if (utilityProc) {
     console.log("[TranscriptionManager] Process already running");
     return utilityProc;
@@ -314,7 +314,7 @@ function broadcastToRenderers(channel: string, data: any): void {
   }
 }
 
-export async function transcribe(
+async function transcribe(
   audioData: Float32Array,
   modelId: string,
   language?: string,
@@ -348,7 +348,7 @@ export async function transcribe(
 // 10 minutes
 const timeoutMs = 600000;
 
-export async function downloadModel(
+async function downloadModel(
   modelId: string
 ): Promise<{ success: boolean; modelId: string }> {
   console.log(`[TranscriptionManager] downloadModel called for: ${modelId}`);
@@ -370,7 +370,7 @@ export async function downloadModel(
   return result;
 }
 
-export async function checkModel(
+async function checkModel(
   modelId: string
 ): Promise<{ exists: boolean; modelId: string; path?: string }> {
   if (!utilityProc) {
@@ -380,12 +380,12 @@ export async function checkModel(
   return sendMessageAndWait({ type: "check-model", modelId });
 }
 
-export async function disposeModel(): Promise<void> {
+async function disposeModel(): Promise<void> {
   if (!utilityProc) return;
   await sendMessageAndWait({ type: "dispose" });
 }
 
-export async function deleteModelFiles(
+async function deleteModelFiles(
   modelId: string
 ): Promise<{ success: boolean; error?: string }> {
   const fs = await import("node:fs");
@@ -420,7 +420,7 @@ export async function deleteModelFiles(
   }
 }
 
-export async function healthCheck(): Promise<{
+async function healthCheck(): Promise<{
   healthy: boolean;
   modelLoaded: boolean;
   currentModelId: string | null;
@@ -431,7 +431,7 @@ export async function healthCheck(): Promise<{
   return sendMessageAndWait({ type: "health-check" });
 }
 
-export function stopTranscriptionProcess(): void {
+function stopTranscriptionProcess(): void {
   if (processRecycleTimer) {
     clearTimeout(processRecycleTimer);
     processRecycleTimer = null;

@@ -143,9 +143,7 @@ export async function getMinSummaryLength(): Promise<number> {
   return settings.minSummaryLength;
 }
 
-export async function saveSettings(
-  settings: Partial<AppSettings>
-): Promise<void> {
+async function saveSettings(settings: Partial<AppSettings>): Promise<void> {
   const update: Partial<AppConfig> = {};
 
   if (settings.minSummaryLength !== undefined) {
@@ -214,7 +212,7 @@ export async function saveSettings(
   await window.electronAPI.configSet(update);
 }
 
-export async function resetSettings(): Promise<void> {
+async function resetSettings(): Promise<void> {
   await window.electronAPI.configSet(DEFAULT_CONFIG);
   if (elements.customPromptInput) {
     const defaultPrompt = elements.customPromptInput.dataset.defaultPrompt;

@@ -9,7 +9,7 @@ export interface SummarizationProgress {
   message: string;
 }
 
-export interface SummarizationResult {
+interface SummarizationResult {
   summary: string;
   duration: number;
   timestamp: string;
@@ -29,12 +29,6 @@ type ProgressCallback = (progress: SummarizationProgress) => void;
 export async function getCustomPrompt(): Promise<string | null> {
   const config = await window.electronAPI.configGet();
   return config.summarization.customPrompt || null;
-}
-
-export async function saveCustomPrompt(prompt: string): Promise<void> {
-  await window.electronAPI.configSet({
-    summarization: { customPrompt: prompt.trim() } as any
-  });
 }
 
 export async function getSelectedModelPath(): Promise<string | null> {
@@ -68,16 +62,6 @@ export async function checkSummarizationModelDownloaded(
     return result.success && result.exists === true && result.isValid === true;
   } catch (error) {
     console.error("Failed to check summarization model:", error);
-    return false;
-  }
-}
-
-export async function deleteSummarizationModel(): Promise<boolean> {
-  try {
-    const result = await window.electronAPI.disposeSummarizationModel();
-    return result.success;
-  } catch (error) {
-    console.error("Failed to dispose summarization model:", error);
     return false;
   }
 }
@@ -234,26 +218,5 @@ export async function summarizeText(
     throw new Error(`Failed to generate summary: ${error}`);
   } finally {
     cleanupListener?.();
-  }
-}
-
-export async function checkSummarizationHealth(): Promise<{
-  healthy: boolean;
-  modelLoaded: boolean;
-  currentModelPath: string | null;
-}> {
-  try {
-    const result = await window.electronAPI.summarizationHealthCheck();
-    if (!result.success) {
-      return { healthy: false, modelLoaded: false, currentModelPath: null };
-    }
-    return {
-      healthy: result.healthy ?? false,
-      modelLoaded: result.modelLoaded ?? false,
-      currentModelPath: result.currentModelPath ?? null
-    };
-  } catch (error) {
-    console.error("Health check failed:", error);
-    return { healthy: false, modelLoaded: false, currentModelPath: null };
   }
 }
