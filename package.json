@@ -4,7 +4,8 @@
     "fmt": "prettier --write .",
     "fmt:check": "prettier --check .",
     "make": "cd desktop && npm run make",
-    "lint": "cd desktop && npm run lint"
+    "lint": "cd desktop && npm run lint",
+    "knip": "cd desktop && npm run knip"
   },
   "dependencies": {
     "prettier": "^3.8.1"
