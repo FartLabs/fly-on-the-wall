@@ -3,13 +3,14 @@ import {
   UtilityProcessMessage,
   UtilityProcessResponse
 } from "@/shared/utilityProcess";
-import { SummarizeParams } from ".";
+import { DEFAULT_CONFIG } from "@/shared/config";
 import type {
   Llama,
   LlamaModel,
   LlamaContext,
   LLamaChatPromptOptions
 } from "node-llama-cpp";
+import type { SummarizeParams } from ".";
 
 export type SummarizationProcessMessage =
   | UtilityProcessMessage
@@ -144,8 +145,9 @@ async function handleSummarize(data: {
 
   const { LlamaChatSession } = await import("node-llama-cpp");
 
+  const contextSequence = currentContext.getSequence();
   const session = new LlamaChatSession({
-    contextSequence: currentContext.getSequence()
+    contextSequence
   });
 
   console.log(
@@ -157,15 +159,15 @@ async function handleSummarize(data: {
 
   let summary = "";
 
-  const config = await window.electronAPI.configGet();
-
   try {
     const promptOptions: LLamaChatPromptOptions = {
-      maxTokens: params?.maxTokens ?? config.summarizationParameters.maxTokens,
+      maxTokens:
+        params?.maxTokens ?? DEFAULT_CONFIG.summarizationParameters.maxTokens,
       temperature:
-        params?.temperature ?? config.summarizationParameters.temperature,
-      topP: params?.topP ?? config.summarizationParameters.topP,
-      topK: params?.topK ?? config.summarizationParameters.topK
+        params?.temperature ??
+        DEFAULT_CONFIG.summarizationParameters.temperature,
+      topP: params?.topP ?? DEFAULT_CONFIG.summarizationParameters.topP,
+      topK: params?.topK ?? DEFAULT_CONFIG.summarizationParameters.topK
     };
 
     // repeatPenalty in node-llama-cpp expects an object or false
@@ -184,6 +186,17 @@ async function handleSummarize(data: {
       }
     } catch (e) {
       console.error("[SummarizationProcess] Error disposing session:", e);
+    }
+
+    try {
+      if (contextSequence && typeof contextSequence.dispose === "function") {
+        contextSequence.dispose();
+      }
+    } catch (e) {
+      console.error(
+        "[SummarizationProcess] Error disposing context sequence:",
+        e
+      );
     }
   }
 
@@ -278,7 +291,10 @@ process.parentPort?.on(
           console.warn(`[SummarizationProcess] Unknown message: ${data}`);
       }
     } catch (error) {
-      console.error(`[SummarizationProcess] Error handling ${data.type}:`, error);
+      console.error(
+        `[SummarizationProcess] Error handling ${data.type}:`,
+        error
+      );
       sendResponse({ type: "error", error: error.message || String(error) });
     }
   }

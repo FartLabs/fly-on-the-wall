@@ -118,7 +118,10 @@ const electronAPI: IElectronAPI = {
 
   selectAudioFiles: () => ipcRenderer.invoke("select-audio-files"),
   importAudioFile: (data: { sourcePath: string; mode: "copy" | "move" }) =>
-    ipcRenderer.invoke("import-audio-file", data)
+    ipcRenderer.invoke("import-audio-file", data),
+
+  notify: (data: { message: string; type?: "success" | "error" | "info" }) =>
+    ipcRenderer.invoke("notify", data)
 };
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);

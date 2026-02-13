@@ -2,6 +2,7 @@ import { elements } from "./domNodes";
 import { getActiveInputDeviceIds } from "./devices";
 import { formatSecondsToTime, isScreenSource } from "@/utils";
 import { refreshModelsList } from "./models";
+import { showNotification } from "./notifications";
 
 let mediaRecorder: MediaRecorder | null = null;
 let audioChunks: Blob[] = [];
@@ -225,6 +226,7 @@ async function processRecording(onComplete: OnRecordingComplete) {
 
   if (result.success) {
     elements.statusText.textContent = "Recording saved!";
+    showNotification("Recording saved successfully", "success");
     onComplete(arrayBuffer, timestamp, filename);
   } else {
     elements.statusText.textContent = "Failed to save recording";

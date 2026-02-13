@@ -13,6 +13,7 @@ import {
   autoOpenForRecording,
   showRightSidebarProcessing
 } from "./rightSideBar";
+import { showNotification } from "./notifications";
 
 let lastTranscription: string | null = null;
 let lastRecordingFilename: string | null = null;
@@ -123,6 +124,7 @@ export async function runTranscription(
     if (elements.statusText) {
       elements.statusText.textContent = "Transcription complete!";
     }
+    showNotification("Transcription complete", "success");
 
     console.log(`Transcription length: ${result.text.length} chars`);
 

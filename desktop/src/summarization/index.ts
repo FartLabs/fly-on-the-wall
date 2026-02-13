@@ -36,9 +36,14 @@ export async function getSelectedModelPath(): Promise<string | null> {
   return config.summarization.selectedModelPath || null;
 }
 
-export async function saveSelectedModelPath(modelPath: string): Promise<void> {
+export async function saveSelectedModelPath(modelPath: string) {
+  const config = await window.electronAPI.configGet();
   await window.electronAPI.configSet({
-    summarization: { selectedModelPath: modelPath.trim() } as any
+    ...config,
+    summarization: {
+      ...config.summarization,
+      selectedModelPath: modelPath.trim()
+    }
   });
 }
 
@@ -133,6 +138,8 @@ export async function summarizeText(
 
   let cleanupListener: (() => void) | undefined;
   if (onProgress) {
+    // still need to find good types for these statuses, but for now just use "any"
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const statusHandler = (status: any) => {
       if (status.type === "status") {
         if (status.status === "loading") {

@@ -275,6 +275,7 @@ async function processQueue(): Promise<void> {
       setTranscriptionInProgress(false);
 
       const transcription = transcriptionResult.text;
+      showNotification("Transcription complete", "success");
 
       // summarize if long enough
       let summary = "";
@@ -300,6 +301,7 @@ async function processQueue(): Promise<void> {
                 selectedModelPath
               );
               summary = sumResult.summary;
+              showNotification("Summary generated successfully", "success");
             } catch (err) {
               console.warn("Summarization failed for import, continuing:", err);
             }

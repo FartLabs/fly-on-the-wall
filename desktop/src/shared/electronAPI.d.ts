@@ -219,4 +219,9 @@ export default interface IElectronAPI {
     sourcePath: string;
     mode: "copy" | "move";
   }) => Promise<{ success: boolean; filename?: string; error?: string }>;
+
+  notify: (data: {
+    message: string;
+    type?: "success" | "error" | "info";
+  }) => Promise<{ success: boolean; suppressed?: boolean; error?: string }>;
 }

@@ -11,7 +11,7 @@ import type {
   SummarizationProcessResponse
 } from "../summarization/utility-process";
 import type { MemoryUsage } from "@/shared/utilityProcess";
-import { SummarizeParams } from "@/summarization";
+import type { SummarizeParams } from "@/summarization";
 
 // TODO: Make these configurable via a settings page
 const MEMORY_CHECK_INTERVAL_MS = 10_000;

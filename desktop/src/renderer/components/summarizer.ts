@@ -6,6 +6,7 @@ import {
   type SummarizationProgress
 } from "@/summarization";
 import { saveNote } from "./saveNote";
+import { showNotification } from "./notifications";
 
 let lastSummary: string | null = null;
 
@@ -137,6 +138,7 @@ export async function runSummarization(
 
     console.log("Auto-saving note after summarization...");
     await saveNote();
+    showNotification("Summary generated successfully", "success");
 
     console.log(`Summary generated in ${result.duration.toFixed(1)}s`);
   } catch (error) {
