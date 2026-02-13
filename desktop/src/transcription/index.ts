@@ -190,8 +190,10 @@ export async function transcribeAudio(
       modelId,
       language
     };
-    // release reference before awaiting IPC (data is serialized/copied)
+
+    // no need to track the audio data
     audioDataArray = null;
+
     const result = await window.electronAPI.transcribe(transcribePayload);
 
     if (!result.success) {

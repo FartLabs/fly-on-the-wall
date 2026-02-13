@@ -99,9 +99,9 @@ async function disposeModel(): Promise<void> {
   }
   currentModelPath = null;
 
-  if (global.gc) {
-    global.gc();
-  }
+  // if (global.gc) {
+  //   global.gc();
+  // }
 
   console.log(`[SummarizationProcess] Model disposed`);
 }

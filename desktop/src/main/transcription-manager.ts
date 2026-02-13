@@ -69,8 +69,8 @@ async function spawnTranscriptionProcess(): Promise<UtilityProcess> {
   console.log(`[TranscriptionManager] Script path: ${scriptPath}`);
 
   utilityProc = utilityProcess.fork(scriptPath, [], {
-    serviceName: "transcription-utility",
-    execArgv: ["--expose-gc"]
+    serviceName: "transcription-utility"
+    // execArgv: ["--expose-gc"]
   });
 
   utilityProc.on("message", (message: TranscriptionResponse) => {
@@ -92,7 +92,7 @@ async function spawnTranscriptionProcess(): Promise<UtilityProcess> {
   return utilityProc;
 }
 
-async function initializeModelsPath(): Promise<void> {
+async function initializeModelsPath() {
   const modelsDir = getTranscriptionModelsDir();
   if (initializedModelsPath === modelsDir) return;
 

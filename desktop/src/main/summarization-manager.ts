@@ -68,9 +68,8 @@ function spawnSummarizationProcess(): UtilityProcess {
   console.log(`[SummarizationManager] Script path: ${scriptPath}`);
 
   utilityProc = utilityProcess.fork(scriptPath, [], {
-    serviceName: "summarization-utility",
-    // enable manual garbage collection
-    execArgv: ["--expose-gc"]
+    serviceName: "summarization-utility"
+    // execArgv: ["--expose-gc"]
   });
 
   utilityProc.on("message", (message: SummarizationProcessResponse) => {
