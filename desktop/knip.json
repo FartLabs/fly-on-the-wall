@@ -7,13 +7,11 @@
     "src/preload/preload.ts",
     "src/summarization/utility-process.ts",
     "src/transcription/utility-process.ts",
-    "forge.config.ts"
-  ],
-  "project": ["**/*.{js,ts}"],
-  "ignore": [
+    "forge.config.ts",
     "vite.main.config.ts",
     "vite.renderer.config.ts",
     "vite.preload.config.ts",
     "vite.utility.config.ts"
-  ]
+  ],
+  "project": ["**/*.{js,ts}"]
 }
