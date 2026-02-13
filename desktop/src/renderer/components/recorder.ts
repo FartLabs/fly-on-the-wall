@@ -19,12 +19,12 @@ type OnRecordingComplete = (
   filename?: string
 ) => void;
 
-function updateTimer(): void {
+function updateTimer() {
   elapsedSeconds++;
   elements.timerDisplay.textContent = formatSecondsToTime(elapsedSeconds);
 }
 
-function setUiLocked(locked: boolean): void {
+function setUiLocked(locked: boolean) {
   elements.systemAudioToggle.disabled = locked;
   elements.systemAudioItem.classList.toggle("disabled", locked);
 
@@ -41,9 +41,7 @@ function setUiLocked(locked: boolean): void {
   elements.refreshDevicesBtn.classList.toggle("disabled", locked);
 }
 
-export async function startRecording(
-  onComplete: OnRecordingComplete
-): Promise<void> {
+export async function startRecording(onComplete: OnRecordingComplete) {
   const systemAudioEnabled = elements.systemAudioToggle.checked;
   const activeDeviceIds = getActiveInputDeviceIds();
 
@@ -156,7 +154,7 @@ export async function startRecording(
   }
 }
 
-export function stopRecording(): void {
+export function stopRecording() {
   if (mediaRecorder && mediaRecorder.state !== "inactive") {
     mediaRecorder.stop();
   }
@@ -183,7 +181,7 @@ export function stopRecording(): void {
   refreshModelsList();
 }
 
-export function pauseRecording(): void {
+export function pauseRecording() {
   if (!mediaRecorder || mediaRecorder.state !== "recording") return;
   mediaRecorder.pause();
   if (timerInterval) clearInterval(timerInterval);
@@ -194,7 +192,7 @@ export function pauseRecording(): void {
   elements.statusText.textContent = "Paused";
 }
 
-export function resumeRecording(): void {
+export function resumeRecording() {
   if (!mediaRecorder || mediaRecorder.state !== "paused") return;
   mediaRecorder.resume();
   timerInterval = window.setInterval(updateTimer, 1000);

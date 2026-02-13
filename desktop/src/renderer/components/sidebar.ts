@@ -75,7 +75,7 @@ export function onSidebarNoteOpen(cb: NoteOpenCallback): void {
 /**
  * Load and render notes in the sidebar file tree.
  */
-export async function loadSidebarNotes(): Promise<void> {
+export async function loadSidebarNotes() {
   const tree = elements.sidebarFileTree;
   if (!tree) return;
 
@@ -353,7 +353,7 @@ function hideContextMenu(): void {
 /**
  * Rename a note from sidebar: show inline input, then save+delete old.
  */
-async function renameNote(filename: string): Promise<void> {
+async function renameNote(filename: string) {
   const item = elements.sidebarFileTree?.querySelector(
     `.sidebar-file-item[data-filename="${CSS.escape(filename)}"]`
   );
@@ -460,7 +460,7 @@ async function renameNote(filename: string): Promise<void> {
 /**
  * Delete a note from sidebar context menu.
  */
-async function deleteNoteFromSidebar(filename: string): Promise<void> {
+async function deleteNoteFromSidebar(filename: string) {
   const confirmed = confirm(
     `Delete "${getBaseName(filename)}"? This cannot be undone.`
   );
@@ -515,7 +515,7 @@ function isEditableTarget(target: EventTarget | null): boolean {
   return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
 }
 
-async function deleteSelectedSidebarNotes(): Promise<void> {
+async function deleteSelectedSidebarNotes() {
   const count = selectedSidebarNotes.size;
   if (count === 0) return;
 

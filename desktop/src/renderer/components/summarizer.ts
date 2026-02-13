@@ -69,7 +69,7 @@ function updateSummaryProgress(progress: SummarizationProgress): void {
 export async function runSummarization(
   transcription: string,
   _timestamp: string
-): Promise<void> {
+) {
   const selectedModelPath = await getSelectedModelPath();
   console.log(`Using summarization model: ${selectedModelPath || "none"}`);
 

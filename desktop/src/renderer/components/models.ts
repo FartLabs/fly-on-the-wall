@@ -18,11 +18,13 @@ let isTranscribing = false;
 let isDownloadingGguf = false;
 let ggufDownloadProgressUnsub: (() => void) | null = null;
 
-async function saveSelectedTranscriptionModel(
-  modelSize: WhisperModelSize
-): Promise<void> {
+async function saveSelectedTranscriptionModel(modelSize: WhisperModelSize) {
+  const config = await window.electronAPI.configGet();
   await window.electronAPI.configSet({
-    transcription: { selectedModel: modelSize } as any
+    transcription: {
+      selectedModel: modelSize,
+      modelStoragePath: config.transcription.modelStoragePath
+    }
   });
 }
 
@@ -31,7 +33,7 @@ export async function getSelectedTranscriptionModel(): Promise<WhisperModelSize 
   return (config.transcription.selectedModel as WhisperModelSize) || null;
 }
 
-export function setTranscriptionInProgress(inProgress: boolean): void {
+export function setTranscriptionInProgress(inProgress: boolean) {
   isTranscribing = inProgress;
   refreshModelsList();
 }
@@ -170,7 +172,7 @@ function createSummaryModelHTML(): string {
 }
 
 // dynamically render the list of .gguf models
-async function renderGgufModelsList(): Promise<void> {
+async function renderGgufModelsList() {
   const container = document.getElementById("ggufModelsList");
   if (!container) return;
 
@@ -255,7 +257,7 @@ async function renderGgufModelsList(): Promise<void> {
 }
 
 // this is used frequently, may need to be optimized in future if performance issues arise
-export async function refreshModelsList(): Promise<void> {
+export async function refreshModelsList() {
   try {
     const statuses = await getAllModelStatus();
     const transcriptionContainer = document.getElementById(
@@ -420,9 +422,7 @@ export async function refreshModelsList(): Promise<void> {
   }
 }
 
-async function selectTranscriptionModel(
-  modelSize: WhisperModelSize
-): Promise<void> {
+async function selectTranscriptionModel(modelSize: WhisperModelSize) {
   if (isTranscribing) {
     console.log("Cannot change model during transcription");
     return;
@@ -468,7 +468,7 @@ async function handleModelDelete(modelSize: WhisperModelSize) {
   await refreshModelsList();
 }
 
-async function handleSelectSummaryModel(): Promise<void> {
+async function handleSelectSummaryModel() {
   try {
     const result = await window.electronAPI.selectModelFile();
 
@@ -511,7 +511,7 @@ async function handleSelectSummaryModel(): Promise<void> {
   }
 }
 
-async function handleSelectGgufModel(modelPath: string): Promise<void> {
+async function handleSelectGgufModel(modelPath: string) {
   if (isTranscribing || isRecordingState()) {
     console.log("Cannot select model during operation");
     return;
@@ -522,7 +522,7 @@ async function handleSelectGgufModel(modelPath: string): Promise<void> {
   await renderGgufModelsList();
 }
 
-async function handleOpenModelsFolder(): Promise<void> {
+async function handleOpenModelsFolder() {
   try {
     const result = await window.electronAPI.openModelsFolder();
     if (!result.success) {
@@ -534,7 +534,7 @@ async function handleOpenModelsFolder(): Promise<void> {
   }
 }
 
-async function handleImportGgufModel(): Promise<void> {
+async function handleImportGgufModel() {
   try {
     const result = await window.electronAPI.selectModelFile();
 
@@ -578,7 +578,7 @@ async function handleImportGgufModel(): Promise<void> {
   }
 }
 
-async function handleDownloadGgufModel(): Promise<void> {
+async function handleDownloadGgufModel() {
   const activeTab = document.querySelector(".gguf-tab.active") as HTMLElement;
   const tabName = activeTab?.dataset.tab || "url";
 
@@ -716,7 +716,7 @@ async function handleDownloadGgufModel(): Promise<void> {
   }
 }
 
-async function handleDeleteGgufModel(modelPath: string): Promise<void> {
+async function handleDeleteGgufModel(modelPath: string) {
   const modelName = modelPath.split(/[/\\]/).pop();
 
   if (

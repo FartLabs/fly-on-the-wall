@@ -2,7 +2,7 @@ import { elements } from "./domNodes";
 import { showNotification } from "./notifications";
 import { getLastRecordingFilename } from "./transcriber";
 
-export async function saveNote(): Promise<void> {
+export async function saveNote() {
   const transcription = elements.transcriptionText?.textContent || "";
   const summary = elements.summaryText?.textContent || "";
 

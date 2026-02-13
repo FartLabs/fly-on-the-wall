@@ -70,7 +70,7 @@ export async function getAllModelStatus(): Promise<ModelStatus[]> {
 export async function downloadModel(
   modelSize: WhisperModelSize,
   onProgress?: ProgressCallback
-): Promise<void> {
+) {
   const modelId = WHISPER_MODELS[modelSize];
 
   onProgress?.({

@@ -18,7 +18,7 @@ import { showNotification } from "./notifications";
 let lastTranscription: string | null = null;
 let lastRecordingFilename: string | null = null;
 
-function updateProgress(progress: TranscriptionProgress): void {
+function updateProgress(progress: TranscriptionProgress) {
   if (
     !elements.transcriptionProgress ||
     !elements.transcriptionResult ||
@@ -46,7 +46,7 @@ export async function runTranscription(
   buffer: ArrayBuffer,
   timestamp: string,
   recordingFilename?: string
-): Promise<void> {
+) {
   console.log(
     "[runTranscription] Recording filename received:",
     recordingFilename
