@@ -157,3 +157,32 @@
 .control-btn:active {
   transform: translateY(0);
 }
+
+.preflight-warning {
+  background: rgba(255, 152, 0, 0.12);
+  border: 1px solid rgba(255, 152, 0, 0.4);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  text-align: left;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #ffb74d;
+}
+
+.preflight-warning .preflight-warning-title {
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.preflight-warning .preflight-warning-item {
+  padding-left: 0.25rem;
+  color: #ffcc80;
+}
+
+.preflight-warning .preflight-warning-item + .preflight-warning-item {
+  margin-top: 0.2rem;
+}

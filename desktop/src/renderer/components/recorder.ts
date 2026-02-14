@@ -1,8 +1,13 @@
 import { elements } from "./domNodes";
 import { getActiveInputDeviceIds } from "./devices";
 import { formatSecondsToTime, isScreenSource } from "@/utils";
-import { refreshModelsList } from "./models";
+import { refreshModelsList, getSelectedTranscriptionModel } from "./models";
 import { showNotification } from "./notifications";
+import { checkModelDownloaded } from "@/transcription";
+import {
+  getSelectedModelPath,
+  checkSummarizationModelDownloaded
+} from "@/summarization";
 
 let mediaRecorder: MediaRecorder | null = null;
 let audioChunks: Blob[] = [];
@@ -39,6 +44,63 @@ function setUiLocked(locked: boolean) {
 
   elements.refreshDevicesBtn.disabled = locked;
   elements.refreshDevicesBtn.classList.toggle("disabled", locked);
+}
+
+function clearPreflightWarning() {
+  elements.preflightWarning.innerHTML = "";
+  elements.preflightWarning.classList.add("hidden");
+}
+
+export async function checkRecordingPreflight(): Promise<boolean> {
+  const issues: string[] = [];
+
+  const transcriptionModel = await getSelectedTranscriptionModel();
+  if (!transcriptionModel) {
+    issues.push("No transcription model selected. Choose one in AI Models.");
+  } else {
+    const isDownloaded = await checkModelDownloaded(transcriptionModel);
+    if (!isDownloaded) {
+      issues.push(
+        `Transcription model "${transcriptionModel}" is not downloaded. Download it in AI Models.`
+      );
+    }
+  }
+
+  const summarizationPath = await getSelectedModelPath();
+  if (!summarizationPath) {
+    issues.push(
+      "No summarization model selected. Choose one in Settings -> Summarization."
+    );
+  } else {
+    const isValid = await checkSummarizationModelDownloaded(summarizationPath);
+    if (!isValid) {
+      issues.push(
+        "Selected summarization model file is missing or invalid. Check Settings -> Summarization."
+      );
+    }
+  }
+
+  if (issues.length > 0) {
+    elements.preflightWarning.innerHTML = `
+      <div class="preflight-warning-title">Models not ready</div>
+      ${issues.map((msg) => `<div class="preflight-warning-item">${msg}</div>`).join("")}
+    `;
+    elements.preflightWarning.classList.remove("hidden");
+
+    // if multiple issues are present, only show generic message and encourage them to look at recorder for details
+    // since it can be overwhelming to show a long list of issues to the user
+    showNotification(
+      issues.length === 1
+        ? issues[0]
+        : "Recording blocked: missing or invalid AI models. Check the recorder for details.",
+      "error"
+    );
+
+    return false;
+  }
+
+  clearPreflightWarning();
+  return true;
 }
 
 export async function startRecording(onComplete: OnRecordingComplete) {

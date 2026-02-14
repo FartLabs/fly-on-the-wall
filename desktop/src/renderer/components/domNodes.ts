@@ -1,6 +1,9 @@
 // TODO: this is getting quite large, find a better way to organize DOM nodes
 // i.e see history.ts that maintains its own DOM references
 export const elements = {
+  preflightWarning: document.getElementById(
+    "preflightWarning"
+  ) as HTMLDivElement,
   recordBtn: document.getElementById("recordBtn") as HTMLButtonElement,
   btnIcon: document.getElementById("btnIcon") as HTMLSpanElement,
   btnText: document.getElementById("btnText") as HTMLSpanElement,

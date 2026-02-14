@@ -34,7 +34,8 @@ import {
   stopRecording,
   pauseRecording,
   resumeRecording,
-  isRecordingState
+  isRecordingState,
+  checkRecordingPreflight
 } from "./components/recorder";
 import {
   refreshModelsList,
@@ -79,10 +80,12 @@ navigator.mediaDevices.addEventListener("devicechange", () => {
   loadAudioDevices();
 });
 
-elements.recordBtn.addEventListener("click", () => {
+elements.recordBtn.addEventListener("click", async () => {
   if (isRecordingState()) {
     stopRecording();
   } else {
+    const ready = await checkRecordingPreflight();
+    if (!ready) return;
     startRecording((buffer, timestamp, filename) => {
       runTranscription(buffer, timestamp, filename);
     });
