@@ -474,7 +474,10 @@ async function deleteNoteFromSidebar(filename: string) {
     }
 
     // If this note is currently being viewed, go back to recorder
-    if (elements.noteViewPage && !elements.noteViewPage.classList.contains("hidden")) {
+    if (
+      elements.noteViewPage &&
+      !elements.noteViewPage.classList.contains("hidden")
+    ) {
       navigateToPage("main");
     }
 
