@@ -98,7 +98,7 @@ export const elements = {
   ) as HTMLDivElement,
   exportNoteBtn: document.getElementById("exportNoteBtn") as HTMLButtonElement,
 
-  mainPage: document.getElementById("mainPage") as HTMLDivElement,
+  mainPage: document.getElementById("main-page") as HTMLDivElement,
 
   settingsModal: document.getElementById("settingsModal") as HTMLDivElement,
   closeSettingsModal: document.getElementById(

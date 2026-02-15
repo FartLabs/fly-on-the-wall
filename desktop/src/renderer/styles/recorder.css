@@ -1,17 +1,17 @@
-.container#mainPage {
+.container#main-page {
   align-items: center;
 }
 
-#mainPage .recorder-card,
-#mainPage .participants-card,
-#mainPage .audio-devices-card {
+#main-page .recorder-card,
+#main-page .participants-card,
+#main-page .audio-devices-card {
   width: min(100%, 760px);
 }
 
 @media (width <= 980px) {
-  #mainPage .recorder-card,
-  #mainPage .participants-card,
-  #mainPage .audio-devices-card {
+  #main-page .recorder-card,
+  #main-page .participants-card,
+  #main-page .audio-devices-card {
     width: min(100%, 640px);
   }
 }
