@@ -22,37 +22,6 @@
   width: 56px;
 }
 
-.left-sidebar.collapsed .sidebar-nav-label,
-.left-sidebar.collapsed .sidebar-title,
-.left-sidebar.collapsed .sidebar-files-section {
-  opacity: 0;
-  pointer-events: none;
-  width: 0;
-  overflow: hidden;
-}
-
-.left-sidebar.collapsed .sidebar-header {
-  padding: 1rem 0.65rem;
-  justify-content: center;
-}
-
-.left-sidebar.collapsed .sidebar-collapse-btn {
-  transform: rotate(180deg);
-}
-
-.left-sidebar.collapsed .sidebar-nav-item {
-  justify-content: center;
-  padding: 0.6rem;
-}
-
-.left-sidebar.collapsed .sidebar-nav-item .sidebar-nav-icon {
-  margin-right: 0;
-}
-
-.left-sidebar.collapsed .sidebar-divider {
-  display: none;
-}
-
 .app-content {
   margin-left: var(--sidebar-width);
   min-height: 100vh;
@@ -466,6 +435,37 @@ body.sidebar-resizing * {
   color: #fff;
   font-size: 0.8rem;
   outline: none;
+}
+
+.left-sidebar.collapsed .sidebar-nav-label,
+.left-sidebar.collapsed .sidebar-title,
+.left-sidebar.collapsed .sidebar-files-section {
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  overflow: hidden;
+}
+
+.left-sidebar.collapsed .sidebar-header {
+  padding: 1rem 0.65rem;
+  justify-content: center;
+}
+
+.left-sidebar.collapsed .sidebar-collapse-btn {
+  transform: rotate(180deg);
+}
+
+.left-sidebar.collapsed .sidebar-nav-item {
+  justify-content: center;
+  padding: 0.6rem;
+}
+
+.left-sidebar.collapsed .sidebar-nav-item .sidebar-nav-icon {
+  margin-right: 0;
+}
+
+.left-sidebar.collapsed .sidebar-divider {
+  display: none;
 }
 
 #note-view-page {
