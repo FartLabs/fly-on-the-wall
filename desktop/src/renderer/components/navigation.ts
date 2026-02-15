@@ -7,16 +7,14 @@ type Page = "main" | "noteView";
 
 export function navigateToPage(page: Page) {
   elements.mainPage?.classList.add("hidden");
-
-  const noteViewPage = document.getElementById("noteViewPage");
-  noteViewPage?.classList.add("hidden");
+  elements.noteViewPage?.classList.add("hidden");
 
   switch (page) {
     case "main":
       elements.mainPage?.classList.remove("hidden");
       break;
     case "noteView":
-      noteViewPage?.classList.remove("hidden");
+      elements.noteViewPage?.classList.remove("hidden");
       break;
   }
 

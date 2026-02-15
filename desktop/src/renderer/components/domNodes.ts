@@ -208,7 +208,7 @@ export const elements = {
   ctxRenameNote: document.getElementById("ctxRenameNote") as HTMLButtonElement,
   ctxDeleteNote: document.getElementById("ctxDeleteNote") as HTMLButtonElement,
 
-  noteViewPage: document.getElementById("noteViewPage") as HTMLDivElement,
+  noteViewPage: document.getElementById("note-view-page") as HTMLDivElement,
   noteViewTitle: document.getElementById("noteViewTitle") as HTMLHeadingElement,
   noteViewTranscription: document.getElementById(
     "noteViewTranscription"
