@@ -1,10 +1,7 @@
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  inset: 0;
+  background: rgb(0 0 0 / 0.7);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
@@ -22,8 +19,8 @@
 .modal-container {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgb(255 255 255 / 0.2);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.5);
   max-width: 700px;
   width: 90%;
   max-height: 85vh;
@@ -48,7 +45,7 @@
   align-items: flex-start;
   justify-content: space-between;
   padding: 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgb(255 255 255 / 0.1);
 }
 
 .modal-header h2 {
@@ -65,7 +62,7 @@
 } */
 
 .modal-close-btn {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 0.1);
   border: none;
   color: #fff;
   width: 36px;
@@ -81,7 +78,7 @@
 }
 
 .modal-close-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(255 255 255 / 0.2);
   transform: rotate(90deg);
 }
 
@@ -96,17 +93,17 @@
 }
 
 .modal-content::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 0.05);
   border-radius: 4px;
 }
 
 .modal-content::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(255 255 255 / 0.2);
   border-radius: 4px;
 }
 
 .modal-content::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgb(255 255 255 / 0.3);
 }
 
 .settings-section {
@@ -118,10 +115,10 @@
 .settings-section-title {
   font-size: 1.1rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-  margin: 0 0 1rem 0;
+  color: rgb(255 255 255 / 0.9);
+  margin: 0 0 1rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgb(255 255 255 / 0.1);
 }
 
 .settings-layout {
@@ -134,10 +131,10 @@
 .settings-nav {
   width: 200px;
   flex-shrink: 0;
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgb(255 255 255 / 0.1);
   padding: 1rem 0;
   overflow-y: auto;
-  background: rgba(0, 0, 0, 0.15);
+  background: rgb(0 0 0 / 0.15);
 }
 
 .settings-nav-list {
@@ -157,7 +154,7 @@
   padding: 0.7rem 1.25rem;
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgb(255 255 255 / 0.6);
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
@@ -167,14 +164,14 @@
 }
 
 .settings-nav-item:hover {
-  color: rgba(255, 255, 255, 0.9);
-  background: rgba(255, 255, 255, 0.05);
+  color: rgb(255 255 255 / 0.9);
+  background: rgb(255 255 255 / 0.05);
 }
 
 .settings-nav-item.active {
   color: #fff;
-  background: rgba(100, 149, 237, 0.12);
-  border-left-color: rgba(100, 149, 237, 0.8);
+  background: rgb(100 149 237 / 0.12);
+  border-left-color: rgb(100 149 237 / 0.8);
 }
 
 .settings-nav-icon {
@@ -196,17 +193,17 @@
 }
 
 .settings-panels::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 0.05);
   border-radius: 4px;
 }
 
 .settings-panels::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(255 255 255 / 0.2);
   border-radius: 4px;
 }
 
 .settings-panels::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgb(255 255 255 / 0.3);
 }
 
 .settings-panel {
@@ -228,8 +225,8 @@
 
 .settings-panel-description {
   font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.5);
-  margin: 0 0 0.75rem 0;
+  color: rgb(255 255 255 / 0.5);
+  margin: 0 0 0.75rem;
 }
 
 .settings-group {
@@ -245,13 +242,13 @@
   gap: 0.2rem;
   font-size: 0.9rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgb(255 255 255 / 0.9);
 }
 
 .settings-hint {
   font-size: 0.78rem;
   line-height: 1.35;
-  color: rgba(255, 255, 255, 0.58);
+  color: rgb(255 255 255 / 0.58);
   font-weight: 400;
 }
 
@@ -261,8 +258,8 @@
   min-height: 2.35rem;
   padding: 0.55rem 0.75rem;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgb(255 255 255 / 0.16);
+  background: rgb(255 255 255 / 0.08);
   color: #fff;
   font-size: 0.9rem;
   font-family: inherit;
@@ -273,20 +270,20 @@
 
 .settings-input::placeholder,
 .settings-select::placeholder {
-  color: rgba(255, 255, 255, 0.42);
+  color: rgb(255 255 255 / 0.42);
 }
 
 .settings-input:hover,
 .settings-select:hover {
-  border-color: rgba(255, 255, 255, 0.28);
+  border-color: rgb(255 255 255 / 0.28);
 }
 
 .settings-input:focus,
 .settings-select:focus {
   outline: none;
-  border-color: rgba(100, 149, 237, 0.68);
-  background: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 0 0 2px rgba(100, 149, 237, 0.2);
+  border-color: rgb(100 149 237 / 0.68);
+  background: rgb(255 255 255 / 0.12);
+  box-shadow: 0 0 0 2px rgb(100 149 237 / 0.2);
 }
 
 .settings-input:disabled,
@@ -319,13 +316,13 @@
   min-height: 2.1rem;
   padding: 0.4rem 0.45rem;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgb(255 255 255 / 0.14);
+  background: rgb(255 255 255 / 0.04);
 }
 
 .hotkey-bindings-empty {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgb(255 255 255 / 0.5);
   padding: 0.15rem 0.2rem;
 }
 
@@ -335,14 +332,14 @@
   gap: 0.35rem;
   padding: 0.25rem 0.35rem 0.25rem 0.55rem;
   border-radius: 999px;
-  background: rgba(100, 149, 237, 0.14);
-  border: 1px solid rgba(100, 149, 237, 0.38);
+  background: rgb(100 149 237 / 0.14);
+  border: 1px solid rgb(100 149 237 / 0.38);
 }
 
 .hotkey-chip-key {
   font-family: monospace;
   font-size: 0.78rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgb(255 255 255 / 0.9);
   white-space: nowrap;
 }
 
@@ -351,8 +348,8 @@
   height: 1.15rem;
   border: none;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.95);
+  background: rgb(255 255 255 / 0.12);
+  color: rgb(255 255 255 / 0.95);
   font-size: 0.85rem;
   line-height: 1;
   cursor: pointer;
@@ -362,15 +359,15 @@
 }
 
 .hotkey-chip-remove:hover {
-  background: rgba(255, 107, 129, 0.5);
+  background: rgb(255 107 129 / 0.5);
 }
 
 .hotkey-add-btn {
   width: 2.1rem;
   height: 2.1rem;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgb(255 255 255 / 0.2);
+  background: rgb(255 255 255 / 0.08);
   color: #fff;
   font-size: 1.2rem;
   line-height: 1;
@@ -379,12 +376,12 @@
 }
 
 .hotkey-add-btn:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: rgb(255 255 255 / 0.16);
 }
 
 .hotkey-add-btn.recording {
-  background: rgba(76, 175, 80, 0.2);
-  border-color: rgba(76, 175, 80, 0.6);
+  background: rgb(76 175 80 / 0.2);
+  border-color: rgb(76 175 80 / 0.6);
   color: #bbf0c0;
 }
 
@@ -398,22 +395,22 @@
 .settings-panel .prompt-section-title {
   font-size: 0.85rem;
   color: #ccc;
-  margin: 0 0 0.4rem 0;
+  margin: 0 0 0.4rem;
   font-weight: 500;
 }
 
 .settings-panel .prompt-section-description {
   font-size: 0.7rem;
   color: #888;
-  margin: 0 0 0.6rem 0;
+  margin: 0 0 0.6rem;
 }
 
 .settings-panel .custom-prompt-input {
   width: 100%;
   padding: 0.6rem 0.75rem;
   font-size: 0.85rem;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgb(255 255 255 / 0.08);
+  border: 1px solid rgb(255 255 255 / 0.15);
   border-radius: 6px;
   color: #fff;
   line-height: 1.5;
@@ -424,13 +421,13 @@
 
 .settings-panel .custom-prompt-input:focus {
   outline: none;
-  border-color: rgba(100, 149, 237, 0.6);
-  background: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 0 0 2px rgba(100, 149, 237, 0.2);
+  border-color: rgb(100 149 237 / 0.6);
+  background: rgb(255 255 255 / 0.12);
+  box-shadow: 0 0 0 2px rgb(100 149 237 / 0.2);
 }
 
 .settings-panel .custom-prompt-input:hover {
-  border-color: rgba(255, 255, 255, 0.25);
+  border-color: rgb(255 255 255 / 0.25);
 }
 
 .settings-panel .prompt-actions {
@@ -442,7 +439,7 @@
 
 .settings-panel .prompt-actions .action-btn {
   padding: 0.5rem 0.75rem;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 0.1);
   border: none;
   border-radius: 8px;
   color: #fff;
@@ -454,13 +451,13 @@
 }
 
 .settings-panel .prompt-actions .action-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(255 255 255 / 0.2);
   transform: none;
   box-shadow: none;
 }
 
 .settings-panel .prompt-actions .action-btn.secondary {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 0.08);
   color: #ddd;
 }
 
@@ -471,7 +468,7 @@
 .settings-model-manager .settings-section-title {
   font-size: 0.85rem;
   color: #ccc;
-  margin: 0 0 0.35rem 0;
+  margin: 0 0 0.35rem;
   padding-bottom: 0;
   border-bottom: none;
   font-weight: 500;
@@ -480,7 +477,7 @@
 .settings-model-manager .settings-panel-description {
   font-size: 0.7rem;
   color: #888;
-  margin: 0 0 0.6rem 0;
+  margin: 0 0 0.6rem;
 }
 
 .settings-model-actions-row {
@@ -492,7 +489,7 @@
 .settings-model-manager .model-btn {
   padding: 0.5rem 0.75rem;
   font-size: 0.8rem;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 0.1);
   border: none;
   border-radius: 8px;
   color: #fff;
@@ -500,42 +497,42 @@
 }
 
 .settings-model-manager .model-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(255 255 255 / 0.2);
   transform: none;
   box-shadow: none;
 }
 
 .settings-model-manager .model-btn.download-btn {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 0.1);
 }
 
 .settings-model-manager .model-btn.download-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(255 255 255 / 0.2);
 }
 
 .settings-model-manager .gguf-download-section {
   margin-bottom: 1rem;
   padding: 0.85rem;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 0.04);
+  border: 1px solid rgb(255 255 255 / 0.1);
   border-radius: 8px;
 }
 
 .settings-model-manager .gguf-download-title {
   font-size: 0.85rem;
   color: #ccc;
-  margin: 0 0 0.75rem 0;
+  margin: 0 0 0.75rem;
   font-weight: 500;
 }
 
 .settings-model-manager .gguf-tab {
   font-size: 0.78rem;
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.7);
+  background: rgb(255 255 255 / 0.05);
+  color: rgb(255 255 255 / 0.7);
 }
 
 .settings-model-manager .gguf-tab.active {
-  background: rgba(100, 149, 237, 0.18);
+  background: rgb(100 149 237 / 0.18);
   color: #d3e1ff;
 }
 
@@ -543,17 +540,17 @@
   width: 100%;
   padding: 0.6rem 0.75rem;
   font-size: 0.85rem;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgb(255 255 255 / 0.08);
+  border: 1px solid rgb(255 255 255 / 0.15);
   border-radius: 6px;
   color: #fff;
 }
 
 .settings-model-manager .gguf-download-input:focus {
   outline: none;
-  border-color: rgba(100, 149, 237, 0.6);
-  background: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 0 0 2px rgba(100, 149, 237, 0.2);
+  border-color: rgb(100 149 237 / 0.6);
+  background: rgb(255 255 255 / 0.12);
+  box-shadow: 0 0 0 2px rgb(100 149 237 / 0.2);
 }
 
 .settings-model-download-action {
@@ -568,8 +565,8 @@
   margin-bottom: 0.5rem;
   padding: 0.55rem 0.65rem;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 0.04);
+  border: 1px solid rgb(255 255 255 / 0.1);
   cursor: default;
 }
 
@@ -578,12 +575,12 @@
 }
 
 .settings-model-manager .gguf-model-item.selectable:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 0.08);
 }
 
 .settings-model-manager .gguf-model-item.selected {
-  border-color: rgba(76, 175, 80, 0.5);
-  background: rgba(76, 175, 80, 0.15);
+  border-color: rgb(76 175 80 / 0.5);
+  background: rgb(76 175 80 / 0.15);
 }
 
 .settings-model-manager .gguf-model-item-content {
@@ -636,15 +633,15 @@
 }
 
 .settings-model-manager #ggufModelsList::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 0.05);
   border-radius: 4px;
 }
 
 .settings-model-manager #ggufModelsList::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(255 255 255 / 0.2);
   border-radius: 4px;
 }
 
 .settings-model-manager #ggufModelsList::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgb(255 255 255 / 0.3);
 }

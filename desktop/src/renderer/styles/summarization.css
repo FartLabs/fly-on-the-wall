@@ -13,8 +13,8 @@
 }
 
 .summary-text {
-  background: rgba(102, 126, 234, 0.1);
-  border: 1px solid rgba(102, 126, 234, 0.2);
+  background: rgb(102 126 234 / 0.1);
+  border: 1px solid rgb(102 126 234 / 0.2);
   border-radius: 12px;
   padding: 1rem;
   font-size: 0.9rem;

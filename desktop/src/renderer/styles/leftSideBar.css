@@ -8,9 +8,9 @@
   left: 0;
   width: var(--sidebar-width);
   height: 100vh;
-  background: rgba(16, 18, 36, 0.97);
+  background: rgb(16 18 36 / 0.97);
   backdrop-filter: blur(15px);
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid rgb(255 255 255 / 0.08);
   display: flex;
   flex-direction: column;
   z-index: 100;
@@ -97,7 +97,7 @@ body.sidebar-resizing * {
 }
 
 .sidebar-resize-handle:hover {
-  background: rgba(102, 126, 234, 0.35);
+  background: rgb(102 126 234 / 0.35);
 }
 
 .left-sidebar.collapsed .sidebar-resize-handle {
@@ -109,13 +109,13 @@ body.sidebar-resizing * {
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1rem 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgb(255 255 255 / 0.06);
 }
 
 .sidebar-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgb(255 255 255 / 0.9);
   white-space: nowrap;
   letter-spacing: 0.02em;
   transition: opacity 0.2s ease;
@@ -124,7 +124,7 @@ body.sidebar-resizing * {
 .sidebar-collapse-btn {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgb(255 255 255 / 0.4);
   cursor: pointer;
   font-size: 0.7rem;
   padding: 4px;
@@ -134,15 +134,15 @@ body.sidebar-resizing * {
 }
 
 .sidebar-collapse-btn:hover {
-  color: rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.08);
+  color: rgb(255 255 255 / 0.8);
+  background: rgb(255 255 255 / 0.08);
 }
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 0.5rem 0.5rem;
+  padding: 0.5rem;
 }
 
 .sidebar-nav-item {
@@ -153,7 +153,7 @@ body.sidebar-resizing * {
   background: transparent;
   border: none;
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgb(255 255 255 / 0.6);
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
@@ -164,12 +164,12 @@ body.sidebar-resizing * {
 }
 
 .sidebar-nav-item:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.9);
+  background: rgb(255 255 255 / 0.06);
+  color: rgb(255 255 255 / 0.9);
 }
 
 .sidebar-nav-item.active {
-  background: rgba(102, 126, 234, 0.15);
+  background: rgb(102 126 234 / 0.15);
   color: #8fa4f0;
 }
 
@@ -189,7 +189,7 @@ body.sidebar-resizing * {
 
 .sidebar-divider {
   height: 1px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 0.06);
   margin: 0.25rem 0.75rem;
   transition: opacity 0.2s ease;
 }
@@ -222,14 +222,14 @@ body.sidebar-resizing * {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.35);
+  color: rgb(255 255 255 / 0.35);
 }
 
 .sidebar-selected-count {
   font-size: 0.62rem;
-  color: rgba(198, 210, 255, 0.95);
-  background: rgba(114, 137, 255, 0.2);
-  border: 1px solid rgba(143, 164, 240, 0.35);
+  color: rgb(198 210 255 / 0.95);
+  background: rgb(114 137 255 / 0.2);
+  border: 1px solid rgb(143 164 240 / 0.35);
   border-radius: 999px;
   padding: 1px 6px;
   white-space: nowrap;
@@ -238,7 +238,7 @@ body.sidebar-resizing * {
 .sidebar-refresh-btn {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.35);
+  color: rgb(255 255 255 / 0.35);
   cursor: pointer;
   font-size: 0.9rem;
   padding: 2px 4px;
@@ -247,8 +247,8 @@ body.sidebar-resizing * {
 }
 
 .sidebar-refresh-btn:hover {
-  color: rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.06);
+  color: rgb(255 255 255 / 0.7);
+  background: rgb(255 255 255 / 0.06);
 }
 
 .sidebar-refresh-btn.spinning {
@@ -262,8 +262,8 @@ body.sidebar-resizing * {
 .sidebar-search-input {
   width: 100%;
   padding: 0.4rem 0.65rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 0.05);
+  border: 1px solid rgb(255 255 255 / 0.08);
   border-radius: 6px;
   color: #fff;
   font-size: 0.78rem;
@@ -272,17 +272,16 @@ body.sidebar-resizing * {
 }
 
 .sidebar-search-input::placeholder {
-  color: rgba(255, 255, 255, 0.25);
+  color: rgb(255 255 255 / 0.25);
 }
 
 .sidebar-search-input:focus {
-  border-color: rgba(102, 126, 234, 0.4);
+  border-color: rgb(102 126 234 / 0.4);
 }
 
 .sidebar-file-tree {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden auto;
   padding: 0 0.25rem;
 }
 
@@ -295,20 +294,20 @@ body.sidebar-resizing * {
 }
 
 .sidebar-file-tree::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 0.1);
   border-radius: 2px;
 }
 
 .sidebar-loading {
   text-align: center;
-  color: rgba(255, 255, 255, 0.3);
+  color: rgb(255 255 255 / 0.3);
   font-size: 0.78rem;
   padding: 1rem;
 }
 
 .sidebar-empty {
   text-align: center;
-  color: rgba(255, 255, 255, 0.25);
+  color: rgb(255 255 255 / 0.25);
   font-size: 0.78rem;
   padding: 1.5rem 0.5rem;
 }
@@ -329,12 +328,12 @@ body.sidebar-resizing * {
 }
 
 .sidebar-date-header:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 0.04);
 }
 
 .sidebar-date-chevron {
   font-size: 0.55rem;
-  color: rgba(255, 255, 255, 0.3);
+  color: rgb(255 255 255 / 0.3);
   transition: transform 0.2s ease;
   flex-shrink: 0;
   width: 12px;
@@ -348,14 +347,14 @@ body.sidebar-resizing * {
 .sidebar-date-label {
   font-size: 0.7rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgb(255 255 255 / 0.4);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .sidebar-date-count {
   font-size: 0.65rem;
-  color: rgba(255, 255, 255, 0.2);
+  color: rgb(255 255 255 / 0.2);
   margin-left: auto;
 }
 
@@ -381,16 +380,16 @@ body.sidebar-resizing * {
 }
 
 .sidebar-file-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 0.05);
 }
 
 .sidebar-file-item.active {
-  background: rgba(102, 126, 234, 0.12);
+  background: rgb(102 126 234 / 0.12);
 }
 
 .sidebar-file-item.multi-selected {
-  background: rgba(114, 137, 255, 0.22);
-  outline: 1px solid rgba(143, 164, 240, 0.45);
+  background: rgb(114 137 255 / 0.22);
+  outline: 1px solid rgb(143 164 240 / 0.45);
 }
 
 .sidebar-file-icon {
@@ -401,7 +400,7 @@ body.sidebar-resizing * {
 
 .sidebar-file-name {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgb(255 255 255 / 0.7);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -409,7 +408,7 @@ body.sidebar-resizing * {
 }
 
 .sidebar-file-item:hover .sidebar-file-name {
-  color: rgba(255, 255, 255, 0.9);
+  color: rgb(255 255 255 / 0.9);
 }
 
 .sidebar-file-item.active .sidebar-file-name {
@@ -423,13 +422,13 @@ body.sidebar-resizing * {
 .sidebar-context-menu {
   position: fixed;
   z-index: 2000;
-  background: rgba(22, 28, 50, 0.98);
+  background: rgb(22 28 50 / 0.98);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgb(255 255 255 / 0.12);
   border-radius: 8px;
   padding: 4px;
   min-width: 140px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
 }
 
 .context-menu-item {
@@ -439,7 +438,7 @@ body.sidebar-resizing * {
   background: none;
   border: none;
   border-radius: 5px;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgb(255 255 255 / 0.8);
   font-size: 0.8rem;
   text-align: left;
   cursor: pointer;
@@ -447,7 +446,7 @@ body.sidebar-resizing * {
 }
 
 .context-menu-item:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 0.08);
 }
 
 .context-menu-item:disabled {
@@ -464,14 +463,14 @@ body.sidebar-resizing * {
 }
 
 .context-menu-item.danger:hover {
-  background: rgba(255, 71, 87, 0.15);
+  background: rgb(255 71 87 / 0.15);
 }
 
 .sidebar-rename-input {
   width: 100%;
   padding: 2px 4px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(102, 126, 234, 0.5);
+  background: rgb(255 255 255 / 0.08);
+  border: 1px solid rgb(102 126 234 / 0.5);
   border-radius: 4px;
   color: #fff;
   font-size: 0.8rem;
@@ -494,7 +493,7 @@ body.sidebar-resizing * {
   justify-content: space-between;
   margin-bottom: 1.5rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgb(255 255 255 / 0.1);
 }
 
 .note-view-title {
@@ -509,11 +508,11 @@ body.sidebar-resizing * {
 }
 
 .note-view-title:hover {
-  outline: 2px dashed rgba(102, 126, 234, 0.2);
+  outline: 2px dashed rgb(102 126 234 / 0.2);
 }
 
 .note-view-title:focus {
-  outline: 2px dashed rgba(102, 126, 234, 0.45);
+  outline: 2px dashed rgb(102 126 234 / 0.45);
 }
 
 .note-view-actions {
@@ -524,8 +523,8 @@ body.sidebar-resizing * {
 }
 
 .note-view-recording {
-  background: rgba(102, 126, 234, 0.1);
-  border: 1px solid rgba(102, 126, 234, 0.2);
+  background: rgb(102 126 234 / 0.1);
+  border: 1px solid rgb(102 126 234 / 0.2);
   border-radius: 12px;
   padding: 1rem;
   margin-bottom: 1.5rem;
@@ -538,8 +537,8 @@ body.sidebar-resizing * {
 }
 
 .note-view-section {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 0.03);
+  border: 1px solid rgb(255 255 255 / 0.08);
   border-radius: 12px;
   padding: 1rem 1.25rem;
 }
@@ -547,26 +546,26 @@ body.sidebar-resizing * {
 .note-view-section .section-header {
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgb(255 255 255 / 0.06);
 }
 
 .note-view-section .note-section-body {
   min-height: 120px;
   white-space: pre-wrap;
-  word-wrap: break-word;
+  overflow-wrap: break-word;
   color: #e0e0e0;
   font-size: 0.9rem;
   line-height: 1.7;
 }
 
 .note-view-section .note-section-body:focus {
-  outline: 2px dashed rgba(102, 126, 234, 0.4);
+  outline: 2px dashed rgb(102 126 234 / 0.4);
   border-radius: 4px;
 }
 
 .sidebar-footer {
   padding: 0.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgb(255 255 255 / 0.06);
 }
 
 .sidebar-footer-item {
@@ -574,7 +573,7 @@ body.sidebar-resizing * {
   align-items: center;
   gap: 0;
   padding: 0.4rem 0.75rem;
-  color: rgba(255, 255, 255, 0.3);
+  color: rgb(255 255 255 / 0.3);
   font-size: 0.75rem;
 }
 

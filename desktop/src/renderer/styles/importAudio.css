@@ -12,7 +12,7 @@
   content: "";
   flex: 1;
   height: 1px;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgb(255 255 255 / 0.12);
 }
 
 .import-divider-text {
@@ -31,20 +31,20 @@
   padding: 0.75rem 1.5rem;
   font-size: 0.95rem;
   font-weight: 600;
-  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border: 2px dashed rgb(255 255 255 / 0.2);
   border-radius: 50px;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 0.04);
   color: #ccc;
 }
 
 .import-btn:hover {
-  border-color: rgba(102, 126, 234, 0.5);
-  background: rgba(102, 126, 234, 0.08);
+  border-color: rgb(102 126 234 / 0.5);
+  background: rgb(102 126 234 / 0.08);
   color: #fff;
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.15);
+  box-shadow: 0 6px 20px rgb(102 126 234 / 0.15);
 }
 
 .import-btn:active {
@@ -62,9 +62,9 @@
 
 .import-queue {
   margin-top: 1.25rem;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 0.03);
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgb(255 255 255 / 0.08);
   padding: 1rem;
   text-align: left;
 }
@@ -102,7 +102,7 @@
   gap: 10px;
   padding: 8px 10px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 0.04);
   font-size: 0.85rem;
 }
 
@@ -130,23 +130,23 @@
 
 .import-status-pending {
   color: #888;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 0.06);
 }
 
 .import-status-active {
   color: #60a5fa;
-  background: rgba(96, 165, 250, 0.12);
+  background: rgb(96 165 250 / 0.12);
   animation: importPulse 1.5s infinite;
 }
 
 .import-status-done {
   color: #34d399;
-  background: rgba(52, 211, 153, 0.12);
+  background: rgb(52 211 153 / 0.12);
 }
 
 .import-status-error {
   color: #f87171;
-  background: rgba(248, 113, 113, 0.12);
+  background: rgb(248 113 113 / 0.12);
   cursor: help;
 }
 
@@ -155,6 +155,7 @@
   100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.6;
   }
@@ -165,7 +166,7 @@
 .import-dialog-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgb(0 0 0 / 0.6);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -175,12 +176,12 @@
 
 .import-dialog {
   background: #1e1e2e;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgb(255 255 255 / 0.12);
   border-radius: 16px;
   padding: 1.5rem 2rem;
   max-width: 440px;
   width: 90%;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 16px 48px rgb(0 0 0 / 0.5);
 }
 
 .import-dialog h3 {
@@ -210,7 +211,7 @@
   color: #888;
   margin-bottom: 8px;
   padding: 4px 8px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 0.04);
   border-radius: 6px;
-  border-left: 3px solid rgba(102, 126, 234, 0.5);
+  border-left: 3px solid rgb(102 126 234 / 0.5);
 }

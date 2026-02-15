@@ -21,14 +21,14 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.875rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 0.05);
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgb(255 255 255 / 0.1);
   transition: all 0.2s ease;
 }
 
 .model-item:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 0.08);
 }
 
 .model-item.selectable {
@@ -36,8 +36,8 @@
 }
 
 .model-item.selectable:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: rgb(255 255 255 / 0.12);
+  border-color: rgb(255 255 255 / 0.2);
   transform: translateY(-1px);
 }
 
@@ -48,25 +48,25 @@
 }
 
 .model-item.disabled:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 0.05);
+  border-color: rgb(255 255 255 / 0.1);
   transform: none;
 }
 
 .model-item.downloaded {
-  border-color: rgba(102, 126, 234, 0.3);
-  background: rgba(102, 126, 234, 0.1);
+  border-color: rgb(102 126 234 / 0.3);
+  background: rgb(102 126 234 / 0.1);
 }
 
 .model-item.selected {
-  border-color: rgba(76, 175, 80, 0.5);
-  background: rgba(76, 175, 80, 0.15);
-  box-shadow: 0 0 15px rgba(76, 175, 80, 0.2);
+  border-color: rgb(76 175 80 / 0.5);
+  background: rgb(76 175 80 / 0.15);
+  box-shadow: 0 0 15px rgb(76 175 80 / 0.2);
 }
 
 .model-item.summary-model.downloaded {
-  border-color: rgba(74, 222, 128, 0.3);
-  background: rgba(74, 222, 128, 0.1);
+  border-color: rgb(74 222 128 / 0.3);
+  background: rgb(74 222 128 / 0.1);
 }
 
 .model-info {
@@ -124,11 +124,11 @@
 
 .model-btn.download-btn:hover:not(:disabled) {
   transform: scale(1.05);
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 15px rgb(102 126 234 / 0.4);
 }
 
 .model-btn.download-btn:disabled {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(255 255 255 / 0.2);
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
@@ -137,19 +137,19 @@
 }
 
 .model-btn.delete-btn {
-  background: rgba(239, 68, 68, 0.2);
+  background: rgb(239 68 68 / 0.2);
   color: #000;
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  border: 1px solid rgb(239 68 68 / 0.3);
 }
 
 .model-btn.delete-btn:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.3);
+  background: rgb(239 68 68 / 0.3);
 }
 
 .model-btn.delete-btn:disabled {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 0.1);
   color: #666;
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: rgb(255 255 255 / 0.1);
   cursor: not-allowed;
   opacity: 0.5;
   pointer-events: none;
@@ -169,14 +169,14 @@
 .prompt-customization-section {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgb(255 255 255 / 0.1);
 }
 
 .custom-prompt-input {
   width: 100%;
   padding: 0.75rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 0.05);
+  border: 1px solid rgb(255 255 255 / 0.1);
   border-radius: 8px;
   color: #fff;
   font-family: monospace;
@@ -189,8 +189,8 @@
 
 .custom-prompt-input:focus {
   outline: none;
-  border-color: rgba(102, 126, 234, 0.5);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: rgb(102 126 234 / 0.5);
+  background: rgb(255 255 255 / 0.08);
 }
 
 .custom-prompt-input::placeholder {
@@ -218,31 +218,31 @@
 
 .prompt-actions .action-btn:hover {
   transform: scale(1.05);
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 15px rgb(102 126 234 / 0.4);
 }
 
 .prompt-actions .action-btn.secondary {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 0.1);
   color: #ddd;
 }
 
 .prompt-actions .action-btn.secondary:hover {
-  background: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 0.15);
+  box-shadow: 0 2px 8px rgb(255 255 255 / 0.1);
 }
 
 .gguf-download-section {
   margin-bottom: 1rem;
   padding: 1rem;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 0.03);
+  border: 1px solid rgb(255 255 255 / 0.08);
   border-radius: 10px;
 }
 
 .gguf-download-title {
   font-size: 0.85rem;
   color: #aaa;
-  margin: 0 0 0.75rem 0;
+  margin: 0 0 0.75rem;
   font-weight: 500;
 }
 
@@ -250,7 +250,7 @@
   display: flex;
   gap: 0;
   margin-bottom: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgb(255 255 255 / 0.1);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -259,7 +259,7 @@
   flex: 1;
   padding: 0.5rem 0.75rem;
   border: none;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 0.03);
   color: #888;
   font-size: 0.8rem;
   font-weight: 500;
@@ -268,16 +268,16 @@
 }
 
 .gguf-tab:not(:last-child) {
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgb(255 255 255 / 0.1);
 }
 
 .gguf-tab:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 0.08);
   color: #ccc;
 }
 
 .gguf-tab.active {
-  background: rgba(102, 126, 234, 0.2);
+  background: rgb(102 126 234 / 0.2);
   color: #a0b9ff;
 }
 
@@ -292,8 +292,8 @@
 .gguf-download-input {
   width: 100%;
   padding: 0.6rem 0.75rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 0.05);
+  border: 1px solid rgb(255 255 255 / 0.1);
   border-radius: 8px;
   color: #fff;
   font-size: 0.8rem;
@@ -303,8 +303,8 @@
 
 .gguf-download-input:focus {
   outline: none;
-  border-color: rgba(102, 126, 234, 0.5);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: rgb(102 126 234 / 0.5);
+  background: rgb(255 255 255 / 0.08);
 }
 
 .gguf-download-input::placeholder {
