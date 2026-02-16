@@ -122,11 +122,6 @@
   color: #fff;
 }
 
-.model-btn.download-btn:hover:not(:disabled) {
-  transform: scale(1.05);
-  box-shadow: 0 4px 15px rgb(102 126 234 / 0.4);
-}
-
 .model-btn.download-btn:disabled {
   background: rgb(255 255 255 / 0.2);
   cursor: not-allowed;
@@ -136,14 +131,15 @@
   opacity: 0.5;
 }
 
+.model-btn.download-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgb(102 126 234 / 0.4);
+}
+
 .model-btn.delete-btn {
   background: rgb(239 68 68 / 0.2);
   color: #000;
   border: 1px solid rgb(239 68 68 / 0.3);
-}
-
-.model-btn.delete-btn:hover:not(:disabled) {
-  background: rgb(239 68 68 / 0.3);
 }
 
 .model-btn.delete-btn:disabled {
@@ -153,6 +149,10 @@
   cursor: not-allowed;
   opacity: 0.5;
   pointer-events: none;
+}
+
+.model-btn.delete-btn:hover:not(:disabled) {
+  background: rgb(239 68 68 / 0.3);
 }
 
 .model-btn:disabled {

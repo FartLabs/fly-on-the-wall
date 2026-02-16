@@ -86,10 +86,6 @@
   opacity: 0.5;
 }
 
-.device-item.muted .device-name {
-  text-decoration: line-through;
-}
-
 .device-item.disabled,
 .devices-list.disabled .device-item {
   opacity: 0.5;
@@ -119,6 +115,10 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.device-item.muted .device-name {
+  text-decoration: line-through;
 }
 
 .device-type {

@@ -136,7 +136,7 @@
 .import-status-active {
   color: #60a5fa;
   background: rgb(96 165 250 / 0.12);
-  animation: importPulse 1.5s infinite;
+  animation: import-pulse 1.5s infinite;
 }
 
 .import-status-done {
@@ -150,7 +150,7 @@
   cursor: help;
 }
 
-@keyframes importPulse {
+@keyframes import-pulse {
   0%,
   100% {
     opacity: 1;
