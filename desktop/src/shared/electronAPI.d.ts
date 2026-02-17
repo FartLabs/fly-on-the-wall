@@ -16,12 +16,12 @@ export interface AppConfig {
     selectedModelPath: string;
     modelStoragePath: string;
     utilityProcess: UtilityProcessSettings;
- };
+  };
   transcription: {
     selectedModel: string;
     modelStoragePath: string;
     utilityProcess: UtilityProcessSettings;
- };
+  };
   hotkeys: HotkeysConfig;
 }
 

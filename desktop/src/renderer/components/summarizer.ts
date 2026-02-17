@@ -77,7 +77,7 @@ export async function runSummarization(
     console.log("No summarization model selected");
     if (elements.summaryEmpty) {
       elements.summaryEmpty.classList.remove("hidden");
-      elements.summaryEmpty.innerHTML = `<p style="color: #ff9800;">No summarization model selected. Please select a GGUF model in Settings → Summarization.</p>`;
+      elements.summaryEmpty.innerHTML = `<p class="status-warning">No summarization model selected. Please select a GGUF model in Settings → Summarization.</p>`;
     }
     return;
   }
@@ -90,7 +90,7 @@ export async function runSummarization(
     console.log("Selected model file not found or invalid");
     if (elements.summaryEmpty) {
       elements.summaryEmpty.classList.remove("hidden");
-      elements.summaryEmpty.innerHTML = `<p style="color: #ff6b81;">Selected model file not found. Please select a valid GGUF model file.</p>`;
+      elements.summaryEmpty.innerHTML = `<p class="status-error">Selected model file not found. Please select a valid GGUF model file.</p>`;
     }
     return;
   }
@@ -148,7 +148,7 @@ export async function runSummarization(
     }
     if (elements.summaryEmpty) {
       elements.summaryEmpty.classList.remove("hidden");
-      elements.summaryEmpty.innerHTML = `<p style="color: #ff6b81;">Summarization failed: ${error}</p>`;
+      elements.summaryEmpty.innerHTML = `<p class="status-error">Summarization failed: ${error}</p>`;
     }
   }
 }

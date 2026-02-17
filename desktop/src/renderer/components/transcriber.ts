@@ -154,7 +154,7 @@ export async function runTranscription(
     }
     if (elements.transcriptionEmpty) {
       elements.transcriptionEmpty.classList.remove("hidden");
-      elements.transcriptionEmpty.innerHTML = `<p style="color: #ff6b81;">Failed: ${error}</p>`;
+      elements.transcriptionEmpty.innerHTML = `<p class="status-error">Failed: ${error}</p>`;
     }
   } finally {
     setTranscriptionInProgress(false);

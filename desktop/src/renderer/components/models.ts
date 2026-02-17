@@ -53,7 +53,7 @@ function createModelItemHTML(
       <div class="model-info">
         <div class="model-name">
           Whisper ${status.modelSize.charAt(0).toUpperCase() + status.modelSize.slice(1)}
-          ${isSelected ? '<span style="color: #4CAF50; margin-left: 0.5rem;">● Active</span>' : ""}
+          ${isSelected ? '<span class="model-active-indicator">● Active</span>' : ""}
         </div>
         <div class="model-meta">
           <span class="model-size">${status.size}</span>
@@ -61,11 +61,11 @@ function createModelItemHTML(
             ${status.downloaded ? "Downloaded" : "Not downloaded"}
           </span>
         </div>
-        <div class="model-description" style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">
+        <div class="model-description">
           ${MODEL_DESCRIPTIONS[status.modelSize]}
-          ${status.downloaded && !isSelected && !isTranscribing && !isRecording ? '<span style="color: #888; font-style: italic;"> • Click to use for transcription</span>' : ""}
-          ${isTranscribing ? '<span style="color: #ff9800; font-style: italic;"> • Locked during transcription</span>' : ""}
-          ${isRecording && !isTranscribing ? '<span style="color: #ff9800; font-style: italic;"> • Locked during recording</span>' : ""}
+          ${status.downloaded && !isSelected && !isTranscribing && !isRecording ? '<span class="model-hint"> • Click to use for transcription</span>' : ""}
+          ${isTranscribing ? '<span class="model-locked"> • Locked during transcription</span>' : ""}
+          ${isRecording && !isTranscribing ? '<span class="model-locked"> • Locked during recording</span>' : ""}
         </div>
       </div>
       <div class="model-actions">
@@ -138,15 +138,14 @@ function createSummaryModelHTML(): string {
           id="ggufFilenameInput"
           class="gguf-download-input"
           placeholder="Filename (e.g. llama-2-7b.Q4_K_M.gguf)"
-          style="margin-top: 0.5rem;"
+          class="gguf-download-input gguf-input-spacing"
           ${isDownloadingGguf ? "disabled" : ""}
         />
         <input
           type="text"
           id="ggufRevisionInput"
-          class="gguf-download-input"
+          class="gguf-download-input gguf-input-spacing"
           placeholder="Branch/tag (default: main)"
-          style="margin-top: 0.5rem;"
           ${isDownloadingGguf ? "disabled" : ""}
         />
       </div>
@@ -206,7 +205,7 @@ async function renderGgufModelsList() {
           <div class="gguf-model-item-content">
             <div class="gguf-model-name">
               ${model.name}
-              ${isSelected ? '<span style="color: #4CAF50; margin-left: 0.5rem;">● Active</span>' : ""}
+              ${isSelected ? '<span class="model-active-indicator">● Active</span>' : ""}
             </div>
             <div class="gguf-model-meta">
               ${model.sizeFormatted}
