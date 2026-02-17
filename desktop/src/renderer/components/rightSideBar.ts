@@ -1,5 +1,6 @@
 import { elements } from "./domNodes";
 import { saveNote } from "./saveNote";
+import { clamp } from "@/utils";
 
 /** Set of recordingFilenames that have already triggered auto-open */
 const autoOpenedRecordings = new Set<string>();
@@ -15,9 +16,14 @@ function getRightSidebarMaxWidth(): number {
 }
 
 function applyRightSidebarWidth(width: number): void {
-  const clamped = Math.max(
+  // const clamped = Math.max(
+  //   RIGHT_SIDEBAR_MIN_WIDTH,
+  //   Math.min(width, getRightSidebarMaxWidth())
+  // );
+  const clamped = clamp(
+    width,
     RIGHT_SIDEBAR_MIN_WIDTH,
-    Math.min(width, getRightSidebarMaxWidth())
+    getRightSidebarMaxWidth()
   );
 
   document.documentElement.style.setProperty(

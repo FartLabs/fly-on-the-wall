@@ -1,5 +1,12 @@
 import { elements } from "./domNodes";
-import { clamp, type DeepPartial } from "@/utils";
+import {
+  clamp,
+  type DeepPartial,
+  msToMinutes,
+  msToSeconds,
+  minutesToMs,
+  secondsToMs
+} from "@/utils";
 import { AppConfig } from "@/shared/electronAPI";
 import {
   DEFAULT_CONFIG,
@@ -17,8 +24,6 @@ import { refreshModelsList } from "./models";
 import { refreshHotkeysFromConfig } from "./hotkeys";
 
 const AUTO_SAVE_DEBOUNCE_MS = 400;
-const MS_PER_SECOND = 1000;
-const MS_PER_MINUTE = 60_000;
 let autoSaveTimeoutId: number | undefined;
 let hotkeyOpenSettingsBindings: string[] = [];
 let isRecordingOpenSettingsHotkey = false;
@@ -127,22 +132,6 @@ async function refreshModelPathHints() {
   } catch (error) {
     console.warn("Failed to refresh model path hints:", error);
   }
-}
-
-function msToSeconds(ms: number): number {
-  return Math.round(ms / MS_PER_SECOND);
-}
-
-function msToMinutes(ms: number): number {
-  return Math.round(ms / MS_PER_MINUTE);
-}
-
-function secondsToMs(seconds: number): number {
-  return seconds * MS_PER_SECOND;
-}
-
-function minutesToMs(minutes: number): number {
-  return minutes * MS_PER_MINUTE;
 }
 
 async function getSettings(): Promise<AppSettings> {

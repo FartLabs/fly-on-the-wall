@@ -96,3 +96,22 @@ export function toSafeName(input: string) {
       .replace(/\s+/g, "_")
   );
 }
+
+const MS_PER_SEC = 1000;
+const MS_PER_MIN = 60_000;
+
+export function msToSeconds(ms: number): number {
+  return Math.round(ms / MS_PER_SEC);
+}
+
+export function msToMinutes(ms: number): number {
+  return Math.round(ms / MS_PER_MIN);
+}
+
+export function secondsToMs(seconds: number): number {
+  return seconds * MS_PER_SEC;
+}
+
+export function minutesToMs(minutes: number): number {
+  return minutes * MS_PER_MIN;
+}
