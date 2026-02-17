@@ -544,8 +544,10 @@ async function deleteSelectedSidebarNotes() {
     lastSidebarClickedFilename = null;
     setActiveSidebarNote(null);
 
-    const noteViewPage = document.getElementById("noteViewPage");
-    if (noteViewPage && !noteViewPage.classList.contains("hidden")) {
+    if (
+      elements.noteViewPage &&
+      !elements.noteViewPage.classList.contains("hidden")
+    ) {
       navigateToPage("main");
     }
 

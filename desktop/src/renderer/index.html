@@ -402,15 +402,6 @@
               <li>
                 <button
                   class="settings-nav-item"
-                  data-settings-section="transcription"
-                >
-                  <span class="settings-nav-icon">🎙️</span>
-                  <span>Transcription</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  class="settings-nav-item"
                   data-settings-section="hotkeys"
                 >
                   <span class="settings-nav-icon">⌨️</span>
@@ -420,6 +411,15 @@
               <li>
                 <button
                   class="settings-nav-item active"
+                  data-settings-section="transcription"
+                >
+                  <span class="settings-nav-icon">🎙️</span>
+                  <span>Transcription</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  class="settings-nav-item"
                   data-settings-section="summarization"
                 >
                   <span class="settings-nav-icon">📝</span>
@@ -447,14 +447,115 @@
                 />
               </div>
 
-              <div
-                class="settings-model-manager settings-transcription-manager"
-              >
-                <h3 class="settings-section-title">Model Management</h3>
-                <p class="settings-panel-description">
+              <div class="settings-model-manager">
+                <h3 class="settings-label settings-subheader">
+                  Model Management
+                </h3>
+                <p class="settings-hint settings-description">
                   Download and select Whisper models for transcription.
                 </p>
                 <div id="transcriptionModelsContainer"></div>
+              </div>
+
+              <div class="settings-main-group">
+                <h3
+                  class="settings-label settings-subheader settings-group-main"
+                >
+                  Utility Process (advanced)
+                </h3>
+                <p
+                  class="settings-hint settings-description settings-group-main-description"
+                >
+                  Configure memory monitoring and lifecycle behavior for the
+                  transcription utility process.
+                </p>
+              </div>
+
+              <div class="settings-group">
+                <label
+                  class="settings-label"
+                  for="transcriptionMemoryCheckIntervalInput"
+                >
+                  Memory Check Interval (seconds)
+                  <span class="settings-hint"
+                    >How often memory usage is checked (1-600). Mainly for
+                    logging purposes, so leave unchanged unless debugging.</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="transcriptionMemoryCheckIntervalInput"
+                  class="settings-input"
+                  min="1"
+                  max="600"
+                  step="1"
+                  value="10"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label
+                  class="settings-label"
+                  for="transcriptionMemoryThresholdInput"
+                >
+                  Memory Threshold (MB)
+                  <span class="settings-hint"
+                    >Restart process if RSS exceeds this threshold
+                    (256-32768)</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="transcriptionMemoryThresholdInput"
+                  class="settings-input"
+                  min="256"
+                  max="32768"
+                  step="256"
+                  value="4096"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label
+                  class="settings-label"
+                  for="transcriptionRestartDelayInput"
+                >
+                  Restart Delay (seconds)
+                  <span class="settings-hint"
+                    >Delay before restart after an unexpected exit (0-60)</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="transcriptionRestartDelayInput"
+                  class="settings-input"
+                  min="0"
+                  max="60"
+                  step="1"
+                  value="1"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label
+                  class="settings-label"
+                  for="transcriptionProcessRecycleTimeoutInput"
+                >
+                  Process Recycle Timeout (minutes)
+                  <span class="settings-hint"
+                    >Recycle idle utility process after this duration
+                    (1-120)</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="transcriptionProcessRecycleTimeoutInput"
+                  class="settings-input"
+                  min="1"
+                  max="120"
+                  step="1"
+                  value="5"
+                />
               </div>
             </div>
 
@@ -486,8 +587,8 @@
             <div class="settings-panel" id="settingsPanel-summarization">
               <h3 class="settings-panel-title">Summarization</h3>
               <div class="prompt-customization-section">
-                <h3 class="prompt-section-title">Prompt</h3>
-                <p class="prompt-section-description">
+                <h3 class="settings-label settings-subheader">Prompt</h3>
+                <p class="settings-hint settings-description">
                   Customize how AI summarizes your meetings. The following
                   variables can be used: {transcript} and {participants}.
                   {transcript} is the full transcription text, and
@@ -521,15 +622,131 @@
                   />
                 </div>
 
-                <h3 class="settings-section-title">Model Management</h3>
-                <p class="settings-panel-description">
+                <h3 class="settings-label settings-subheader">
+                  Model Management
+                </h3>
+                <p class="settings-hint settings-description">
                   Manage GGUF models used for summarization.
                 </p>
 
                 <div id="summarizationModelsContainer"></div>
               </div>
 
+              <div class="settings-main-group">
+                <h3
+                  class="settings-label settings-subheader settings-group-main"
+                >
+                  Utility Process (advanced)
+                </h3>
+                <p
+                  class="settings-hint settings-description settings-group-main-description"
+                >
+                  Configure memory monitoring and lifecycle behavior for the
+                  summarization utility process.
+                </p>
+              </div>
+
+              <div class="settings-group">
+                <label
+                  class="settings-label"
+                  for="summarizationMemoryCheckIntervalInput"
+                >
+                  Memory Check Interval (seconds)
+                  <span class="settings-hint"
+                    >How often memory usage is checked (1-600). Mainly for
+                    logging purposes, so leave unchanged unless debugging.</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="summarizationMemoryCheckIntervalInput"
+                  class="settings-input"
+                  min="1"
+                  max="600"
+                  step="1"
+                  value="10"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label
+                  class="settings-label"
+                  for="summarizationMemoryThresholdInput"
+                >
+                  Memory Threshold (MB)
+                  <span class="settings-hint"
+                    >Restart process if RSS exceeds this threshold
+                    (256-32768)</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="summarizationMemoryThresholdInput"
+                  class="settings-input"
+                  min="256"
+                  max="32768"
+                  step="256"
+                  value="4096"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label
+                  class="settings-label"
+                  for="summarizationRestartDelayInput"
+                >
+                  Restart Delay (seconds)
+                  <span class="settings-hint"
+                    >Delay before restart after an unexpected exit (0-60)</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="summarizationRestartDelayInput"
+                  class="settings-input"
+                  min="0"
+                  max="60"
+                  step="1"
+                  value="1"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label
+                  class="settings-label"
+                  for="summarizationProcessRecycleTimeoutInput"
+                >
+                  Process Recycle Timeout (minutes)
+                  <span class="settings-hint"
+                    >Recycle idle utility process after this duration
+                    (1-120)</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="summarizationProcessRecycleTimeoutInput"
+                  class="settings-input"
+                  min="1"
+                  max="120"
+                  step="1"
+                  value="5"
+                />
+              </div>
+
               <!-- NOTE: would it be possible to use values from shared/config.ts? would like to use that file as single source of truth?  -->
+
+              <div class="settings-main-group">
+                <h3
+                  class="settings-label settings-subheader settings-group-main"
+                >
+                  Summarization Parameters
+                </h3>
+                <p
+                  class="settings-hint settings-description settings-group-main-description"
+                >
+                  Configure generation behavior for summarization output.
+                </p>
+              </div>
 
               <div class="settings-group">
                 <label class="settings-label" for="minSummaryLengthInput">

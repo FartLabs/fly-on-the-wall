@@ -17,6 +17,8 @@ import { refreshModelsList } from "./models";
 import { refreshHotkeysFromConfig } from "./hotkeys";
 
 const AUTO_SAVE_DEBOUNCE_MS = 400;
+const MS_PER_SECOND = 1000;
+const MS_PER_MINUTE = 60_000;
 let autoSaveTimeoutId: number | undefined;
 let hotkeyOpenSettingsBindings: string[] = [];
 let isRecordingOpenSettingsHotkey = false;
@@ -127,6 +129,22 @@ async function refreshModelPathHints() {
   }
 }
 
+function msToSeconds(ms: number): number {
+  return Math.round(ms / MS_PER_SECOND);
+}
+
+function msToMinutes(ms: number): number {
+  return Math.round(ms / MS_PER_MINUTE);
+}
+
+function secondsToMs(seconds: number): number {
+  return seconds * MS_PER_SECOND;
+}
+
+function minutesToMs(minutes: number): number {
+  return minutes * MS_PER_MINUTE;
+}
+
 async function getSettings(): Promise<AppSettings> {
   const config = await window.electronAPI.configGet();
   const rawOpenSettings = (
@@ -175,6 +193,66 @@ async function getSettings(): Promise<AppSettings> {
     ),
     transcriptionModelPath: config.transcription.modelStoragePath ?? "",
     summarizationModelPath: config.summarization.modelStoragePath ?? "",
+    transcriptionMemoryCheckIntervalSeconds: msToSeconds(
+      clamp(
+        config.transcription.utilityProcess?.memoryCheckIntervalMs ??
+          DEFAULT_CONFIG.transcription.utilityProcess.memoryCheckIntervalMs,
+        LIMITS.memoryCheckIntervalMs.min,
+        LIMITS.memoryCheckIntervalMs.max
+      )
+    ),
+    transcriptionMemoryThresholdMb: clamp(
+      config.transcription.utilityProcess?.memoryThresholdMb ??
+        DEFAULT_CONFIG.transcription.utilityProcess.memoryThresholdMb,
+      LIMITS.memoryThresholdMb.min,
+      LIMITS.memoryThresholdMb.max
+    ),
+    transcriptionRestartDelaySeconds: msToSeconds(
+      clamp(
+        config.transcription.utilityProcess?.restartDelayMs ??
+          DEFAULT_CONFIG.transcription.utilityProcess.restartDelayMs,
+        LIMITS.restartDelayMs.min,
+        LIMITS.restartDelayMs.max
+      )
+    ),
+    transcriptionProcessRecycleTimeoutMinutes: msToMinutes(
+      clamp(
+        config.transcription.utilityProcess?.processRecycleTimeoutMs ??
+          DEFAULT_CONFIG.transcription.utilityProcess.processRecycleTimeoutMs,
+        LIMITS.processRecycleTimeoutMs.min,
+        LIMITS.processRecycleTimeoutMs.max
+      )
+    ),
+    summarizationMemoryCheckIntervalSeconds: msToSeconds(
+      clamp(
+        config.summarization.utilityProcess?.memoryCheckIntervalMs ??
+          DEFAULT_CONFIG.summarization.utilityProcess.memoryCheckIntervalMs,
+        LIMITS.memoryCheckIntervalMs.min,
+        LIMITS.memoryCheckIntervalMs.max
+      )
+    ),
+    summarizationMemoryThresholdMb: clamp(
+      config.summarization.utilityProcess?.memoryThresholdMb ??
+        DEFAULT_CONFIG.summarization.utilityProcess.memoryThresholdMb,
+      LIMITS.memoryThresholdMb.min,
+      LIMITS.memoryThresholdMb.max
+    ),
+    summarizationRestartDelaySeconds: msToSeconds(
+      clamp(
+        config.summarization.utilityProcess?.restartDelayMs ??
+          DEFAULT_CONFIG.summarization.utilityProcess.restartDelayMs,
+        LIMITS.restartDelayMs.min,
+        LIMITS.restartDelayMs.max
+      )
+    ),
+    summarizationProcessRecycleTimeoutMinutes: msToMinutes(
+      clamp(
+        config.summarization.utilityProcess?.processRecycleTimeoutMs ??
+          DEFAULT_CONFIG.summarization.utilityProcess.processRecycleTimeoutMs,
+        LIMITS.processRecycleTimeoutMs.min,
+        LIMITS.processRecycleTimeoutMs.max
+      )
+    ),
     hotkeyOpenSettings: hasExplicitOpenSettingsValue
       ? normalizedOpenSettings
       : [...HOTKEY_DEFAULTS.openSettings]
@@ -222,6 +300,82 @@ async function saveSettings(settings: Partial<AppSettings>) {
   if (settings.transcriptionModelPath !== undefined) {
     update.transcription = {
       modelStoragePath: settings.transcriptionModelPath.trim()
+    };
+  }
+
+  const transcriptionUtilityUpdate: Partial<
+    AppConfig["transcription"]["utilityProcess"]
+  > = {};
+  if (settings.transcriptionMemoryCheckIntervalSeconds !== undefined) {
+    transcriptionUtilityUpdate.memoryCheckIntervalMs = clamp(
+      secondsToMs(settings.transcriptionMemoryCheckIntervalSeconds),
+      LIMITS.memoryCheckIntervalMs.min,
+      LIMITS.memoryCheckIntervalMs.max
+    );
+  }
+  if (settings.transcriptionMemoryThresholdMb !== undefined) {
+    transcriptionUtilityUpdate.memoryThresholdMb = clamp(
+      settings.transcriptionMemoryThresholdMb,
+      LIMITS.memoryThresholdMb.min,
+      LIMITS.memoryThresholdMb.max
+    );
+  }
+  if (settings.transcriptionRestartDelaySeconds !== undefined) {
+    transcriptionUtilityUpdate.restartDelayMs = clamp(
+      secondsToMs(settings.transcriptionRestartDelaySeconds),
+      LIMITS.restartDelayMs.min,
+      LIMITS.restartDelayMs.max
+    );
+  }
+  if (settings.transcriptionProcessRecycleTimeoutMinutes !== undefined) {
+    transcriptionUtilityUpdate.processRecycleTimeoutMs = clamp(
+      minutesToMs(settings.transcriptionProcessRecycleTimeoutMinutes),
+      LIMITS.processRecycleTimeoutMs.min,
+      LIMITS.processRecycleTimeoutMs.max
+    );
+  }
+  if (Object.keys(transcriptionUtilityUpdate).length > 0) {
+    update.transcription = {
+      ...(update.transcription || {}),
+      utilityProcess: transcriptionUtilityUpdate
+    };
+  }
+
+  const summarizationUtilityUpdate: Partial<
+    AppConfig["summarization"]["utilityProcess"]
+  > = {};
+  if (settings.summarizationMemoryCheckIntervalSeconds !== undefined) {
+    summarizationUtilityUpdate.memoryCheckIntervalMs = clamp(
+      secondsToMs(settings.summarizationMemoryCheckIntervalSeconds),
+      LIMITS.memoryCheckIntervalMs.min,
+      LIMITS.memoryCheckIntervalMs.max
+    );
+  }
+  if (settings.summarizationMemoryThresholdMb !== undefined) {
+    summarizationUtilityUpdate.memoryThresholdMb = clamp(
+      settings.summarizationMemoryThresholdMb,
+      LIMITS.memoryThresholdMb.min,
+      LIMITS.memoryThresholdMb.max
+    );
+  }
+  if (settings.summarizationRestartDelaySeconds !== undefined) {
+    summarizationUtilityUpdate.restartDelayMs = clamp(
+      secondsToMs(settings.summarizationRestartDelaySeconds),
+      LIMITS.restartDelayMs.min,
+      LIMITS.restartDelayMs.max
+    );
+  }
+  if (settings.summarizationProcessRecycleTimeoutMinutes !== undefined) {
+    summarizationUtilityUpdate.processRecycleTimeoutMs = clamp(
+      minutesToMs(settings.summarizationProcessRecycleTimeoutMinutes),
+      LIMITS.processRecycleTimeoutMs.min,
+      LIMITS.processRecycleTimeoutMs.max
+    );
+  }
+  if (Object.keys(summarizationUtilityUpdate).length > 0) {
+    update.summarization = {
+      ...(update.summarization || {}),
+      utilityProcess: summarizationUtilityUpdate
     };
   }
 
@@ -309,6 +463,46 @@ async function loadSettingsIntoUI() {
     elements.summarizationModelPathInput.value =
       settings.summarizationModelPath;
   }
+  if (elements.transcriptionMemoryCheckIntervalInput) {
+    elements.transcriptionMemoryCheckIntervalInput.value = String(
+      settings.transcriptionMemoryCheckIntervalSeconds
+    );
+  }
+  if (elements.transcriptionMemoryThresholdInput) {
+    elements.transcriptionMemoryThresholdInput.value = String(
+      settings.transcriptionMemoryThresholdMb
+    );
+  }
+  if (elements.transcriptionRestartDelayInput) {
+    elements.transcriptionRestartDelayInput.value = String(
+      settings.transcriptionRestartDelaySeconds
+    );
+  }
+  if (elements.transcriptionProcessRecycleTimeoutInput) {
+    elements.transcriptionProcessRecycleTimeoutInput.value = String(
+      settings.transcriptionProcessRecycleTimeoutMinutes
+    );
+  }
+  if (elements.summarizationMemoryCheckIntervalInput) {
+    elements.summarizationMemoryCheckIntervalInput.value = String(
+      settings.summarizationMemoryCheckIntervalSeconds
+    );
+  }
+  if (elements.summarizationMemoryThresholdInput) {
+    elements.summarizationMemoryThresholdInput.value = String(
+      settings.summarizationMemoryThresholdMb
+    );
+  }
+  if (elements.summarizationRestartDelayInput) {
+    elements.summarizationRestartDelayInput.value = String(
+      settings.summarizationRestartDelaySeconds
+    );
+  }
+  if (elements.summarizationProcessRecycleTimeoutInput) {
+    elements.summarizationProcessRecycleTimeoutInput.value = String(
+      settings.summarizationProcessRecycleTimeoutMinutes
+    );
+  }
 
   hotkeyOpenSettingsBindings = [...settings.hotkeyOpenSettings];
   renderHotkeyOpenSettingsBindings();
@@ -336,6 +530,38 @@ function readSettingsFromUI(): AppSettings {
       DEFAULT_CONFIG.summarizationParameters.repeatPenalty,
     transcriptionModelPath: elements.transcriptionModelPathInput?.value || "",
     summarizationModelPath: elements.summarizationModelPathInput?.value || "",
+    transcriptionMemoryCheckIntervalSeconds:
+      parseFloat(elements.transcriptionMemoryCheckIntervalInput?.value) ||
+      msToSeconds(
+        DEFAULT_CONFIG.transcription.utilityProcess.memoryCheckIntervalMs
+      ),
+    transcriptionMemoryThresholdMb:
+      parseFloat(elements.transcriptionMemoryThresholdInput?.value) ||
+      DEFAULT_CONFIG.transcription.utilityProcess.memoryThresholdMb,
+    transcriptionRestartDelaySeconds:
+      parseFloat(elements.transcriptionRestartDelayInput?.value) ||
+      msToSeconds(DEFAULT_CONFIG.transcription.utilityProcess.restartDelayMs),
+    transcriptionProcessRecycleTimeoutMinutes:
+      parseFloat(elements.transcriptionProcessRecycleTimeoutInput?.value) ||
+      msToMinutes(
+        DEFAULT_CONFIG.transcription.utilityProcess.processRecycleTimeoutMs
+      ),
+    summarizationMemoryCheckIntervalSeconds:
+      parseFloat(elements.summarizationMemoryCheckIntervalInput?.value) ||
+      msToSeconds(
+        DEFAULT_CONFIG.summarization.utilityProcess.memoryCheckIntervalMs
+      ),
+    summarizationMemoryThresholdMb:
+      parseFloat(elements.summarizationMemoryThresholdInput?.value) ||
+      DEFAULT_CONFIG.summarization.utilityProcess.memoryThresholdMb,
+    summarizationRestartDelaySeconds:
+      parseFloat(elements.summarizationRestartDelayInput?.value) ||
+      msToSeconds(DEFAULT_CONFIG.summarization.utilityProcess.restartDelayMs),
+    summarizationProcessRecycleTimeoutMinutes:
+      parseFloat(elements.summarizationProcessRecycleTimeoutInput?.value) ||
+      msToMinutes(
+        DEFAULT_CONFIG.summarization.utilityProcess.processRecycleTimeoutMs
+      ),
     hotkeyOpenSettings: [...hotkeyOpenSettingsBindings]
   };
 }
@@ -556,6 +782,14 @@ export function setupSettingsListeners() {
     elements.repeatPenaltyInput,
     elements.transcriptionModelPathInput,
     elements.summarizationModelPathInput,
+    elements.transcriptionMemoryCheckIntervalInput,
+    elements.transcriptionMemoryThresholdInput,
+    elements.transcriptionRestartDelayInput,
+    elements.transcriptionProcessRecycleTimeoutInput,
+    elements.summarizationMemoryCheckIntervalInput,
+    elements.summarizationMemoryThresholdInput,
+    elements.summarizationRestartDelayInput,
+    elements.summarizationProcessRecycleTimeoutInput,
     elements.customPromptInput
   ];
 
@@ -570,21 +804,53 @@ export function setupSettingsListeners() {
 function setupSettingsNavigation() {
   const navItems =
     document.querySelectorAll<HTMLButtonElement>(".settings-nav-item");
+  const panels = document.querySelectorAll<HTMLDivElement>(".settings-panel");
+
+  const activateSection = (sectionId: string) => {
+    navItems.forEach((nav) => {
+      const navSection = nav.getAttribute("data-settings-section");
+      nav.classList.toggle("active", navSection === sectionId);
+    });
+
+    panels.forEach((panel) => {
+      panel.classList.toggle(
+        "active",
+        panel.id === `settingsPanel-${sectionId}`
+      );
+    });
+  };
+
+  const activeNavItem = Array.from(navItems).find((item) =>
+    item.classList.contains("active")
+  );
+  const activeNavSection = activeNavItem?.getAttribute("data-settings-section");
+  const activePanel = Array.from(panels).find((panel) =>
+    panel.classList.contains("active")
+  );
+  const activePanelSection = activePanel?.id.replace("settingsPanel-", "");
+
+  const initialSection =
+    activeNavSection &&
+    document.getElementById(`settingsPanel-${activeNavSection}`)
+      ? activeNavSection
+      : activePanelSection &&
+          Array.from(navItems).some(
+            (item) =>
+              item.getAttribute("data-settings-section") === activePanelSection
+          )
+        ? activePanelSection
+        : navItems[0]?.getAttribute("data-settings-section");
+
+  if (initialSection) {
+    activateSection(initialSection);
+  }
 
   navItems.forEach((item) => {
     item.addEventListener("click", () => {
       const sectionId = item.getAttribute("data-settings-section");
       if (!sectionId) return;
 
-      navItems.forEach((nav) => nav.classList.remove("active"));
-      item.classList.add("active");
-
-      const panels =
-        document.querySelectorAll<HTMLDivElement>(".settings-panel");
-      panels.forEach((panel) => panel.classList.remove("active"));
-
-      const targetPanel = document.getElementById(`settingsPanel-${sectionId}`);
-      targetPanel?.classList.add("active");
+      activateSection(sectionId);
     });
   });
 }

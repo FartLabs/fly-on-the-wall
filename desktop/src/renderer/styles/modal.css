@@ -106,21 +106,6 @@
   background: rgb(255 255 255 / 0.3);
 }
 
-.settings-section {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.settings-section-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: rgb(255 255 255 / 0.9);
-  margin: 0 0 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgb(255 255 255 / 0.1);
-}
-
 .settings-layout {
   display: flex;
   flex: 1;
@@ -223,10 +208,34 @@
   margin: 0;
 }
 
-.settings-panel-description {
-  font-size: 0.85rem;
-  color: rgb(255 255 255 / 0.5);
-  margin: 0 0 0.75rem;
+.settings-subheader {
+  margin: 0 0 0.35rem;
+}
+
+.settings-description {
+  margin: 0 0 0.6rem;
+}
+
+.settings-label.settings-group-main {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  margin: 0;
+}
+
+.settings-hint.settings-group-main-description {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: rgb(255 255 255 / 0.74);
+  margin: 0 0 0.95rem;
+}
+
+.settings-main-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 .settings-group {
@@ -392,19 +401,6 @@
   margin-bottom: 0.5rem;
 }
 
-.settings-panel .prompt-section-title {
-  font-size: 0.85rem;
-  color: #ccc;
-  margin: 0 0 0.4rem;
-  font-weight: 500;
-}
-
-.settings-panel .prompt-section-description {
-  font-size: 0.7rem;
-  color: #888;
-  margin: 0 0 0.6rem;
-}
-
 .settings-panel .custom-prompt-input {
   width: 100%;
   padding: 0.6rem 0.75rem;
@@ -430,54 +426,8 @@
   border-color: rgb(255 255 255 / 0.25);
 }
 
-.settings-panel .prompt-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.settings-panel .prompt-actions .action-btn {
-  padding: 0.5rem 0.75rem;
-  background: rgb(255 255 255 / 0.1);
-  border: none;
-  border-radius: 8px;
-  color: #fff;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  transform: none;
-  box-shadow: none;
-}
-
-.settings-panel .prompt-actions .action-btn:hover {
-  background: rgb(255 255 255 / 0.2);
-  transform: none;
-  box-shadow: none;
-}
-
-.settings-panel .prompt-actions .action-btn.secondary {
-  background: rgb(255 255 255 / 0.08);
-  color: #ddd;
-}
-
 .settings-model-manager {
   margin-bottom: 0.5rem;
-}
-
-.settings-model-manager .settings-section-title {
-  font-size: 0.85rem;
-  color: #ccc;
-  margin: 0 0 0.35rem;
-  padding-bottom: 0;
-  border-bottom: none;
-  font-weight: 500;
-}
-
-.settings-model-manager .settings-panel-description {
-  font-size: 0.7rem;
-  color: #888;
-  margin: 0 0 0.6rem;
 }
 
 .settings-model-actions-row {

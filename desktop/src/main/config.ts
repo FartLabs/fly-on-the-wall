@@ -4,6 +4,9 @@ import fs from "node:fs";
 import { AppConfig } from "@/shared/electronAPI";
 import { DEFAULT_CONFIG } from "@/shared/config";
 
+type ConfigUpdateListener = (config: AppConfig) => void;
+const configUpdateListeners = new Set<ConfigUpdateListener>();
+
 function getConfigPath() {
   return path.join(app.getPath("userData"), "config.json");
 }
@@ -22,6 +25,64 @@ export function readConfig(): AppConfig {
     console.error("Error reading config file, using defaults:", error);
   }
   return structuredClone(DEFAULT_CONFIG);
+}
+
+export function onConfigUpdated(listener: ConfigUpdateListener): () => void {
+  configUpdateListeners.add(listener);
+  return () => {
+    configUpdateListeners.delete(listener);
+  };
+}
+
+function notifyConfigUpdated(config: AppConfig) {
+  for (const listener of configUpdateListeners) {
+    try {
+      listener(config);
+    } catch (error) {
+      console.error("Error in config update listener:", error);
+    }
+  }
+}
+
+function logUtilityProcessSettingChanges(previous: AppConfig, next: AppConfig) {
+  const sections: Array<"transcription" | "summarization"> = [
+    "transcription",
+    "summarization"
+  ];
+
+  for (const section of sections) {
+    const before = previous[section].utilityProcess;
+    const after = next[section].utilityProcess;
+
+    const changed: string[] = [];
+
+    if (before.memoryCheckIntervalMs !== after.memoryCheckIntervalMs) {
+      changed.push(
+        `memoryCheckIntervalMs: ${before.memoryCheckIntervalMs} -> ${after.memoryCheckIntervalMs}`
+      );
+    }
+    if (before.memoryThresholdMb !== after.memoryThresholdMb) {
+      changed.push(
+        `memoryThresholdMb: ${before.memoryThresholdMb} -> ${after.memoryThresholdMb}`
+      );
+    }
+    if (before.restartDelayMs !== after.restartDelayMs) {
+      changed.push(
+        `restartDelayMs: ${before.restartDelayMs} -> ${after.restartDelayMs}`
+      );
+    }
+    if (before.processRecycleTimeoutMs !== after.processRecycleTimeoutMs) {
+      changed.push(
+        `processRecycleTimeoutMs: ${before.processRecycleTimeoutMs} -> ${after.processRecycleTimeoutMs}`
+      );
+    }
+
+    if (changed.length > 0) {
+      console.log(
+        `[Config] ${section} utility process settings changed: ${changed.join(", ")}`
+      );
+    }
+  }
 }
 
 function writeConfig(config: AppConfig) {
@@ -70,5 +131,7 @@ ipcMain.handle("config-set", (_event, partialConfig: Partial<AppConfig>) => {
   const current = readConfig();
   const merged = deepMerge(current, partialConfig as Record<string, any>);
   writeConfig(merged);
+  logUtilityProcessSettingChanges(current, merged);
+  notifyConfigUpdated(merged);
   return merged;
 });

@@ -1,10 +1,4 @@
-import {
-  utilityProcess,
-  UtilityProcess,
-  app,
-  ipcMain,
-  BrowserWindow
-} from "electron";
+import { utilityProcess, UtilityProcess, app, ipcMain } from "electron";
 import path from "node:path";
 import type {
   TranscriptionMessage,
@@ -12,12 +6,14 @@ import type {
 } from "../transcription/utility-process";
 import { getTranscriptionModelsDir, broadcastToRenderer } from "./models";
 import { MemoryUsage } from "@/shared/utilityProcess";
-
-// TODO: Make these configurable via a settings page
-const MEMORY_CHECK_INTERVAL_MS = 10_000;
-const MEMORY_THRESHOLD_MB = 4096; // restart if RSS exceeds the specified threshold
-const RESTART_DELAY_MS = 1000;
-const PROCESS_RECYCLE_TIMEOUT_MS = 5 * 60 * 1000;
+import {
+  DEFAULT_CONFIG,
+  LIMITS,
+  type UtilityProcessSettings
+} from "@/shared/config";
+import { AppConfig } from "@/shared/electronAPI";
+import { onConfigUpdated, readConfig } from "./config";
+import { clamp } from "@/utils";
 
 let utilityProc: UtilityProcess | null = null;
 let memoryCheckTimer: NodeJS.Timeout | null = null;
@@ -34,6 +30,99 @@ let requestIdCounter = 0;
 let isRestarting = false;
 let isRecycling = false;
 let initializedModelsPath: string | null = null;
+let utilitySettings: UtilityProcessSettings =
+  getTranscriptionUtilitySettings(readConfig());
+
+function getTranscriptionUtilitySettings(
+  config: AppConfig
+): UtilityProcessSettings {
+  const defaults = DEFAULT_CONFIG.transcription.utilityProcess;
+  const current = config.transcription.utilityProcess ?? defaults;
+
+  return {
+    memoryCheckIntervalMs: clamp(
+      current.memoryCheckIntervalMs ?? defaults.memoryCheckIntervalMs,
+      LIMITS.memoryCheckIntervalMs.min,
+      LIMITS.memoryCheckIntervalMs.max
+    ),
+    memoryThresholdMb: clamp(
+      current.memoryThresholdMb ?? defaults.memoryThresholdMb,
+      LIMITS.memoryThresholdMb.min,
+      LIMITS.memoryThresholdMb.max
+    ),
+    restartDelayMs: clamp(
+      current.restartDelayMs ?? defaults.restartDelayMs,
+      LIMITS.restartDelayMs.min,
+      LIMITS.restartDelayMs.max
+    ),
+    processRecycleTimeoutMs: clamp(
+      current.processRecycleTimeoutMs ?? defaults.processRecycleTimeoutMs,
+      LIMITS.processRecycleTimeoutMs.min,
+      LIMITS.processRecycleTimeoutMs.max
+    )
+  };
+}
+
+function applyUtilitySettings(config: AppConfig) {
+  const previous = utilitySettings;
+  utilitySettings = getTranscriptionUtilitySettings(config);
+
+  const changed: string[] = [];
+  if (
+    previous.memoryCheckIntervalMs !== utilitySettings.memoryCheckIntervalMs
+  ) {
+    changed.push(
+      `memoryCheckIntervalMs: ${previous.memoryCheckIntervalMs} -> ${utilitySettings.memoryCheckIntervalMs}`
+    );
+  }
+  if (previous.memoryThresholdMb !== utilitySettings.memoryThresholdMb) {
+    changed.push(
+      `memoryThresholdMb: ${previous.memoryThresholdMb} -> ${utilitySettings.memoryThresholdMb}`
+    );
+  }
+  if (previous.restartDelayMs !== utilitySettings.restartDelayMs) {
+    changed.push(
+      `restartDelayMs: ${previous.restartDelayMs} -> ${utilitySettings.restartDelayMs}`
+    );
+  }
+  if (
+    previous.processRecycleTimeoutMs !== utilitySettings.processRecycleTimeoutMs
+  ) {
+    changed.push(
+      `processRecycleTimeoutMs: ${previous.processRecycleTimeoutMs} -> ${utilitySettings.processRecycleTimeoutMs}`
+    );
+  }
+
+  if (changed.length > 0) {
+    console.log(
+      `[TranscriptionManager] Applied utility settings update (${changed.join(", ")})`
+    );
+  }
+
+  if (
+    memoryCheckTimer &&
+    previous.memoryCheckIntervalMs !== utilitySettings.memoryCheckIntervalMs
+  ) {
+    console.log(
+      `[TranscriptionManager] Reconfiguring memory check timer to ${utilitySettings.memoryCheckIntervalMs}ms`
+    );
+    startMemoryMonitoring(true);
+  }
+
+  if (
+    processRecycleTimer &&
+    previous.processRecycleTimeoutMs !== utilitySettings.processRecycleTimeoutMs
+  ) {
+    console.log(
+      `[TranscriptionManager] Reconfiguring recycle timeout to ${utilitySettings.processRecycleTimeoutMs}ms`
+    );
+    resetProcessRecycleTimer();
+  }
+}
+
+const unsubscribeConfigUpdates = onConfigUpdated((config) => {
+  applyUtilitySettings(config);
+});
 
 function getUtilityProcessPath(): string {
   if (app.isPackaged) {
@@ -86,6 +175,7 @@ async function spawnTranscriptionProcess(): Promise<UtilityProcess> {
 
   await initializeModelsPath();
 
+  applyUtilitySettings(readConfig());
   startMemoryMonitoring();
 
   console.log("[TranscriptionManager] Utility process spawned successfully");
@@ -196,19 +286,23 @@ function handleProcessExit(code: number | null) {
     setTimeout(async () => {
       isRestarting = false;
       await spawnTranscriptionProcess();
-    }, RESTART_DELAY_MS);
+    }, utilitySettings.restartDelayMs);
     isRestarting = true;
   }
 }
 
-function startMemoryMonitoring() {
-  if (memoryCheckTimer) return;
+function startMemoryMonitoring(force = false) {
+  if (memoryCheckTimer) {
+    if (!force) return;
+    clearInterval(memoryCheckTimer);
+    memoryCheckTimer = null;
+  }
 
   memoryCheckTimer = setInterval(() => {
     if (utilityProc) {
       sendToUtility({ type: "get-memory-usage" });
     }
-  }, MEMORY_CHECK_INTERVAL_MS);
+  }, utilitySettings.memoryCheckIntervalMs);
 
   console.log("[TranscriptionManager] Memory monitoring started");
 }
@@ -227,9 +321,9 @@ function checkMemoryThreshold(usage: MemoryUsage) {
     `[TranscriptionManager] Memory usage: ${rssMb.toFixed(1)} MB RSS`
   );
 
-  if (rssMb > MEMORY_THRESHOLD_MB) {
+  if (rssMb > utilitySettings.memoryThresholdMb) {
     console.warn(
-      `[TranscriptionManager] Memory threshold exceeded (${rssMb.toFixed(1)} MB > ${MEMORY_THRESHOLD_MB} MB). Restarting...`
+      `[TranscriptionManager] Memory threshold exceeded (${rssMb.toFixed(1)} MB > ${utilitySettings.memoryThresholdMb} MB). Restarting...`
     );
     restartProcess();
   }
@@ -257,7 +351,7 @@ async function restartProcess() {
   setTimeout(async () => {
     isRestarting = false;
     await spawnTranscriptionProcess();
-  }, RESTART_DELAY_MS);
+  }, utilitySettings.restartDelayMs);
 }
 
 function resetProcessRecycleTimer() {
@@ -271,7 +365,7 @@ function resetProcessRecycleTimer() {
       );
       recycleProcess();
     }
-  }, PROCESS_RECYCLE_TIMEOUT_MS);
+  }, utilitySettings.processRecycleTimeoutMs);
 }
 
 function recycleProcess() {
@@ -471,6 +565,7 @@ function stopTranscriptionProcess(): void {
   }
   initializedModelsPath = null;
   pendingRequests.clear();
+  unsubscribeConfigUpdates();
   console.log("[TranscriptionManager] Utility process stopped");
 }
 

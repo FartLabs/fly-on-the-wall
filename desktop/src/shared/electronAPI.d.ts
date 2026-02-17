@@ -1,5 +1,6 @@
 // https://www.electronjs.org/docs/latest/tutorial/context-isolation#usage-with-typescript
 import type { HotkeysConfig } from "./hotkeys";
+import type { UtilityProcessSettings } from "./config";
 
 export interface AppConfig {
   summarizationParameters: {
@@ -14,11 +15,13 @@ export interface AppConfig {
     customPrompt: string;
     selectedModelPath: string;
     modelStoragePath: string;
-  };
+    utilityProcess: UtilityProcessSettings;
+ };
   transcription: {
     selectedModel: string;
     modelStoragePath: string;
-  };
+    utilityProcess: UtilityProcessSettings;
+ };
   hotkeys: HotkeysConfig;
 }
 

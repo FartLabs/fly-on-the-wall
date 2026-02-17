@@ -142,6 +142,18 @@ export const elements = {
   transcriptionModelPathInput: document.getElementById(
     "transcriptionModelPathInput"
   ) as HTMLInputElement,
+  transcriptionMemoryCheckIntervalInput: document.getElementById(
+    "transcriptionMemoryCheckIntervalInput"
+  ) as HTMLInputElement,
+  transcriptionMemoryThresholdInput: document.getElementById(
+    "transcriptionMemoryThresholdInput"
+  ) as HTMLInputElement,
+  transcriptionRestartDelayInput: document.getElementById(
+    "transcriptionRestartDelayInput"
+  ) as HTMLInputElement,
+  transcriptionProcessRecycleTimeoutInput: document.getElementById(
+    "transcriptionProcessRecycleTimeoutInput"
+  ) as HTMLInputElement,
   hotkeyOpenSettingsList: document.getElementById(
     "hotkeyOpenSettingsList"
   ) as HTMLDivElement,
@@ -153,6 +165,18 @@ export const elements = {
   ) as HTMLSpanElement,
   summarizationModelPathInput: document.getElementById(
     "summarizationModelPathInput"
+  ) as HTMLInputElement,
+  summarizationMemoryCheckIntervalInput: document.getElementById(
+    "summarizationMemoryCheckIntervalInput"
+  ) as HTMLInputElement,
+  summarizationMemoryThresholdInput: document.getElementById(
+    "summarizationMemoryThresholdInput"
+  ) as HTMLInputElement,
+  summarizationRestartDelayInput: document.getElementById(
+    "summarizationRestartDelayInput"
+  ) as HTMLInputElement,
+  summarizationProcessRecycleTimeoutInput: document.getElementById(
+    "summarizationProcessRecycleTimeoutInput"
   ) as HTMLInputElement,
   resetSettingsBtn: document.getElementById(
     "resetSettingsBtn"
