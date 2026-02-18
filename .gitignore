@@ -3,6 +3,8 @@ notes/
 models/
 recordings/
 
+*.db
+
 # Logs
 logs
 *.log

@@ -1,0 +1,22 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    schema: "db/schema/postgres"
+    queries: "db/query/postgres"
+    gen:
+      go:
+        package: "pgsqlc"
+        out: "internal/database/sqlc/pgsqlc"
+        sql_package: "database/sql"
+        emit_interface: true
+        emit_json_tags: true
+  - engine: "sqlite"
+    schema: "db/schema/sqlite"
+    queries: "db/query/sqlite"
+    gen:
+      go:
+        package: "sqliteqlc"
+        out: "internal/database/sqlc/sqliteqlc"
+        sql_package: "database/sql"
+        emit_interface: true
+        emit_json_tags: true

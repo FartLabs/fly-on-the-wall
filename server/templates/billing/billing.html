@@ -1,0 +1,53 @@
+{{define "billing"}}
+{{template "base" .}}
+{{end}}
+
+{{define "content"}}
+<div class="billing-page">
+    <h2>Billing & Premium</h2>
+
+    {{if .Data}}
+    <div class="billing-status">
+        {{if index .Data "is_premium"}}
+            <div class="billing-card billing-active">
+                <h3>Premium Active</h3>
+                {{if eq (index .Data "premium_mode") "all_premium"}}
+                    <p>All features are enabled on this self-hosted instance.</p>
+                {{else if eq (index .Data "premium_mode") "admin_override"}}
+                    <p>Premium has been granted by the server administrator.</p>
+                {{else}}
+                    <p>Your premium subscription is active.</p>
+                    {{if .Data.subscription}}
+                        <p class="text-muted">Next billing date: {{.Data.subscription.CurrentPeriodEnd}}</p>
+                    {{end}}
+                {{end}}
+            </div>
+        {{else}}
+            <div class="billing-card">
+                <h3>Free Plan</h3>
+                <p>You're on the free plan. Upgrade to premium for cloud AI processing.</p>
+
+                <div class="premium-features">
+                    <h4>Premium Features</h4>
+                    <ul>
+                        <li>Cloud GPU transcription</li>
+                        <li>Cloud GPU summarization</li>
+                        <li>Priority processing</li>
+                    </ul>
+                </div>
+
+                {{if index .Data "stripe_enabled"}}
+                    <form method="POST" action="/api/v1/billing/checkout" class="billing-form">
+                        <input type="hidden" name="success_url" value="/billing?success=1">
+                        <input type="hidden" name="cancel_url" value="/billing?canceled=1">
+                        <button type="submit" class="btn btn-primary btn-lg">Upgrade to Premium</button>
+                    </form>
+                {{else}}
+                    <p class="text-muted">Contact your server administrator to enable premium features.</p>
+                {{end}}
+            </div>
+        {{end}}
+    </div>
+    {{end}}
+</div>
+{{end}}

@@ -5,7 +5,11 @@
     "fmt:check": "prettier --check .",
     "make": "cd desktop && npm run make",
     "lint": "cd desktop && npm run lint",
-    "knip": "cd desktop && npm run knip"
+    "knip": "cd desktop && npm run knip",
+    "server:dev": "cd server && go run ./cmd/web",
+    "server:sqlc": "cd server && sqlc generate -f sqlc.yaml",
+    "server:docker": "cd server && docker compose up -d --build --force-recreate",
+    "server:docker:down": "cd server && docker compose down"
   },
   "dependencies": {
     "prettier": "^3.8.1"
