@@ -1,22 +1,25 @@
-{{define "base"}}<!DOCTYPE html>
+{{define "base"}}<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{.Title}} — Fly on the Wall</title>
-    <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
+    <link rel="stylesheet" href="/static/css/style.css" />
+  </head>
+  <body>
     {{template "nav" .}}
     <main class="container">
-        {{if .Error}}<div class="alert alert-error">{{.Error}}</div>{{end}}
-        {{if .Success}}<div class="alert alert-success">{{.Success}}</div>{{end}}
-        {{template "content" .}}
+      {{if .Error}}
+      <div class="alert alert-error">{{.Error}}</div>
+      {{end}} {{if .Success}}
+      <div class="alert alert-success">{{.Success}}</div>
+      {{end}} {{template "content" .}}
     </main>
     <footer class="footer">
-        <div class="container">
-            <p>&copy; {{CurrentYear}} Fly on the Wall</p>
-        </div>
+      <div class="container">
+        <p>&copy; {{CurrentYear}} Fly on the Wall</p>
+      </div>
     </footer>
-</body>
-</html>{{end}}
+  </body>
+</html>
+{{end}}

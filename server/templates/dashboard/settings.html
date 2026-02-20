@@ -1,35 +1,35 @@
-{{define "settings"}}
-{{template "base" .}}
-{{end}}
-
-{{define "content"}}
+{{define "settings"}} {{template "base" .}} {{end}} {{define "content"}}
 <div class="settings-page">
-    <h2>Settings</h2>
+  <h2>Settings</h2>
 
-    <section class="settings-section">
-        <h3>Account</h3>
-        <div class="settings-card">
-            <div class="setting-row">
-                <span class="setting-label">Username</span>
-                <span class="setting-value">{{if .User}}{{.User.Username}}{{end}}</span>
-            </div>
-        </div>
-    </section>
+  <section class="settings-section">
+    <h3>Account</h3>
+    <div class="settings-card">
+      <div class="setting-row">
+        <span class="setting-label">Username</span>
+        <span class="setting-value">{{if .User}}{{.User.Username}}{{end}}</span>
+      </div>
+    </div>
+  </section>
 
-    <section class="settings-section">
-        <h3>Connected Devices</h3>
-        <div class="settings-card">
-            <p class="text-muted">Devices registered for end-to-end encrypted sync will appear here.</p>
-            <p class="text-muted">Use the desktop app to register a device.</p>
-        </div>
-    </section>
+  <section class="settings-section">
+    <h3>Connected Devices</h3>
+    <div class="settings-card">
+      <p class="text-muted">
+        Devices registered for end-to-end encrypted sync will appear here.
+      </p>
+      <p class="text-muted">Use the desktop app to register a device.</p>
+    </div>
+  </section>
 
-    <section class="settings-section">
-        <h3>API Access</h3>
-        <div class="settings-card">
-            <p class="text-muted">Use the API endpoints to connect your desktop application.</p>
-            <code class="code-block">POST /api/v1/auth/login</code>
-        </div>
-    </section>
+  <section class="settings-section">
+    <h3>API Access</h3>
+    <div class="settings-card">
+      <p class="text-muted">
+        Use the API endpoints to connect your desktop application.
+      </p>
+      <code class="code-block">POST /api/v1/auth/login</code>
+    </div>
+  </section>
 </div>
 {{end}}

@@ -1,0 +1,57 @@
+{{define "devices"}} {{template "base" .}} {{end}} {{define "content"}}
+<div class="devices-page">
+  <div class="page-header">
+    <h2>Devices</h2>
+  </div>
+
+  {{if .Error}}
+  <div class="alert alert-error">{{.Error}}</div>
+  {{end}} {{if .Data}} {{$sessions := index .Data "sessions"}} {{if $sessions}}
+  <p class="text-muted">
+    These are your active sessions. Revoke a session to log out that device.
+  </p>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Device ID</th>
+        <th>Created</th>
+        <th>Expires</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range $session := $sessions}}
+      <tr>
+        <td>
+          {{if $session.DeviceID}} {{$session.DeviceID}} {{else}}
+          <span class="text-muted">Web Session</span>
+          {{end}}
+        </td>
+        <td>{{$session.CreatedAt.Format "Jan 2, 2006 3:04pm"}}</td>
+        <td>{{$session.ExpiresAt.Format "Jan 2, 2006 3:04pm"}}</td>
+        <td>
+          <form
+            method="POST"
+            action="/devices/{{$session.ID}}/revoke"
+            style="display: inline"
+          >
+            <button
+              type="submit"
+              class="btn btn-small btn-danger"
+              onclick="return confirm('Revoke this session?');"
+            >
+              Revoke
+            </button>
+          </form>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <div class="empty-state">
+    <p>No active sessions found.</p>
+  </div>
+  {{end}} {{end}}
+</div>
+{{end}}
