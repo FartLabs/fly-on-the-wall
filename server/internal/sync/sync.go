@@ -23,7 +23,7 @@ var (
 	ErrNotFound        = errors.New("resource not found")
 )
 
-// Service handles E2EE data synchronization.
+// Service handles data synchronization.
 type Service struct {
 	db            *sql.DB
 	store         store.ObjectStore
@@ -43,167 +43,7 @@ func NewService(db *sql.DB, store store.ObjectStore, driver string) *Service {
 	return s
 }
 
-// --- Device Management ---
-
-// RegisterDevice registers a new device for E2EE key exchange.
-func (s *Service) RegisterDevice(ctx context.Context, userID, deviceName, publicKey string) (*database.Device, error) {
-	if s.pgQueries != nil {
-		uid, err := uuid.Parse(userID)
-		if err != nil {
-			return nil, fmt.Errorf("parse user id: %w", err)
-		}
-		row, err := s.pgQueries.CreateDevice(ctx, pgsqlc.CreateDeviceParams{
-			Column1:    uid,
-			DeviceName: deviceName,
-			PublicKey:  publicKey,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("register device: %w", err)
-		}
-		return &database.Device{
-			ID:             row.ID,
-			UserID:         row.UserID,
-			DeviceName:     row.DeviceName,
-			PublicKey:      row.PublicKey,
-			WrappedUserKey: row.WrappedUserKey,
-			LastSeenAt:     row.LastSeenAt,
-			CreatedAt:      row.CreatedAt,
-		}, nil
-	}
-
-	row, err := s.sqliteQueries.CreateDevice(ctx, sqliteqlc.CreateDeviceParams{
-		UserID:     userID,
-		DeviceName: deviceName,
-		PublicKey:  publicKey,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("register device: %w", err)
-	}
-	lastSeenAt, err := dbtime.ParseSQLiteTime(row.LastSeenAt)
-	if err != nil {
-		return nil, err
-	}
-	createdAt, err := dbtime.ParseSQLiteTime(row.CreatedAt)
-	if err != nil {
-		return nil, err
-	}
-	return &database.Device{
-		ID:             row.ID,
-		UserID:         row.UserID,
-		DeviceName:     row.DeviceName,
-		PublicKey:      row.PublicKey,
-		WrappedUserKey: row.WrappedUserKey,
-		LastSeenAt:     lastSeenAt,
-		CreatedAt:      createdAt,
-	}, nil
-}
-
-func (s *Service) ListDevices(ctx context.Context, userID string) ([]database.Device, error) {
-	if s.pgQueries != nil {
-		uid, err := uuid.Parse(userID)
-		if err != nil {
-			return nil, fmt.Errorf("parse user id: %w", err)
-		}
-		rows, err := s.pgQueries.ListDevicesByUser(ctx, uid)
-		if err != nil {
-			return nil, fmt.Errorf("list devices: %w", err)
-		}
-		devices := make([]database.Device, 0, len(rows))
-		for _, row := range rows {
-			devices = append(devices, database.Device{
-				ID:             row.ID,
-				UserID:         row.UserID,
-				DeviceName:     row.DeviceName,
-				PublicKey:      row.PublicKey,
-				WrappedUserKey: row.WrappedUserKey,
-				LastSeenAt:     row.LastSeenAt,
-				CreatedAt:      row.CreatedAt,
-			})
-		}
-		return devices, nil
-	}
-
-	rows, err := s.sqliteQueries.ListDevicesByUser(ctx, userID)
-	if err != nil {
-		return nil, fmt.Errorf("list devices: %w", err)
-	}
-	devices := make([]database.Device, 0, len(rows))
-	for _, row := range rows {
-		lastSeenAt, err := dbtime.ParseSQLiteTime(row.LastSeenAt)
-		if err != nil {
-			return nil, err
-		}
-		createdAt, err := dbtime.ParseSQLiteTime(row.CreatedAt)
-		if err != nil {
-			return nil, err
-		}
-		devices = append(devices, database.Device{
-			ID:             row.ID,
-			UserID:         row.UserID,
-			DeviceName:     row.DeviceName,
-			PublicKey:      row.PublicKey,
-			WrappedUserKey: row.WrappedUserKey,
-			LastSeenAt:     lastSeenAt,
-			CreatedAt:      createdAt,
-		})
-	}
-	return devices, nil
-}
-
-// UpdateDeviceKey updates the wrapped user key for a device (e.g., during key provisioning).
-func (s *Service) UpdateDeviceKey(ctx context.Context, deviceID, userID, wrappedKey string) error {
-	var (
-		n   int64
-		err error
-	)
-	if s.pgQueries != nil {
-		did, parseErr := uuid.Parse(deviceID)
-		if parseErr != nil {
-			return fmt.Errorf("parse device id: %w", parseErr)
-		}
-		uid, parseErr := uuid.Parse(userID)
-		if parseErr != nil {
-			return fmt.Errorf("parse user id: %w", parseErr)
-		}
-		n, err = s.pgQueries.UpdateDeviceKey(ctx, pgsqlc.UpdateDeviceKeyParams{
-			WrappedUserKey: wrappedKey,
-			ID:             did,
-			UserID:         uid,
-		})
-	} else {
-		n, err = s.sqliteQueries.UpdateDeviceKey(ctx, sqliteqlc.UpdateDeviceKeyParams{
-			WrappedUserKey: wrappedKey,
-			ID:             deviceID,
-			UserID:         userID,
-		})
-	}
-	if err != nil {
-		return fmt.Errorf("update device key: %w", err)
-	}
-
-	if n == 0 {
-		return ErrNotFound
-	}
-	return nil
-}
-
-// RemoveDevice removes a device.
-func (s *Service) RemoveDevice(ctx context.Context, deviceID, userID string) error {
-	if s.pgQueries != nil {
-		did, err := uuid.Parse(deviceID)
-		if err != nil {
-			return fmt.Errorf("parse device id: %w", err)
-		}
-		uid, err := uuid.Parse(userID)
-		if err != nil {
-			return fmt.Errorf("parse user id: %w", err)
-		}
-		return s.pgQueries.DeleteDevice(ctx, pgsqlc.DeleteDeviceParams{ID: did, UserID: uid})
-	}
-	return s.sqliteQueries.DeleteDevice(ctx, sqliteqlc.DeleteDeviceParams{ID: deviceID, UserID: userID})
-}
-
-// --- Encrypted Notes ---
+// --- Notes ---
 
 // noteObjectKey returns the object store key for a note payload.
 func noteObjectKey(userID, noteID string, version int) string {
@@ -226,8 +66,8 @@ func (s *Service) getNotePayload(ctx context.Context, key string) ([]byte, error
 }
 
 // UpsertNote creates or updates an encrypted note with optimistic concurrency.
-func (s *Service) UpsertNote(ctx context.Context, note *database.EncryptedNote) (*database.EncryptedNote, error) {
-	payload := note.EncryptedContent // ciphertext+nonce combined
+func (s *Service) UpsertNote(ctx context.Context, note *database.Note) (*database.Note, error) {
+	payload := note.Content // ciphertext+nonce combined
 	payloadSize := int64(len(payload))
 
 	if note.ID == "" {
@@ -372,8 +212,8 @@ func (s *Service) UpsertNote(ctx context.Context, note *database.EncryptedNote) 
 }
 
 // GetNote retrieves a single encrypted note.
-func (s *Service) GetNote(ctx context.Context, noteID, userID string) (*database.EncryptedNote, error) {
-	var note *database.EncryptedNote
+func (s *Service) GetNote(ctx context.Context, noteID, userID string) (*database.Note, error) {
+	var note *database.Note
 
 	if s.pgQueries != nil {
 		nid, err := uuid.Parse(noteID)
@@ -391,7 +231,7 @@ func (s *Service) GetNote(ctx context.Context, noteID, userID string) (*database
 			}
 			return nil, fmt.Errorf("get note: %w", err)
 		}
-		note = &database.EncryptedNote{
+		note = &database.Note{
 			ID:           row.ID,
 			UserID:       row.UserID,
 			ObjectKey:    row.ObjectKey,
@@ -422,7 +262,7 @@ func (s *Service) GetNote(ctx context.Context, noteID, userID string) (*database
 		if err != nil {
 			return nil, err
 		}
-		note = &database.EncryptedNote{
+		note = &database.Note{
 			ID:           row.ID,
 			UserID:       row.UserID,
 			ObjectKey:    row.ObjectKey,
@@ -441,7 +281,7 @@ func (s *Service) GetNote(ctx context.Context, noteID, userID string) (*database
 		if err != nil {
 			return nil, fmt.Errorf("fetch note payload: %w", err)
 		}
-		note.EncryptedContent = payload
+		note.Content = payload
 	}
 
 	return note, nil
@@ -476,7 +316,7 @@ func (s *Service) DeleteNote(ctx context.Context, noteID, userID string) error {
 }
 
 // CreateRecordingMeta stores metadata for an encrypted recording.
-func (s *Service) CreateRecordingMeta(ctx context.Context, rec *database.EncryptedRecording) (*database.EncryptedRecording, error) {
+func (s *Service) CreateRecordingMeta(ctx context.Context, rec *database.Recording) (*database.Recording, error) {
 	if s.pgQueries != nil {
 		uid, err := uuid.Parse(rec.UserID)
 		if err != nil {
@@ -486,8 +326,8 @@ func (s *Service) CreateRecordingMeta(ctx context.Context, rec *database.Encrypt
 			Column1:       uid,
 			ObjectKey:     rec.ObjectKey,
 			SizeBytes:     rec.SizeBytes,
-			ContentNonce:  rec.ContentNonce,
-			EncryptedMeta: rec.EncryptedMeta,
+			ContentNonce:  []byte{},
+			EncryptedMeta: rec.Meta,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("insert recording meta: %w", err)
@@ -504,8 +344,8 @@ func (s *Service) CreateRecordingMeta(ctx context.Context, rec *database.Encrypt
 		UserID:        rec.UserID,
 		ObjectKey:     rec.ObjectKey,
 		SizeBytes:     rec.SizeBytes,
-		ContentNonce:  rec.ContentNonce,
-		EncryptedMeta: rec.EncryptedMeta,
+		ContentNonce:  []byte{},
+		EncryptedMeta: rec.Meta,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("insert recording meta: %w", err)
@@ -594,10 +434,10 @@ func (s *Service) DeleteRecording(ctx context.Context, recordingID, userID strin
 
 // SyncDelta represents changes since a cursor.
 type SyncDelta struct {
-	Notes      []database.EncryptedNote      `json:"notes"`
-	Recordings []database.EncryptedRecording `json:"recordings"`
-	Cursor     time.Time                     `json:"cursor"`
-	HasMore    bool                          `json:"has_more"`
+	Notes      []database.Note      `json:"notes"`
+	Recordings []database.Recording `json:"recordings"`
+	Cursor     time.Time            `json:"cursor"`
+	HasMore    bool                 `json:"has_more"`
 }
 
 // GetDelta returns all notes and recordings changed since the given cursor.
@@ -607,8 +447,8 @@ func (s *Service) GetDelta(ctx context.Context, userID string, since time.Time, 
 	}
 
 	delta := &SyncDelta{
-		Notes:      make([]database.EncryptedNote, 0),
-		Recordings: make([]database.EncryptedRecording, 0),
+		Notes:      make([]database.Note, 0),
+		Recordings: make([]database.Recording, 0),
 	}
 
 	if s.pgQueries != nil {
@@ -625,7 +465,7 @@ func (s *Service) GetDelta(ctx context.Context, userID string, since time.Time, 
 			return nil, fmt.Errorf("query note delta: %w", err)
 		}
 		for _, row := range noteRows {
-			n := database.EncryptedNote{
+			n := database.Note{
 				ID:           row.ID,
 				UserID:       row.UserID,
 				ObjectKey:    row.ObjectKey,
@@ -651,17 +491,16 @@ func (s *Service) GetDelta(ctx context.Context, userID string, since time.Time, 
 			return nil, fmt.Errorf("query recording delta: %w", err)
 		}
 		for _, row := range recRows {
-			r := database.EncryptedRecording{
-				ID:            row.ID,
-				UserID:        row.UserID,
-				ObjectKey:     row.ObjectKey,
-				SizeBytes:     row.SizeBytes,
-				ContentNonce:  row.ContentNonce,
-				EncryptedMeta: row.EncryptedMeta,
-				Version:       int(row.Version),
-				CreatedAt:     row.CreatedAt,
-				UpdatedAt:     row.UpdatedAt,
-				DeletedAt:     dbtime.NullableTimeFromPG(row.DeletedAt),
+			r := database.Recording{
+				ID:        row.ID,
+				UserID:    row.UserID,
+				ObjectKey: row.ObjectKey,
+				SizeBytes: row.SizeBytes,
+				Meta:      row.EncryptedMeta,
+				Version:   int(row.Version),
+				CreatedAt: row.CreatedAt,
+				UpdatedAt: row.UpdatedAt,
+				DeletedAt: dbtime.NullableTimeFromPG(row.DeletedAt),
 			}
 			delta.Recordings = append(delta.Recordings, r)
 			if r.UpdatedAt.After(delta.Cursor) {
@@ -690,7 +529,7 @@ func (s *Service) GetDelta(ctx context.Context, userID string, since time.Time, 
 			if err != nil {
 				return nil, err
 			}
-			n := database.EncryptedNote{
+			n := database.Note{
 				ID:           row.ID,
 				UserID:       row.UserID,
 				ObjectKey:    row.ObjectKey,
@@ -728,17 +567,16 @@ func (s *Service) GetDelta(ctx context.Context, userID string, since time.Time, 
 			if err != nil {
 				return nil, err
 			}
-			r := database.EncryptedRecording{
-				ID:            row.ID,
-				UserID:        row.UserID,
-				ObjectKey:     row.ObjectKey,
-				SizeBytes:     row.SizeBytes,
-				ContentNonce:  row.ContentNonce,
-				EncryptedMeta: row.EncryptedMeta,
-				Version:       int(row.Version),
-				CreatedAt:     createdAt,
-				UpdatedAt:     updatedAt,
-				DeletedAt:     deletedAt,
+			r := database.Recording{
+				ID:        row.ID,
+				UserID:    row.UserID,
+				ObjectKey: row.ObjectKey,
+				SizeBytes: row.SizeBytes,
+				Meta:      row.EncryptedMeta,
+				Version:   int(row.Version),
+				CreatedAt: createdAt,
+				UpdatedAt: updatedAt,
+				DeletedAt: deletedAt,
 			}
 			delta.Recordings = append(delta.Recordings, r)
 			if r.UpdatedAt.After(delta.Cursor) {

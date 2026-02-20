@@ -23,8 +23,9 @@ type Querier interface {
 	CreateUserAdmin(ctx context.Context, arg CreateUserAdminParams) (CreateUserAdminRow, error)
 	DeleteDevice(ctx context.Context, arg DeleteDeviceParams) error
 	DeleteExpiredSessions(ctx context.Context) (int64, error)
-	DeleteSessionByID(ctx context.Context, dollar_1 uuid.UUID) error
+	DeleteSessionByID(ctx context.Context, arg DeleteSessionByIDParams) error
 	DeleteSessionByToken(ctx context.Context, token string) error
+	DeleteSessionsByDeviceID(ctx context.Context, dollar_1 uuid.UUID) error
 	GetEncryptedNote(ctx context.Context, arg GetEncryptedNoteParams) (GetEncryptedNoteRow, error)
 	GetJobByIDForUser(ctx context.Context, arg GetJobByIDForUserParams) (GetJobByIDForUserRow, error)
 	GetSessionByToken(ctx context.Context, token string) (GetSessionByTokenRow, error)
@@ -38,6 +39,7 @@ type Querier interface {
 	ListEncryptedRecordingChanges(ctx context.Context, arg ListEncryptedRecordingChangesParams) ([]ListEncryptedRecordingChangesRow, error)
 	ListJobsByUser(ctx context.Context, userID uuid.UUID) ([]ListJobsByUserRow, error)
 	ListJobsByUserAndType(ctx context.Context, arg ListJobsByUserAndTypeParams) ([]ListJobsByUserAndTypeRow, error)
+	ListSessionsByUser(ctx context.Context, dollar_1 uuid.UUID) ([]ListSessionsByUserRow, error)
 	RecordingOwnedByUser(ctx context.Context, arg RecordingOwnedByUserParams) (bool, error)
 	SetUserPremium(ctx context.Context, arg SetUserPremiumParams) error
 	SetUserPremiumFalse(ctx context.Context, id uuid.UUID) error

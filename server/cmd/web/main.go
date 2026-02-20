@@ -110,7 +110,7 @@ func main() {
 
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
-	webHandler := web.NewHandler(authService, billingService)
+	webHandler := web.NewHandler(authService, syncService, billingService)
 	webHandler.Register(mux)
 
 	apiHandler := api.NewHandler(authService, syncService, billingService, jobService)

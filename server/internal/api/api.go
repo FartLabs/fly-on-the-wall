@@ -37,11 +37,6 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.Handle("POST /api/v1/auth/logout", authMw(http.HandlerFunc(h.handleLogout)))
 	mux.Handle("GET /api/v1/auth/me", authMw(http.HandlerFunc(h.handleMe)))
 
-	mux.Handle("POST /api/v1/devices", authMw(http.HandlerFunc(h.handleRegisterDevice)))
-	mux.Handle("GET /api/v1/devices", authMw(http.HandlerFunc(h.handleListDevices)))
-	mux.Handle("PUT /api/v1/devices/{id}/key", authMw(http.HandlerFunc(h.handleUpdateDeviceKey)))
-	mux.Handle("DELETE /api/v1/devices/{id}", authMw(http.HandlerFunc(h.handleRemoveDevice)))
-
 	mux.Handle("GET /api/v1/sync/delta", authMw(http.HandlerFunc(h.handleSyncDelta)))
 	mux.Handle("PUT /api/v1/sync/cursor", authMw(http.HandlerFunc(h.handleUpdateCursor)))
 
@@ -68,6 +63,7 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
+		DeviceID string `json:"device_id"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		jsonError(w, "Invalid request body", http.StatusBadRequest)
@@ -95,7 +91,7 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := h.auth.CreateSession(r.Context(), user.ID)
+	session, err := h.auth.CreateSession(r.Context(), user.ID, req.DeviceID)
 	if err != nil {
 		slog.Error("create session failed", "error", err)
 		jsonError(w, "Registration succeeded but login failed", http.StatusInternalServerError)
@@ -113,13 +109,14 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
+		DeviceID string `json:"device_id"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		jsonError(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	user, session, err := h.auth.Login(r.Context(), req.Username, req.Password)
+	user, session, err := h.auth.Login(r.Context(), req.Username, req.Password, req.DeviceID)
 	if err != nil {
 		if errors.Is(err, auth.ErrInvalidCredentials) {
 			jsonError(w, "Invalid username or password", http.StatusUnauthorized)
@@ -158,70 +155,6 @@ func (h *Handler) handleMe(w http.ResponseWriter, r *http.Request) {
 	resp := sanitizeUser(user)
 	resp["is_premium"] = premium
 	jsonResponse(w, http.StatusOK, resp)
-}
-
-func (h *Handler) handleRegisterDevice(w http.ResponseWriter, r *http.Request) {
-	user := middleware.UserFromContext(r.Context())
-	var req struct {
-		DeviceName string `json:"device_name"`
-		PublicKey  string `json:"public_key"`
-	}
-	if err := decodeJSON(r, &req); err != nil {
-		jsonError(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	device, err := h.sync.RegisterDevice(r.Context(), user.ID, req.DeviceName, req.PublicKey)
-	if err != nil {
-		slog.Error("register device failed", "error", err)
-		jsonError(w, "Failed to register device", http.StatusInternalServerError)
-		return
-	}
-	jsonResponse(w, http.StatusCreated, device)
-}
-
-func (h *Handler) handleListDevices(w http.ResponseWriter, r *http.Request) {
-	user := middleware.UserFromContext(r.Context())
-	devices, err := h.sync.ListDevices(r.Context(), user.ID)
-	if err != nil {
-		slog.Error("list devices failed", "error", err)
-		jsonError(w, "Failed to list devices", http.StatusInternalServerError)
-		return
-	}
-	jsonResponse(w, http.StatusOK, devices)
-}
-
-func (h *Handler) handleUpdateDeviceKey(w http.ResponseWriter, r *http.Request) {
-	user := middleware.UserFromContext(r.Context())
-	deviceID := r.PathValue("id")
-	var req struct {
-		WrappedKey string `json:"wrapped_key"`
-	}
-	if err := decodeJSON(r, &req); err != nil {
-		jsonError(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	if err := h.sync.UpdateDeviceKey(r.Context(), deviceID, user.ID, req.WrappedKey); err != nil {
-		if errors.Is(err, sync.ErrNotFound) {
-			jsonError(w, "Device not found", http.StatusNotFound)
-			return
-		}
-		jsonError(w, "Failed to update device key", http.StatusInternalServerError)
-		return
-	}
-	jsonResponse(w, http.StatusOK, map[string]string{"status": "updated"})
-}
-
-func (h *Handler) handleRemoveDevice(w http.ResponseWriter, r *http.Request) {
-	user := middleware.UserFromContext(r.Context())
-	deviceID := r.PathValue("id")
-
-	if err := h.sync.RemoveDevice(r.Context(), deviceID, user.ID); err != nil {
-		jsonError(w, "Failed to remove device", http.StatusInternalServerError)
-		return
-	}
-	jsonResponse(w, http.StatusOK, map[string]string{"status": "removed"})
 }
 
 func (h *Handler) handleSyncDelta(w http.ResponseWriter, r *http.Request) {
@@ -268,22 +201,29 @@ func (h *Handler) handleUpdateCursor(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleUpsertNote(w http.ResponseWriter, r *http.Request) {
 	user := middleware.UserFromContext(r.Context())
 	var req struct {
-		ID               string `json:"id"`
-		EncryptedContent []byte `json:"encrypted_content"`
-		RecordingRef     string `json:"recording_ref"`
-		Version          int    `json:"version"`
+		ID           string `json:"id"`
+		Content      []byte `json:"content,omitempty"`
+		Deprecated   []byte `json:"encrypted_content,omitempty"` // Deprecated: use content instead
+		RecordingRef string `json:"recording_ref"`
+		Version      int    `json:"version"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		jsonError(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	note := &database.EncryptedNote{
-		ID:               req.ID,
-		UserID:           user.ID,
-		EncryptedContent: req.EncryptedContent,
-		RecordingRef:     req.RecordingRef,
-		Version:          req.Version,
+	content := req.Content
+	if len(content) == 0 && len(req.Deprecated) > 0 {
+		slog.Warn("encrypted_content is deprecated, use content instead")
+		content = req.Deprecated
+	}
+
+	note := &database.Note{
+		ID:           req.ID,
+		UserID:       user.ID,
+		Content:      content,
+		RecordingRef: req.RecordingRef,
+		Version:      req.Version,
 	}
 
 	result, err := h.sync.UpsertNote(r.Context(), note)
@@ -333,22 +273,27 @@ func (h *Handler) handleDeleteNote(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleCreateRecording(w http.ResponseWriter, r *http.Request) {
 	user := middleware.UserFromContext(r.Context())
 	var req struct {
-		ObjectKey     string `json:"object_key"`
-		SizeBytes     int64  `json:"size_bytes"`
-		ContentNonce  []byte `json:"content_nonce"`
-		EncryptedMeta []byte `json:"encrypted_meta"`
+		ObjectKey  string `json:"object_key"`
+		SizeBytes  int64  `json:"size_bytes"`
+		Meta       []byte `json:"meta,omitempty"`
+		Deprecated []byte `json:"encrypted_meta,omitempty"` // Deprecated: use meta instead
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		jsonError(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	rec := &database.EncryptedRecording{
-		UserID:        user.ID,
-		ObjectKey:     req.ObjectKey,
-		SizeBytes:     req.SizeBytes,
-		ContentNonce:  req.ContentNonce,
-		EncryptedMeta: req.EncryptedMeta,
+	meta := req.Meta
+	if len(meta) == 0 && len(req.Deprecated) > 0 {
+		slog.Warn("encrypted_meta is deprecated, use meta instead")
+		meta = req.Deprecated
+	}
+
+	rec := &database.Recording{
+		UserID:    user.ID,
+		ObjectKey: req.ObjectKey,
+		SizeBytes: req.SizeBytes,
+		Meta:      meta,
 	}
 
 	result, err := h.sync.CreateRecordingMeta(r.Context(), rec)

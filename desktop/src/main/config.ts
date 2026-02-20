@@ -127,11 +127,15 @@ ipcMain.handle("config-get", () => {
   return readConfig();
 });
 
-ipcMain.handle("config-set", (_event, partialConfig: Partial<AppConfig>) => {
+export function setConfig(partialConfig: Partial<AppConfig>): AppConfig {
   const current = readConfig();
   const merged = deepMerge(current, partialConfig as Record<string, any>);
   writeConfig(merged);
   logUtilityProcessSettingChanges(current, merged);
   notifyConfigUpdated(merged);
   return merged;
+}
+
+ipcMain.handle("config-set", (_event, partialConfig: Partial<AppConfig>) => {
+  return setConfig(partialConfig);
 });

@@ -18,49 +18,36 @@ type Session struct {
 	ID        string    `json:"id"`
 	UserID    string    `json:"user_id"`
 	Token     string    `json:"-"`
+	DeviceID  string    `json:"device_id,omitempty"`
 	ExpiresAt time.Time `json:"expires_at"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// Device represents a registered client device for E2EE key management.
-type Device struct {
-	ID             string    `json:"id"`
-	UserID         string    `json:"user_id"`
-	DeviceName     string    `json:"device_name"`
-	PublicKey      string    `json:"public_key"`       // Device's public key for key wrapping
-	WrappedUserKey string    `json:"wrapped_user_key"` // User's master key encrypted with this device's public key
-	LastSeenAt     time.Time `json:"last_seen_at"`
-	CreatedAt      time.Time `json:"created_at"`
+// Note stores note metadata. Payload is stored in object storage.
+type Note struct {
+	ID           string     `json:"id"`
+	UserID       string     `json:"user_id"`
+	ObjectKey    string     `json:"object_key"`        // S3 object key for payload
+	PayloadSize  int64      `json:"payload_size"`      // Size of payload in bytes
+	Content      []byte     `json:"content,omitempty"` // Populated from object store on read (not persisted in DB)
+	Version      int        `json:"version"`           // Optimistic concurrency
+	RecordingRef string     `json:"recording_ref"`     // Reference to recording object key
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+	DeletedAt    *time.Time `json:"deleted_at,omitempty"` // Soft delete for sync
 }
 
-// EncryptedNote stores E2EE note metadata.
-// The encrypted payload (ciphertext + nonce) is stored in object storage.
-type EncryptedNote struct {
-	ID               string     `json:"id"`
-	UserID           string     `json:"user_id"`
-	ObjectKey        string     `json:"object_key"`        // S3 object key for encrypted payload
-	PayloadSize      int64      `json:"payload_size"`      // Size of encrypted payload in bytes
-	EncryptedContent []byte     `json:"encrypted_content"` // Populated from object store on read (not persisted in DB)
-	ContentNonce     []byte     `json:"content_nonce"`     // Populated from object store on read (not persisted in DB)
-	Version          int        `json:"version"`           // Optimistic concurrency
-	RecordingRef     string     `json:"recording_ref"`     // Reference to recording object key
-	CreatedAt        time.Time  `json:"created_at"`
-	UpdatedAt        time.Time  `json:"updated_at"`
-	DeletedAt        *time.Time `json:"deleted_at,omitempty"` // Soft delete for sync
-}
-
-// EncryptedRecording stores metadata for an encrypted recording in object storage.
-type EncryptedRecording struct {
-	ID            string     `json:"id"`
-	UserID        string     `json:"user_id"`
-	ObjectKey     string     `json:"object_key"` // S3 object key
-	SizeBytes     int64      `json:"size_bytes"`
-	ContentNonce  []byte     `json:"content_nonce"`
-	EncryptedMeta []byte     `json:"encrypted_meta"` // Encrypted original filename, duration, etc.
-	Version       int        `json:"version"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
-	DeletedAt     *time.Time `json:"deleted_at,omitempty"`
+// Recording stores metadata for a recording in object storage.
+type Recording struct {
+	ID        string     `json:"id"`
+	UserID    string     `json:"user_id"`
+	ObjectKey string     `json:"object_key"` // S3 object key
+	SizeBytes int64      `json:"size_bytes"`
+	Meta      []byte     `json:"meta,omitempty"` // Original filename, duration, etc.
+	Version   int        `json:"version"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
+	DeletedAt *time.Time `json:"deleted_at,omitempty"`
 }
 
 // SyncCursor tracks a device's sync position.

@@ -116,7 +116,7 @@ func (s *Service) Register(ctx context.Context, username, password string) (*dat
 }
 
 // Login validates credentials and creates a session.
-func (s *Service) Login(ctx context.Context, username, password string) (*database.User, *database.Session, error) {
+func (s *Service) Login(ctx context.Context, username, password, deviceID string) (*database.User, *database.Session, error) {
 	user, err := s.getUserByUsername(ctx, username)
 
 	if err != nil {
@@ -130,7 +130,7 @@ func (s *Service) Login(ctx context.Context, username, password string) (*databa
 		return nil, nil, ErrInvalidCredentials
 	}
 
-	session, err := s.CreateSession(ctx, user.ID)
+	session, err := s.CreateSession(ctx, user.ID, deviceID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -139,7 +139,7 @@ func (s *Service) Login(ctx context.Context, username, password string) (*databa
 }
 
 // CreateSession creates a new session for the given user.
-func (s *Service) CreateSession(ctx context.Context, userID string) (*database.Session, error) {
+func (s *Service) CreateSession(ctx context.Context, userID string, deviceID string) (*database.Session, error) {
 	token, err := generateToken(32)
 	if err != nil {
 		return nil, fmt.Errorf("generate token: %w", err)
@@ -152,19 +152,29 @@ func (s *Service) CreateSession(ctx context.Context, userID string) (*database.S
 		if parseErr != nil {
 			return nil, fmt.Errorf("parse user id: %w", parseErr)
 		}
+		var devID uuid.UUID
+		if deviceID != "" {
+			devID, _ = uuid.Parse(deviceID)
+		}
 		row, qErr := s.pgQueries.CreateSession(ctx, pgsqlc.CreateSessionParams{
 			Column1:   uid,
 			Token:     token,
+			Column3:   devID,
 			ExpiresAt: expiresAt,
 		})
 		err = qErr
 		if err == nil {
-			session = &database.Session{ID: row.ID, UserID: row.UserID, Token: row.Token, ExpiresAt: row.ExpiresAt, CreatedAt: row.CreatedAt}
+			session = &database.Session{ID: row.ID, UserID: row.UserID, Token: row.Token, DeviceID: row.DeviceID, ExpiresAt: row.ExpiresAt, CreatedAt: row.CreatedAt}
 		}
 	} else {
+		dev := ""
+		if deviceID != "" {
+			dev = deviceID
+		}
 		row, qErr := s.sqliteQueries.CreateSession(ctx, sqliteqlc.CreateSessionParams{
 			UserID:    userID,
 			Token:     token,
+			DeviceID:  dev,
 			ExpiresAt: expiresAt.UTC().Format("2006-01-02 15:04:05"),
 		})
 		err = qErr
@@ -177,7 +187,11 @@ func (s *Service) CreateSession(ctx context.Context, userID string) (*database.S
 			if parseErr != nil {
 				return nil, parseErr
 			}
-			session = &database.Session{ID: row.ID, UserID: row.UserID, Token: row.Token, ExpiresAt: rowExpiresAt, CreatedAt: rowCreatedAt}
+			d := ""
+			if dev, ok := row.DeviceID.(string); ok {
+				d = dev
+			}
+			session = &database.Session{ID: row.ID, UserID: row.UserID, Token: row.Token, DeviceID: d, ExpiresAt: rowExpiresAt, CreatedAt: rowCreatedAt}
 		}
 	}
 
@@ -219,6 +233,21 @@ func (s *Service) Logout(ctx context.Context, token string) error {
 		return s.pgQueries.DeleteSessionByToken(ctx, token)
 	}
 	return s.sqliteQueries.DeleteSessionByToken(ctx, token)
+}
+
+// RevokeSessionsByDevice deletes all sessions associated with a device ID.
+func (s *Service) RevokeSessionsByDevice(ctx context.Context, deviceID string) error {
+	if deviceID == "" {
+		return nil
+	}
+	if s.pgQueries != nil {
+		uid, err := uuid.Parse(deviceID)
+		if err != nil {
+			return fmt.Errorf("parse device id: %w", err)
+		}
+		return s.pgQueries.DeleteSessionsByDeviceID(ctx, uid)
+	}
+	return s.sqliteQueries.DeleteSessionsByDeviceID(ctx, deviceID)
 }
 
 // GetUser retrieves a user by ID.
@@ -335,7 +364,7 @@ func (s *Service) getSessionByToken(ctx context.Context, token string) (*databas
 			}
 			return nil, fmt.Errorf("query session: %w", err)
 		}
-		return &database.Session{ID: row.ID, UserID: row.UserID, Token: row.Token, ExpiresAt: row.ExpiresAt, CreatedAt: row.CreatedAt}, nil
+		return &database.Session{ID: row.ID, UserID: row.UserID, Token: row.Token, DeviceID: row.DeviceID, ExpiresAt: row.ExpiresAt, CreatedAt: row.CreatedAt}, nil
 	}
 
 	row, err := s.sqliteQueries.GetSessionByToken(ctx, token)
@@ -353,7 +382,11 @@ func (s *Service) getSessionByToken(ctx context.Context, token string) (*databas
 	if err != nil {
 		return nil, err
 	}
-	return &database.Session{ID: row.ID, UserID: row.UserID, Token: row.Token, ExpiresAt: expiresAt, CreatedAt: createdAt}, nil
+	dev := ""
+	if d, ok := row.DeviceID.(string); ok {
+		dev = d
+	}
+	return &database.Session{ID: row.ID, UserID: row.UserID, Token: row.Token, DeviceID: dev, ExpiresAt: expiresAt, CreatedAt: createdAt}, nil
 }
 
 func (s *Service) getUserByUsername(ctx context.Context, username string) (*database.User, error) {
@@ -466,4 +499,76 @@ func (s *Service) CountAdmins(ctx context.Context) (int64, error) {
 		return s.pgQueries.CountAdmins(ctx)
 	}
 	return s.sqliteQueries.CountAdmins(ctx)
+}
+
+// ListUserSessions returns all active sessions for a user.
+func (s *Service) ListUserSessions(ctx context.Context, userID string) ([]database.Session, error) {
+	if s.pgQueries != nil {
+		uid, err := uuid.Parse(userID)
+		if err != nil {
+			return nil, fmt.Errorf("parse user id: %w", err)
+		}
+		rows, err := s.pgQueries.ListSessionsByUser(ctx, uid)
+		if err != nil {
+			return nil, fmt.Errorf("list sessions: %w", err)
+		}
+		sessions := make([]database.Session, 0, len(rows))
+		for _, row := range rows {
+			sessions = append(sessions, database.Session{
+				ID:        row.ID,
+				UserID:    row.UserID,
+				Token:     row.Token,
+				DeviceID:  row.DeviceID,
+				ExpiresAt: row.ExpiresAt,
+				CreatedAt: row.CreatedAt,
+			})
+		}
+		return sessions, nil
+	}
+
+	rows, err := s.sqliteQueries.ListSessionsByUser(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("list sessions: %w", err)
+	}
+	sessions := make([]database.Session, 0, len(rows))
+	for _, row := range rows {
+		expiresAt, err := dbtime.ParseSQLiteTime(row.ExpiresAt)
+		if err != nil {
+			return nil, err
+		}
+		createdAt, err := dbtime.ParseSQLiteTime(row.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		d := ""
+		if dev, ok := row.DeviceID.(string); ok {
+			d = dev
+		}
+		sessions = append(sessions, database.Session{
+			ID:        row.ID,
+			UserID:    row.UserID,
+			Token:     row.Token,
+			DeviceID:  d,
+			ExpiresAt: expiresAt,
+			CreatedAt: createdAt,
+		})
+	}
+	return sessions, nil
+}
+
+// RevokeSession revokes a specific session for a user.
+func (s *Service) RevokeSession(ctx context.Context, sessionID, userID string) error {
+	if s.pgQueries != nil {
+		sid, err := uuid.Parse(sessionID)
+		if err != nil {
+			return fmt.Errorf("parse session id: %w", err)
+		}
+		uid, err := uuid.Parse(userID)
+		if err != nil {
+			return fmt.Errorf("parse user id: %w", err)
+		}
+		return s.pgQueries.DeleteSessionByID(ctx, pgsqlc.DeleteSessionByIDParams{Column1: sid, Column2: uid})
+	}
+	err := s.sqliteQueries.DeleteSessionByID(ctx, sqliteqlc.DeleteSessionByIDParams{ID: sessionID, UserID: userID})
+	return err
 }

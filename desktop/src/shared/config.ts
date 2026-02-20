@@ -31,6 +31,19 @@ export const DEFAULT_CONFIG: AppConfig = {
       processRecycleTimeoutMs: 5 * 60 * 1000
     }
   },
+  sync: {
+    enabled: true,
+    serverUrl: "http://localhost:8080",
+    authToken: "",
+    userId: "",
+    username: "",
+    deviceId: "",
+    notesCursor: "",
+    autoSyncOnStartup: true,
+    syncIntervalMinutes: 5,
+    lastSyncAt: "",
+    lastSyncError: ""
+  },
   hotkeys: {
     ...HOTKEY_DEFAULTS
   }
@@ -68,6 +81,8 @@ export interface AppSettings extends SummarizationSettings {
   summarizationMemoryThresholdMb: number;
   summarizationRestartDelaySeconds: number;
   summarizationProcessRecycleTimeoutMinutes: number;
+  serverUrl: string;
+  syncIntervalMinutes: number;
   hotkeyOpenSettings: string[];
 }
 

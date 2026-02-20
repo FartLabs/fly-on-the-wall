@@ -27,12 +27,12 @@ SET is_premium = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?;
 
 -- name: CreateSession :one
-INSERT INTO sessions (id, user_id, token, expires_at, created_at)
-VALUES (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))), ?, ?, ?, CURRENT_TIMESTAMP)
-RETURNING id, user_id, token, expires_at, created_at;
+INSERT INTO sessions (id, user_id, token, device_id, expires_at, created_at)
+VALUES (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))), ?, ?, ?, ?, CURRENT_TIMESTAMP)
+RETURNING id, user_id, token, device_id, expires_at, created_at;
 
 -- name: GetSessionByToken :one
-SELECT id, user_id, token, expires_at, created_at
+SELECT id, user_id, token, device_id, expires_at, created_at
 FROM sessions
 WHERE token = ?;
 
@@ -40,7 +40,16 @@ WHERE token = ?;
 DELETE FROM sessions WHERE token = ?;
 
 -- name: DeleteSessionByID :exec
-DELETE FROM sessions WHERE id = ?;
+DELETE FROM sessions WHERE id = ? AND user_id = ?;
+
+-- name: DeleteSessionsByDeviceID :exec
+DELETE FROM sessions WHERE device_id = ?;
 
 -- name: DeleteExpiredSessions :execrows
 DELETE FROM sessions WHERE expires_at < CURRENT_TIMESTAMP;
+
+-- name: ListSessionsByUser :many
+SELECT id, user_id, token, device_id, expires_at, created_at
+FROM sessions
+WHERE user_id = ? AND expires_at > CURRENT_TIMESTAMP
+ORDER BY created_at DESC;

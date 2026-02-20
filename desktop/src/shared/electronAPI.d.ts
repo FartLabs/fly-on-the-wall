@@ -22,6 +22,19 @@ export interface AppConfig {
     modelStoragePath: string;
     utilityProcess: UtilityProcessSettings;
   };
+  sync: {
+    enabled: boolean;
+    serverUrl: string;
+    authToken: string;
+    userId: string;
+    username: string;
+    deviceId: string;
+    notesCursor: string;
+    autoSyncOnStartup: boolean;
+    syncIntervalMinutes: number;
+    lastSyncAt: string;
+    lastSyncError: string;
+  };
   hotkeys: HotkeysConfig;
 }
 
@@ -227,4 +240,44 @@ export default interface IElectronAPI {
     message: string;
     type?: "success" | "error" | "info";
   }) => Promise<{ success: boolean; suppressed?: boolean; error?: string }>;
+
+  syncSignUp: (data: { username: string; password: string }) => Promise<{
+    success: boolean;
+    user?: {
+      id: string;
+      username: string;
+      is_admin: boolean;
+      is_premium: boolean;
+    };
+    error?: string;
+  }>;
+  syncLogin: (data: { username: string; password: string }) => Promise<{
+    success: boolean;
+    user?: {
+      id: string;
+      username: string;
+      is_admin: boolean;
+      is_premium: boolean;
+    };
+    error?: string;
+  }>;
+  syncLogout: () => Promise<{ success: boolean; error?: string }>;
+  syncWhoAmI: () => Promise<{
+    success: boolean;
+    authenticated: boolean;
+    user?: {
+      id: string;
+      username: string;
+      is_admin: boolean;
+      is_premium: boolean;
+    };
+    error?: string;
+  }>;
+  syncNow: () => Promise<{
+    success: boolean;
+    pushed: number;
+    pulled: number;
+    skipped: number;
+    error?: string;
+  }>;
 }

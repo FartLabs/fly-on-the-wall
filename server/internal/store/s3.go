@@ -12,12 +12,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-// ObjectStore defines the interface for storing encrypted recording blobs.
+// ObjectStore defines the interface for storing recording blobs.
 type ObjectStore interface {
-	// PutObject uploads an encrypted object.
+	// PutObject uploads an object.
 	PutObject(ctx context.Context, key string, body io.Reader, size int64, contentType string) error
 
-	// GetObject downloads an encrypted object.
+	// GetObject downloads an object.
 	GetObject(ctx context.Context, key string) (io.ReadCloser, error)
 
 	// DeleteObject removes an object.
@@ -92,7 +92,7 @@ func NewS3Store(cfg S3Config) (*S3Store, error) {
 	}, nil
 }
 
-// PutObject uploads an encrypted object to S3.
+// PutObject uploads an object to S3.
 func (s *S3Store) PutObject(ctx context.Context, key string, body io.Reader, size int64, contentType string) error {
 	input := &s3.PutObjectInput{
 		Bucket:      aws.String(s.bucket),
@@ -111,7 +111,7 @@ func (s *S3Store) PutObject(ctx context.Context, key string, body io.Reader, siz
 	return nil
 }
 
-// GetObject downloads an encrypted object from S3.
+// GetObject downloads an object from S3.
 func (s *S3Store) GetObject(ctx context.Context, key string) (io.ReadCloser, error) {
 	output, err := s.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(s.bucket),

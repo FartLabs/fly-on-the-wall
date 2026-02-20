@@ -12,6 +12,7 @@ CREATE TABLE sessions (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
     token TEXT UNIQUE NOT NULL,
+    device_id TEXT NULL,
     expires_at TEXT NOT NULL,
     created_at TEXT NOT NULL
 );

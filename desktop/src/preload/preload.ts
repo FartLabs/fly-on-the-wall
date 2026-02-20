@@ -121,7 +121,15 @@ const electronAPI: IElectronAPI = {
     ipcRenderer.invoke("import-audio-file", data),
 
   notify: (data: { message: string; type?: "success" | "error" | "info" }) =>
-    ipcRenderer.invoke("notify", data)
+    ipcRenderer.invoke("notify", data),
+
+  syncSignUp: (data: { username: string; password: string }) =>
+    ipcRenderer.invoke("sync-signup", data),
+  syncLogin: (data: { username: string; password: string }) =>
+    ipcRenderer.invoke("sync-login", data),
+  syncLogout: () => ipcRenderer.invoke("sync-logout"),
+  syncWhoAmI: () => ipcRenderer.invoke("sync-whoami"),
+  syncNow: () => ipcRenderer.invoke("sync-now")
 };
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);

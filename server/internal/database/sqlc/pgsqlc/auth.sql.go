@@ -24,14 +24,15 @@ func (q *Queries) CountAdmins(ctx context.Context) (int64, error) {
 }
 
 const createSession = `-- name: CreateSession :one
-INSERT INTO sessions (id, user_id, token, expires_at, created_at)
-VALUES (gen_random_uuid(), $1::uuid, $2, $3, NOW())
-RETURNING id::text, user_id::text, token, expires_at, created_at
+INSERT INTO sessions (id, user_id, token, device_id, expires_at, created_at)
+VALUES (gen_random_uuid(), $1::uuid, $2, $3::uuid, $4, NOW())
+RETURNING id::text, user_id::text, token, device_id::text, expires_at, created_at
 `
 
 type CreateSessionParams struct {
 	Column1   uuid.UUID `json:"column_1"`
 	Token     string    `json:"token"`
+	Column3   uuid.UUID `json:"column_3"`
 	ExpiresAt time.Time `json:"expires_at"`
 }
 
@@ -39,17 +40,24 @@ type CreateSessionRow struct {
 	ID        string    `json:"id"`
 	UserID    string    `json:"user_id"`
 	Token     string    `json:"token"`
+	DeviceID  string    `json:"device_id"`
 	ExpiresAt time.Time `json:"expires_at"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
 func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (CreateSessionRow, error) {
-	row := q.db.QueryRowContext(ctx, createSession, arg.Column1, arg.Token, arg.ExpiresAt)
+	row := q.db.QueryRowContext(ctx, createSession,
+		arg.Column1,
+		arg.Token,
+		arg.Column3,
+		arg.ExpiresAt,
+	)
 	var i CreateSessionRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
 		&i.Token,
+		&i.DeviceID,
 		&i.ExpiresAt,
 		&i.CreatedAt,
 	)
@@ -141,11 +149,16 @@ func (q *Queries) DeleteExpiredSessions(ctx context.Context) (int64, error) {
 }
 
 const deleteSessionByID = `-- name: DeleteSessionByID :exec
-DELETE FROM sessions WHERE id = $1::uuid
+DELETE FROM sessions WHERE id = $1::uuid AND user_id = $2::uuid
 `
 
-func (q *Queries) DeleteSessionByID(ctx context.Context, dollar_1 uuid.UUID) error {
-	_, err := q.db.ExecContext(ctx, deleteSessionByID, dollar_1)
+type DeleteSessionByIDParams struct {
+	Column1 uuid.UUID `json:"column_1"`
+	Column2 uuid.UUID `json:"column_2"`
+}
+
+func (q *Queries) DeleteSessionByID(ctx context.Context, arg DeleteSessionByIDParams) error {
+	_, err := q.db.ExecContext(ctx, deleteSessionByID, arg.Column1, arg.Column2)
 	return err
 }
 
@@ -158,8 +171,17 @@ func (q *Queries) DeleteSessionByToken(ctx context.Context, token string) error 
 	return err
 }
 
+const deleteSessionsByDeviceID = `-- name: DeleteSessionsByDeviceID :exec
+DELETE FROM sessions WHERE device_id = $1::uuid
+`
+
+func (q *Queries) DeleteSessionsByDeviceID(ctx context.Context, dollar_1 uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteSessionsByDeviceID, dollar_1)
+	return err
+}
+
 const getSessionByToken = `-- name: GetSessionByToken :one
-SELECT id::text, user_id::text, token, expires_at, created_at
+SELECT id::text, user_id::text, token, device_id::text, expires_at, created_at
 FROM sessions
 WHERE token = $1
 `
@@ -168,6 +190,7 @@ type GetSessionByTokenRow struct {
 	ID        string    `json:"id"`
 	UserID    string    `json:"user_id"`
 	Token     string    `json:"token"`
+	DeviceID  string    `json:"device_id"`
 	ExpiresAt time.Time `json:"expires_at"`
 	CreatedAt time.Time `json:"created_at"`
 }
@@ -179,6 +202,7 @@ func (q *Queries) GetSessionByToken(ctx context.Context, token string) (GetSessi
 		&i.ID,
 		&i.UserID,
 		&i.Token,
+		&i.DeviceID,
 		&i.ExpiresAt,
 		&i.CreatedAt,
 	)
@@ -245,6 +269,52 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (GetUs
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const listSessionsByUser = `-- name: ListSessionsByUser :many
+SELECT id::text, user_id::text, token, device_id::text, expires_at, created_at
+FROM sessions
+WHERE user_id = $1::uuid AND expires_at > NOW()
+ORDER BY created_at DESC
+`
+
+type ListSessionsByUserRow struct {
+	ID        string    `json:"id"`
+	UserID    string    `json:"user_id"`
+	Token     string    `json:"token"`
+	DeviceID  string    `json:"device_id"`
+	ExpiresAt time.Time `json:"expires_at"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+func (q *Queries) ListSessionsByUser(ctx context.Context, dollar_1 uuid.UUID) ([]ListSessionsByUserRow, error) {
+	rows, err := q.db.QueryContext(ctx, listSessionsByUser, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListSessionsByUserRow
+	for rows.Next() {
+		var i ListSessionsByUserRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Token,
+			&i.DeviceID,
+			&i.ExpiresAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const setUserPremium = `-- name: SetUserPremium :exec

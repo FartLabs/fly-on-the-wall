@@ -418,6 +418,12 @@
                 </button>
               </li>
               <li>
+                <button class="settings-nav-item" data-settings-section="sync">
+                  <span class="settings-nav-icon">🔄</span>
+                  <span>Sync</span>
+                </button>
+              </li>
+              <li>
                 <button
                   class="settings-nav-item"
                   data-settings-section="summarization"
@@ -556,6 +562,66 @@
                   step="1"
                   value="5"
                 />
+              </div>
+            </div>
+
+            <div class="settings-panel" id="settingsPanel-sync">
+              <h3 class="settings-panel-title">Sync</h3>
+
+              <div class="settings-group">
+                <label class="settings-label" for="serverUrlInput">
+                  Server URL
+                  <span class="settings-hint"
+                    >Base URL of your server (e.g. http://localhost:8080)</span
+                  >
+                </label>
+                <input
+                  type="text"
+                  id="serverUrlInput"
+                  class="settings-input"
+                  placeholder="http://localhost:8080"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label class="settings-label" for="syncIntervalMinutesInput">
+                  Auto Sync Interval (minutes)
+                  <span class="settings-hint"
+                    >How often to sync notes in the background</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="syncIntervalMinutesInput"
+                  class="settings-input"
+                  min="1"
+                  max="240"
+                  step="1"
+                  value="5"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label class="settings-label">
+                  Connection
+                  <span class="settings-hint" id="syncStatusText"
+                    >Not connected</span
+                  >
+                </label>
+                <span class="settings-hint" id="syncLastSyncText"
+                  >Last sync: never</span
+                >
+                <span class="settings-hint" id="syncLastErrorText"></span>
+              </div>
+
+              <div class="settings-actions">
+                <button class="action-btn" id="syncConnectBtn">Connect</button>
+                <button class="action-btn" id="syncLogoutBtn">
+                  Disconnect
+                </button>
+                <button class="action-btn primary" id="syncNowBtn">
+                  Sync Now
+                </button>
               </div>
             </div>
 
@@ -857,6 +923,52 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay hidden" id="syncAuthModal">
+      <div class="modal-container settings-modal-container">
+        <div class="modal-header">
+          <div>
+            <h2>Connect to Server</h2>
+          </div>
+          <button class="modal-close-btn" id="closeSyncAuthModal" title="Close">
+            ✕
+          </button>
+        </div>
+
+        <div class="settings-group">
+          <label class="settings-label" for="syncAuthUsernameInput"
+            >Username</label
+          >
+          <input
+            type="text"
+            id="syncAuthUsernameInput"
+            class="settings-input"
+            placeholder="your_username"
+          />
+        </div>
+
+        <div class="settings-group">
+          <label class="settings-label" for="syncAuthPasswordInput"
+            >Password</label
+          >
+          <input
+            type="password"
+            id="syncAuthPasswordInput"
+            class="settings-input"
+            placeholder="At least 8 characters"
+          />
+        </div>
+
+        <div class="settings-group">
+          <span class="settings-hint" id="syncAuthStatusText"></span>
+        </div>
+
+        <div class="settings-actions">
+          <button class="action-btn" id="syncSignupBtn">Sign Up</button>
+          <button class="action-btn primary" id="syncLoginBtn">Login</button>
         </div>
       </div>
     </div>
