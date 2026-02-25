@@ -1,0 +1,96 @@
+{{define "notes/view"}} {{template "base" .}} {{end}} {{define "content"}}
+<div class="notes-view-page">
+  <div class="page-header">
+    <h2>Edit Note</h2>
+    <a href="/notes" class="btn btn-secondary">Back to Notes</a>
+  </div>
+
+  {{if .Error}}
+  <div class="alert alert-error">{{.Error}}</div>
+  {{end}} {{if .Data}} {{$note := index .Data "note"}} {{if $note}}
+  <div class="note-view">
+    <div class="note-meta">
+      <span class="meta-item">ID: {{$note.note_id}}</span>
+      <span class="meta-item">Created: {{$note.created_at}}</span>
+      <span class="meta-item">Updated: {{$note.updated_at}}</span>
+    </div>
+
+    <form
+      method="POST"
+      action="/notes/{{$note.id}}"
+      class="note-form"
+      id="noteForm"
+    >
+      <div class="form-group">
+        <label for="filename">Filename</label>
+        <input
+          type="text"
+          id="filename"
+          name="filename"
+          value="{{$note.filename}}"
+          placeholder="Enter filename..."
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="transcription">Transcription</label>
+        <textarea
+          id="transcription"
+          name="transcription"
+          rows="12"
+          placeholder="Enter transcription text..."
+        >
+{{$note.transcription}}</textarea
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="summary">Summary</label>
+        <textarea
+          id="summary"
+          name="summary"
+          rows="6"
+          placeholder="Enter summary text..."
+        >
+{{$note.summary}}</textarea
+        >
+      </div>
+
+      <div class="form-actions">
+        <span class="autosave-status" id="autosaveStatus"></span>
+        <form
+          method="POST"
+          action="/notes/{{$note.id}}/delete"
+          style="display: inline"
+        >
+          <button
+            type="submit"
+            class="btn btn-danger"
+            onclick="return confirm('Delete this note?');"
+          >
+            Delete
+          </button>
+        </form>
+      </div>
+    </form>
+
+    {{$metadata := $note.metadata}} {{if $metadata}}
+    <div class="note-metadata">
+      <h3>Metadata</h3>
+      <table class="metadata-table">
+        {{range $key, $value := $metadata}}
+        <tr>
+          <td class="metadata-key">{{$key}}</td>
+          <td class="metadata-value">{{$value}}</td>
+        </tr>
+        {{end}}
+      </table>
+    </div>
+    {{end}}
+  </div>
+
+  <script src="/static/js/notes-view.js"></script>
+  {{end}} {{end}}
+</div>
+{{end}}

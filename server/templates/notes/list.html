@@ -1,0 +1,73 @@
+{{define "notes/list"}} {{template "base" .}} {{end}} {{define "content"}}
+<div class="notes-page">
+  <div class="page-header">
+    <h2>Notes</h2>
+    <a href="/notes/new" class="btn btn-primary">New Note</a>
+  </div>
+
+  {{if .Error}}
+  <div class="alert alert-error">{{.Error}}</div>
+  {{end}}
+
+  <div class="notes-search">
+    <input
+      type="text"
+      id="notesSearch"
+      class="search-input"
+      placeholder="Search notes..."
+    />
+  </div>
+
+  {{if .Data}} {{$notes := index .Data "notes"}} {{if $notes}}
+  <div class="notes-grid" id="notesGrid">
+    {{range $note := $notes}}
+    <div
+      class="note-card"
+      data-filename="{{$note.Filename}}"
+      data-preview="{{$note.Preview}}"
+    >
+      <a href="/notes/{{$note.ID}}" class="note-card-link">
+        <div class="note-card-header">
+          <h3 class="note-card-title">{{$note.Filename}}</h3>
+        </div>
+        <div class="note-card-preview">
+          {{if $note.Preview}} {{$note.Preview}} {{else}}
+          <span class="text-muted">No content</span>
+          {{end}}
+        </div>
+        <div class="note-card-footer">
+          <span class="note-card-date"
+            >{{$note.UpdatedAt.Format "Jan 2, 2006"}}</span
+          >
+          <form
+            method="POST"
+            action="/notes/{{$note.ID}}/delete"
+            class="note-card-delete"
+            onclick="event.stopPropagation()"
+          >
+            <button
+              type="submit"
+              class="btn btn-small btn-danger"
+              onclick="return confirm('Delete this note?');"
+            >
+              Delete
+            </button>
+          </form>
+        </div>
+      </a>
+    </div>
+    {{end}}
+  </div>
+  <div class="no-results hidden" id="noResults">
+    <p>No notes found matching your search.</p>
+  </div>
+  {{else}}
+  <div class="empty-state">
+    <p>No notes yet.</p>
+    <a href="/notes/new" class="btn btn-primary">Create your first note</a>
+  </div>
+  {{end}} {{end}}
+</div>
+
+<script src="/static/js/notes-list.js"></script>
+{{end}}
