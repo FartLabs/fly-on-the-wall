@@ -116,7 +116,7 @@ func (s *Service) Register(ctx context.Context, username, password string) (*dat
 }
 
 // Login validates credentials and creates a session.
-func (s *Service) Login(ctx context.Context, username, password, deviceID string) (*database.User, *database.Session, error) {
+func (s *Service) Login(ctx context.Context, username, password, deviceID, deviceOS, deviceVersion, deviceName string) (*database.User, *database.Session, error) {
 	user, err := s.getUserByUsername(ctx, username)
 
 	if err != nil {
@@ -130,7 +130,7 @@ func (s *Service) Login(ctx context.Context, username, password, deviceID string
 		return nil, nil, ErrInvalidCredentials
 	}
 
-	session, err := s.CreateSession(ctx, user.ID, deviceID)
+	session, err := s.CreateSession(ctx, user.ID, deviceID, deviceOS, deviceVersion, deviceName)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -139,7 +139,7 @@ func (s *Service) Login(ctx context.Context, username, password, deviceID string
 }
 
 // CreateSession creates a new session for the given user.
-func (s *Service) CreateSession(ctx context.Context, userID string, deviceID string) (*database.Session, error) {
+func (s *Service) CreateSession(ctx context.Context, userID string, deviceID string, deviceOS string, deviceVersion string, deviceName string) (*database.Session, error) {
 	token, err := generateToken(32)
 	if err != nil {
 		return nil, fmt.Errorf("generate token: %w", err)
@@ -157,14 +157,27 @@ func (s *Service) CreateSession(ctx context.Context, userID string, deviceID str
 			devID, _ = uuid.Parse(deviceID)
 		}
 		row, qErr := s.pgQueries.CreateSession(ctx, pgsqlc.CreateSessionParams{
-			Column1:   uid,
-			Token:     token,
-			Column3:   devID,
-			ExpiresAt: expiresAt,
+			Column1:       uid,
+			Token:         token,
+			Column3:       devID,
+			DeviceOs:      sql.NullString{String: deviceOS, Valid: deviceOS != ""},
+			DeviceVersion: sql.NullString{String: deviceVersion, Valid: deviceVersion != ""},
+			DeviceName:    sql.NullString{String: deviceName, Valid: deviceName != ""},
+			ExpiresAt:     expiresAt,
 		})
 		err = qErr
 		if err == nil {
-			session = &database.Session{ID: row.ID, UserID: row.UserID, Token: row.Token, DeviceID: row.DeviceID, ExpiresAt: row.ExpiresAt, CreatedAt: row.CreatedAt}
+			session = &database.Session{
+				ID:            row.ID,
+				UserID:        row.UserID,
+				Token:         row.Token,
+				DeviceID:      row.DeviceID,
+				DeviceOS:      row.DeviceOs.String,
+				DeviceVersion: row.DeviceVersion.String,
+				DeviceName:    row.DeviceName.String,
+				ExpiresAt:     row.ExpiresAt,
+				CreatedAt:     row.CreatedAt,
+			}
 		}
 	} else {
 		dev := ""
@@ -172,10 +185,13 @@ func (s *Service) CreateSession(ctx context.Context, userID string, deviceID str
 			dev = deviceID
 		}
 		row, qErr := s.sqliteQueries.CreateSession(ctx, sqliteqlc.CreateSessionParams{
-			UserID:    userID,
-			Token:     token,
-			DeviceID:  dev,
-			ExpiresAt: expiresAt.UTC().Format("2006-01-02 15:04:05"),
+			UserID:        userID,
+			Token:         token,
+			DeviceID:      dev,
+			DeviceOs:      deviceOS,
+			DeviceVersion: deviceVersion,
+			DeviceName:    deviceName,
+			ExpiresAt:     expiresAt.UTC().Format("2006-01-02 15:04:05"),
 		})
 		err = qErr
 		if err == nil {
@@ -191,7 +207,17 @@ func (s *Service) CreateSession(ctx context.Context, userID string, deviceID str
 			if dev, ok := row.DeviceID.(string); ok {
 				d = dev
 			}
-			session = &database.Session{ID: row.ID, UserID: row.UserID, Token: row.Token, DeviceID: d, ExpiresAt: rowExpiresAt, CreatedAt: rowCreatedAt}
+			var devOS, devVer, devName string
+			if os, ok := row.DeviceOs.(string); ok {
+				devOS = os
+			}
+			if ver, ok := row.DeviceVersion.(string); ok {
+				devVer = ver
+			}
+			if name, ok := row.DeviceName.(string); ok {
+				devName = name
+			}
+			session = &database.Session{ID: row.ID, UserID: row.UserID, Token: row.Token, DeviceID: d, DeviceOS: devOS, DeviceVersion: devVer, DeviceName: devName, ExpiresAt: rowExpiresAt, CreatedAt: rowCreatedAt}
 		}
 	}
 
@@ -515,12 +541,15 @@ func (s *Service) ListUserSessions(ctx context.Context, userID string) ([]databa
 		sessions := make([]database.Session, 0, len(rows))
 		for _, row := range rows {
 			sessions = append(sessions, database.Session{
-				ID:        row.ID,
-				UserID:    row.UserID,
-				Token:     row.Token,
-				DeviceID:  row.DeviceID,
-				ExpiresAt: row.ExpiresAt,
-				CreatedAt: row.CreatedAt,
+				ID:            row.ID,
+				UserID:        row.UserID,
+				Token:         row.Token,
+				DeviceID:      row.DeviceID,
+				DeviceOS:      row.DeviceOs.String,
+				DeviceVersion: row.DeviceVersion.String,
+				DeviceName:    row.DeviceName.String,
+				ExpiresAt:     row.ExpiresAt,
+				CreatedAt:     row.CreatedAt,
 			})
 		}
 		return sessions, nil
@@ -544,13 +573,26 @@ func (s *Service) ListUserSessions(ctx context.Context, userID string) ([]databa
 		if dev, ok := row.DeviceID.(string); ok {
 			d = dev
 		}
+		var devOS, devVer, devName string
+		if os, ok := row.DeviceOs.(string); ok {
+			devOS = os
+		}
+		if ver, ok := row.DeviceVersion.(string); ok {
+			devVer = ver
+		}
+		if name, ok := row.DeviceName.(string); ok {
+			devName = name
+		}
 		sessions = append(sessions, database.Session{
-			ID:        row.ID,
-			UserID:    row.UserID,
-			Token:     row.Token,
-			DeviceID:  d,
-			ExpiresAt: expiresAt,
-			CreatedAt: createdAt,
+			ID:            row.ID,
+			UserID:        row.UserID,
+			Token:         row.Token,
+			DeviceID:      d,
+			DeviceOS:      devOS,
+			DeviceVersion: devVer,
+			DeviceName:    devName,
+			ExpiresAt:     expiresAt,
+			CreatedAt:     createdAt,
 		})
 	}
 	return sessions, nil

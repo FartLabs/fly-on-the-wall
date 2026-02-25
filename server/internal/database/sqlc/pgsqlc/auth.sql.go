@@ -7,6 +7,7 @@ package pgsqlc
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
@@ -24,25 +25,31 @@ func (q *Queries) CountAdmins(ctx context.Context) (int64, error) {
 }
 
 const createSession = `-- name: CreateSession :one
-INSERT INTO sessions (id, user_id, token, device_id, expires_at, created_at)
-VALUES (gen_random_uuid(), $1::uuid, $2, $3::uuid, $4, NOW())
-RETURNING id::text, user_id::text, token, device_id::text, expires_at, created_at
+INSERT INTO sessions (id, user_id, token, device_id, device_os, device_version, device_name, expires_at, created_at)
+VALUES (gen_random_uuid(), $1::uuid, $2, $3::uuid, $4, $5, $6, $7, NOW())
+RETURNING id::text, user_id::text, token, device_id::text, device_os, device_version, device_name, expires_at, created_at
 `
 
 type CreateSessionParams struct {
-	Column1   uuid.UUID `json:"column_1"`
-	Token     string    `json:"token"`
-	Column3   uuid.UUID `json:"column_3"`
-	ExpiresAt time.Time `json:"expires_at"`
+	Column1       uuid.UUID      `json:"column_1"`
+	Token         string         `json:"token"`
+	Column3       uuid.UUID      `json:"column_3"`
+	DeviceOs      sql.NullString `json:"device_os"`
+	DeviceVersion sql.NullString `json:"device_version"`
+	DeviceName    sql.NullString `json:"device_name"`
+	ExpiresAt     time.Time      `json:"expires_at"`
 }
 
 type CreateSessionRow struct {
-	ID        string    `json:"id"`
-	UserID    string    `json:"user_id"`
-	Token     string    `json:"token"`
-	DeviceID  string    `json:"device_id"`
-	ExpiresAt time.Time `json:"expires_at"`
-	CreatedAt time.Time `json:"created_at"`
+	ID            string         `json:"id"`
+	UserID        string         `json:"user_id"`
+	Token         string         `json:"token"`
+	DeviceID      string         `json:"device_id"`
+	DeviceOs      sql.NullString `json:"device_os"`
+	DeviceVersion sql.NullString `json:"device_version"`
+	DeviceName    sql.NullString `json:"device_name"`
+	ExpiresAt     time.Time      `json:"expires_at"`
+	CreatedAt     time.Time      `json:"created_at"`
 }
 
 func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (CreateSessionRow, error) {
@@ -50,6 +57,9 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (C
 		arg.Column1,
 		arg.Token,
 		arg.Column3,
+		arg.DeviceOs,
+		arg.DeviceVersion,
+		arg.DeviceName,
 		arg.ExpiresAt,
 	)
 	var i CreateSessionRow
@@ -58,6 +68,9 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (C
 		&i.UserID,
 		&i.Token,
 		&i.DeviceID,
+		&i.DeviceOs,
+		&i.DeviceVersion,
+		&i.DeviceName,
 		&i.ExpiresAt,
 		&i.CreatedAt,
 	)
@@ -181,18 +194,21 @@ func (q *Queries) DeleteSessionsByDeviceID(ctx context.Context, dollar_1 uuid.UU
 }
 
 const getSessionByToken = `-- name: GetSessionByToken :one
-SELECT id::text, user_id::text, token, device_id::text, expires_at, created_at
+SELECT id::text, user_id::text, token, device_id::text, device_os, device_version, device_name, expires_at, created_at
 FROM sessions
 WHERE token = $1
 `
 
 type GetSessionByTokenRow struct {
-	ID        string    `json:"id"`
-	UserID    string    `json:"user_id"`
-	Token     string    `json:"token"`
-	DeviceID  string    `json:"device_id"`
-	ExpiresAt time.Time `json:"expires_at"`
-	CreatedAt time.Time `json:"created_at"`
+	ID            string         `json:"id"`
+	UserID        string         `json:"user_id"`
+	Token         string         `json:"token"`
+	DeviceID      string         `json:"device_id"`
+	DeviceOs      sql.NullString `json:"device_os"`
+	DeviceVersion sql.NullString `json:"device_version"`
+	DeviceName    sql.NullString `json:"device_name"`
+	ExpiresAt     time.Time      `json:"expires_at"`
+	CreatedAt     time.Time      `json:"created_at"`
 }
 
 func (q *Queries) GetSessionByToken(ctx context.Context, token string) (GetSessionByTokenRow, error) {
@@ -203,6 +219,9 @@ func (q *Queries) GetSessionByToken(ctx context.Context, token string) (GetSessi
 		&i.UserID,
 		&i.Token,
 		&i.DeviceID,
+		&i.DeviceOs,
+		&i.DeviceVersion,
+		&i.DeviceName,
 		&i.ExpiresAt,
 		&i.CreatedAt,
 	)
@@ -272,19 +291,22 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (GetUs
 }
 
 const listSessionsByUser = `-- name: ListSessionsByUser :many
-SELECT id::text, user_id::text, token, device_id::text, expires_at, created_at
+SELECT id::text, user_id::text, token, device_id::text, device_os, device_version, device_name, expires_at, created_at
 FROM sessions
 WHERE user_id = $1::uuid AND expires_at > NOW()
 ORDER BY created_at DESC
 `
 
 type ListSessionsByUserRow struct {
-	ID        string    `json:"id"`
-	UserID    string    `json:"user_id"`
-	Token     string    `json:"token"`
-	DeviceID  string    `json:"device_id"`
-	ExpiresAt time.Time `json:"expires_at"`
-	CreatedAt time.Time `json:"created_at"`
+	ID            string         `json:"id"`
+	UserID        string         `json:"user_id"`
+	Token         string         `json:"token"`
+	DeviceID      string         `json:"device_id"`
+	DeviceOs      sql.NullString `json:"device_os"`
+	DeviceVersion sql.NullString `json:"device_version"`
+	DeviceName    sql.NullString `json:"device_name"`
+	ExpiresAt     time.Time      `json:"expires_at"`
+	CreatedAt     time.Time      `json:"created_at"`
 }
 
 func (q *Queries) ListSessionsByUser(ctx context.Context, dollar_1 uuid.UUID) ([]ListSessionsByUserRow, error) {
@@ -301,6 +323,9 @@ func (q *Queries) ListSessionsByUser(ctx context.Context, dollar_1 uuid.UUID) ([
 			&i.UserID,
 			&i.Token,
 			&i.DeviceID,
+			&i.DeviceOs,
+			&i.DeviceVersion,
+			&i.DeviceName,
 			&i.ExpiresAt,
 			&i.CreatedAt,
 		); err != nil {

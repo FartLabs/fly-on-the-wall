@@ -13,6 +13,9 @@ CREATE TABLE sessions (
     user_id UUID NOT NULL,
     token TEXT UNIQUE NOT NULL,
     device_id UUID NULL,
+    device_os TEXT NULL,
+    device_version TEXT NULL,
+    device_name TEXT NULL,
     expires_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL
 );

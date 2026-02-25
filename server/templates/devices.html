@@ -6,39 +6,34 @@
 
   {{if .Error}}
   <div class="alert alert-error">{{.Error}}</div>
-  {{end}} {{if .Data}} {{$sessions := index .Data "sessions"}} {{if $sessions}}
+  {{end}} {{if .Data}} {{$devices := index .Data "devices"}} {{if $devices}}
   <p class="text-muted">
-    These are your active sessions. Revoke a session to log out that device.
+    These are your active devices. Revoke a device to log out all sessions on
+    that device.
   </p>
   <table class="data-table">
     <thead>
       <tr>
-        <th>Device ID</th>
-        <th>Created</th>
-        <th>Expires</th>
+        <th>Device</th>
+        <th>Last Active</th>
         <th>Actions</th>
       </tr>
     </thead>
     <tbody>
-      {{range $session := $sessions}}
+      {{range $device := $devices}}
       <tr>
-        <td>
-          {{if $session.DeviceID}} {{$session.DeviceID}} {{else}}
-          <span class="text-muted">Web Session</span>
-          {{end}}
-        </td>
-        <td>{{$session.CreatedAt.Format "Jan 2, 2006 3:04pm"}}</td>
-        <td>{{$session.ExpiresAt.Format "Jan 2, 2006 3:04pm"}}</td>
+        <td>{{$device.DisplayName}}</td>
+        <td>{{$device.LastActive}}</td>
         <td>
           <form
             method="POST"
-            action="/devices/{{$session.ID}}/revoke"
+            action="/devices/{{$device.RevokeKey}}/revoke"
             style="display: inline"
           >
             <button
               type="submit"
               class="btn btn-small btn-danger"
-              onclick="return confirm('Revoke this session?');"
+              onclick="return confirm('Revoke all sessions on this device?');"
             >
               Revoke
             </button>
@@ -50,7 +45,7 @@
   </table>
   {{else}}
   <div class="empty-state">
-    <p>No active sessions found.</p>
+    <p>No active devices found.</p>
   </div>
   {{end}} {{end}}
 </div>

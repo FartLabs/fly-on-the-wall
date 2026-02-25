@@ -27,12 +27,12 @@ SET is_premium = $1, updated_at = NOW()
 WHERE id = $2::uuid;
 
 -- name: CreateSession :one
-INSERT INTO sessions (id, user_id, token, device_id, expires_at, created_at)
-VALUES (gen_random_uuid(), $1::uuid, $2, $3::uuid, $4, NOW())
-RETURNING id::text, user_id::text, token, device_id::text, expires_at, created_at;
+INSERT INTO sessions (id, user_id, token, device_id, device_os, device_version, device_name, expires_at, created_at)
+VALUES (gen_random_uuid(), $1::uuid, $2, $3::uuid, $4, $5, $6, $7, NOW())
+RETURNING id::text, user_id::text, token, device_id::text, device_os, device_version, device_name, expires_at, created_at;
 
 -- name: GetSessionByToken :one
-SELECT id::text, user_id::text, token, device_id::text, expires_at, created_at
+SELECT id::text, user_id::text, token, device_id::text, device_os, device_version, device_name, expires_at, created_at
 FROM sessions
 WHERE token = $1;
 
@@ -49,7 +49,7 @@ DELETE FROM sessions WHERE device_id = $1::uuid;
 DELETE FROM sessions WHERE expires_at < NOW();
 
 -- name: ListSessionsByUser :many
-SELECT id::text, user_id::text, token, device_id::text, expires_at, created_at
+SELECT id::text, user_id::text, token, device_id::text, device_os, device_version, device_name, expires_at, created_at
 FROM sessions
 WHERE user_id = $1::uuid AND expires_at > NOW()
 ORDER BY created_at DESC;

@@ -61,9 +61,12 @@ func (h *Handler) Register(mux *http.ServeMux) {
 
 func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-		DeviceID string `json:"device_id"`
+		Username      string `json:"username"`
+		Password      string `json:"password"`
+		DeviceID      string `json:"device_id"`
+		DeviceOS      string `json:"device_os"`
+		DeviceVersion string `json:"device_version"`
+		DeviceName    string `json:"device_name"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		jsonError(w, "Invalid request body", http.StatusBadRequest)
@@ -91,7 +94,7 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := h.auth.CreateSession(r.Context(), user.ID, req.DeviceID)
+	session, err := h.auth.CreateSession(r.Context(), user.ID, req.DeviceID, req.DeviceOS, req.DeviceVersion, req.DeviceName)
 	if err != nil {
 		slog.Error("create session failed", "error", err)
 		jsonError(w, "Registration succeeded but login failed", http.StatusInternalServerError)
@@ -107,16 +110,19 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-		DeviceID string `json:"device_id"`
+		Username      string `json:"username"`
+		Password      string `json:"password"`
+		DeviceID      string `json:"device_id"`
+		DeviceOS      string `json:"device_os"`
+		DeviceVersion string `json:"device_version"`
+		DeviceName    string `json:"device_name"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		jsonError(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	user, session, err := h.auth.Login(r.Context(), req.Username, req.Password, req.DeviceID)
+	user, session, err := h.auth.Login(r.Context(), req.Username, req.Password, req.DeviceID, req.DeviceOS, req.DeviceVersion, req.DeviceName)
 	if err != nil {
 		if errors.Is(err, auth.ErrInvalidCredentials) {
 			jsonError(w, "Invalid username or password", http.StatusUnauthorized)

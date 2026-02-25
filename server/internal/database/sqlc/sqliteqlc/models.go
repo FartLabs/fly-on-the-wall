@@ -59,12 +59,15 @@ type Job struct {
 }
 
 type Session struct {
-	ID        string      `json:"id"`
-	UserID    string      `json:"user_id"`
-	Token     string      `json:"token"`
-	DeviceID  interface{} `json:"device_id"`
-	ExpiresAt string      `json:"expires_at"`
-	CreatedAt string      `json:"created_at"`
+	ID            string      `json:"id"`
+	UserID        string      `json:"user_id"`
+	Token         string      `json:"token"`
+	DeviceID      interface{} `json:"device_id"`
+	DeviceOs      interface{} `json:"device_os"`
+	DeviceVersion interface{} `json:"device_version"`
+	DeviceName    interface{} `json:"device_name"`
+	ExpiresAt     string      `json:"expires_at"`
+	CreatedAt     string      `json:"created_at"`
 }
 
 type Subscription struct {

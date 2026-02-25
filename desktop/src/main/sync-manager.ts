@@ -433,15 +433,27 @@ async function signUpOrLogin(
   try {
     const endpoint =
       mode === "register" ? "/api/v1/auth/register" : "/api/v1/auth/login";
-    const response = await requestJSON<{ user: SyncUser; token: string }>(
-      "POST",
-      endpoint,
-      data,
-      false
-    );
 
     const cfg = readConfig();
     const deviceId = cfg.sync.deviceId || crypto.randomUUID();
+
+    const os = require("os");
+    const deviceInfo = {
+      username: data.username,
+      password: data.password,
+      device_id: deviceId,
+      device_os: process.platform,
+      device_version: os.release(),
+      device_name: os.hostname()
+    };
+
+    const response = await requestJSON<{ user: SyncUser; token: string }>(
+      "POST",
+      endpoint,
+      deviceInfo,
+      false
+    );
+
     setConfig({
       sync: {
         ...cfg.sync,

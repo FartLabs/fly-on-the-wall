@@ -21,16 +21,19 @@ func (q *Queries) CountAdmins(ctx context.Context) (int64, error) {
 }
 
 const createSession = `-- name: CreateSession :one
-INSERT INTO sessions (id, user_id, token, device_id, expires_at, created_at)
-VALUES (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))), ?, ?, ?, ?, CURRENT_TIMESTAMP)
-RETURNING id, user_id, token, device_id, expires_at, created_at
+INSERT INTO sessions (id, user_id, token, device_id, device_os, device_version, device_name, expires_at, created_at)
+VALUES (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))), ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+RETURNING id, user_id, token, device_id, device_os, device_version, device_name, expires_at, created_at
 `
 
 type CreateSessionParams struct {
-	UserID    string      `json:"user_id"`
-	Token     string      `json:"token"`
-	DeviceID  interface{} `json:"device_id"`
-	ExpiresAt string      `json:"expires_at"`
+	UserID        string      `json:"user_id"`
+	Token         string      `json:"token"`
+	DeviceID      interface{} `json:"device_id"`
+	DeviceOs      interface{} `json:"device_os"`
+	DeviceVersion interface{} `json:"device_version"`
+	DeviceName    interface{} `json:"device_name"`
+	ExpiresAt     string      `json:"expires_at"`
 }
 
 func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error) {
@@ -38,6 +41,9 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (S
 		arg.UserID,
 		arg.Token,
 		arg.DeviceID,
+		arg.DeviceOs,
+		arg.DeviceVersion,
+		arg.DeviceName,
 		arg.ExpiresAt,
 	)
 	var i Session
@@ -46,6 +52,9 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (S
 		&i.UserID,
 		&i.Token,
 		&i.DeviceID,
+		&i.DeviceOs,
+		&i.DeviceVersion,
+		&i.DeviceName,
 		&i.ExpiresAt,
 		&i.CreatedAt,
 	)
@@ -149,7 +158,7 @@ func (q *Queries) DeleteSessionsByDeviceID(ctx context.Context, deviceID interfa
 }
 
 const getSessionByToken = `-- name: GetSessionByToken :one
-SELECT id, user_id, token, device_id, expires_at, created_at
+SELECT id, user_id, token, device_id, device_os, device_version, device_name, expires_at, created_at
 FROM sessions
 WHERE token = ?
 `
@@ -162,6 +171,9 @@ func (q *Queries) GetSessionByToken(ctx context.Context, token string) (Session,
 		&i.UserID,
 		&i.Token,
 		&i.DeviceID,
+		&i.DeviceOs,
+		&i.DeviceVersion,
+		&i.DeviceName,
 		&i.ExpiresAt,
 		&i.CreatedAt,
 	)
@@ -211,7 +223,7 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 }
 
 const listSessionsByUser = `-- name: ListSessionsByUser :many
-SELECT id, user_id, token, device_id, expires_at, created_at
+SELECT id, user_id, token, device_id, device_os, device_version, device_name, expires_at, created_at
 FROM sessions
 WHERE user_id = ? AND expires_at > CURRENT_TIMESTAMP
 ORDER BY created_at DESC
@@ -231,6 +243,9 @@ func (q *Queries) ListSessionsByUser(ctx context.Context, userID string) ([]Sess
 			&i.UserID,
 			&i.Token,
 			&i.DeviceID,
+			&i.DeviceOs,
+			&i.DeviceVersion,
+			&i.DeviceName,
 			&i.ExpiresAt,
 			&i.CreatedAt,
 		); err != nil {

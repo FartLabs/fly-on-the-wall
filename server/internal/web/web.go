@@ -2,6 +2,7 @@ package web
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"log/slog"
 	"net/http"
@@ -58,10 +59,12 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.Handle("GET /notes/{id}", authMw(http.HandlerFunc(h.handleNotesView)))
 	mux.Handle("POST /notes/{id}", authMw(http.HandlerFunc(h.handleNotesUpdate)))
 	mux.Handle("POST /notes/{id}/delete", authMw(http.HandlerFunc(h.handleNotesDelete)))
+	mux.Handle("POST /notes/{id}/autosave", authMw(http.HandlerFunc(h.handleNotesAutoSave)))
 
 	// devices
 	mux.Handle("GET /devices", authMw(http.HandlerFunc(h.handleDevices)))
 	mux.Handle("POST /devices/{id}/revoke", authMw(http.HandlerFunc(h.handleDevicesRevoke)))
+	mux.Handle("POST /settings/devices/{id}/revoke", authMw(http.HandlerFunc(h.handleDeviceRevoke)))
 }
 
 type pageData struct {
@@ -102,7 +105,10 @@ func (h *Handler) handleLoginSubmit(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 
-	user, session, err := h.auth.Login(r.Context(), username, password, "")
+	ua := r.UserAgent()
+	deviceOS, deviceName := parseUserAgent(ua)
+
+	user, session, err := h.auth.Login(r.Context(), username, password, "", deviceOS, "", deviceName)
 	if err != nil {
 		h.render(w, "login", pageData{Title: "Login", Error: "Invalid username or password"})
 		return
@@ -152,7 +158,10 @@ func (h *Handler) handleRegisterSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := h.auth.CreateSession(r.Context(), user.ID, "")
+	ua := r.UserAgent()
+	deviceOS, deviceName := parseUserAgent(ua)
+
+	session, err := h.auth.CreateSession(r.Context(), user.ID, "", deviceOS, "", deviceName)
 	if err != nil {
 		h.render(w, "login", pageData{Title: "Login", Error: "Account created. Please log in."})
 		return
@@ -200,10 +209,102 @@ func (h *Handler) handleDashboard(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleSettings(w http.ResponseWriter, r *http.Request) {
 	user := middleware.UserFromContext(r.Context())
+
+	sessions, err := h.auth.ListUserSessions(r.Context(), user.ID)
+	if err != nil {
+		slog.Error("list sessions failed", "error", err)
+		h.render(w, "settings", pageData{
+			Title: "Settings",
+			User:  user,
+			Error: "Failed to load devices",
+		})
+		return
+	}
+
+	type Device struct {
+		DeviceID      string
+		DeviceOS      string
+		DeviceVersion string
+		DeviceName    string
+		DisplayName   string
+		RevokeKey     string
+		LastActive    string
+		SessionCount  int
+	}
+
+	devices := make(map[string]*Device)
+	for _, s := range sessions {
+		key := s.DeviceID
+		if key == "" {
+			key = "web-" + s.DeviceName
+		}
+
+		if d, exists := devices[key]; exists {
+			d.SessionCount++
+		} else {
+			displayName := formatDeviceName(s.DeviceName, s.DeviceOS, s.DeviceVersion)
+			if displayName == "" {
+				if s.DeviceID == "" {
+					displayName = s.DeviceName
+					if displayName == "" {
+						displayName = "Web Session"
+					}
+				} else {
+					displayName = s.DeviceID
+				}
+			}
+			revokeKey := s.DeviceID
+			if revokeKey == "" {
+				revokeKey = "web"
+			}
+			devices[key] = &Device{
+				DeviceID:      s.DeviceID,
+				DeviceOS:      s.DeviceOS,
+				DeviceVersion: s.DeviceVersion,
+				DeviceName:    s.DeviceName,
+				DisplayName:   displayName,
+				RevokeKey:     revokeKey,
+				LastActive:    s.CreatedAt.Format("Jan 2, 2006 3:04pm"),
+				SessionCount:  1,
+			}
+		}
+	}
+
+	deviceList := make([]*Device, 0, len(devices))
+	for _, d := range devices {
+		deviceList = append(deviceList, d)
+	}
+
 	h.render(w, "settings", pageData{
 		Title: "Settings",
 		User:  user,
+		Data: map[string]interface{}{
+			"devices": deviceList,
+		},
 	})
+}
+
+func formatDeviceName(name, os, version string) string {
+	if name == "" && os == "" {
+		return ""
+	}
+
+	if name != "" && os != "" && version != "" {
+		return fmt.Sprintf("%s (%s %s)", name, os, version)
+	}
+	if name != "" && os != "" {
+		return fmt.Sprintf("%s (%s)", name, os)
+	}
+	if name != "" {
+		return name
+	}
+	if os != "" && version != "" {
+		return fmt.Sprintf("%s %s", os, version)
+	}
+	if os != "" {
+		return os
+	}
+	return ""
 }
 
 func (h *Handler) handleBillingPage(w http.ResponseWriter, r *http.Request) {
@@ -226,7 +327,8 @@ func (h *Handler) handleBillingPage(w http.ResponseWriter, r *http.Request) {
 
 type NoteListItem struct {
 	ID        string
-	Version   int
+	Filename  string
+	Preview   string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -248,9 +350,48 @@ func (h *Handler) handleNotesList(w http.ResponseWriter, r *http.Request) {
 	notes := make([]NoteListItem, 0, len(delta.Notes))
 	for _, n := range delta.Notes {
 		if n.DeletedAt == nil {
+			filename := ""
+			preview := ""
+
+			if n.ObjectKey != "" {
+				note, err := h.sync.GetNote(r.Context(), n.ID, user.ID)
+				if err == nil && len(note.Content) > 0 {
+					var noteData map[string]interface{}
+					if err := json.Unmarshal(note.Content, &noteData); err == nil {
+						if fn, ok := noteData["filename"].(string); ok && fn != "" {
+							filename = fn
+						}
+						if noteIDStr, ok := noteData["id"].(string); ok && filename == "" && noteIDStr != "" {
+							if idx := strings.Index(noteIDStr, "_recording_"); idx != -1 {
+								filename = noteIDStr[:idx]
+							} else {
+								filename = noteIDStr
+							}
+						}
+						if trans, ok := noteData["transcription"].(string); ok && trans != "" {
+							preview = trans
+							if len(preview) > 150 {
+								preview = preview[:150] + "..."
+							}
+						}
+					}
+				}
+			}
+
+			if filename == "" && preview == "" {
+				filename = "Untitled Note"
+			} else if filename == "" && preview != "" {
+				lines := strings.Split(preview, "\n")
+				filename = strings.TrimSpace(lines[0])
+				if len(filename) > 50 {
+					filename = filename[:50] + "..."
+				}
+			}
+
 			notes = append(notes, NoteListItem{
 				ID:        n.ID,
-				Version:   n.Version,
+				Filename:  filename,
+				Preview:   preview,
 				CreatedAt: n.CreatedAt,
 				UpdatedAt: n.UpdatedAt,
 			})
@@ -287,11 +428,12 @@ func (h *Handler) handleNotesCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	filename := r.FormValue("filename")
 	noteID := r.FormValue("note_id")
 	transcription := r.FormValue("transcription")
 	summary := r.FormValue("summary")
 
-	if noteID == "" && transcription == "" {
+	if noteID == "" && transcription == "" && filename == "" {
 		h.render(w, "notes/form", pageData{
 			Title: "New Note",
 			User:  user,
@@ -300,12 +442,18 @@ func (h *Handler) handleNotesCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	noteData := map[string]interface{}{
-		"transcription": transcription,
-		"summary":       summary,
+	noteData := map[string]interface{}{}
+	if filename != "" {
+		noteData["filename"] = filename
 	}
 	if noteID != "" {
 		noteData["id"] = noteID
+	}
+	if transcription != "" {
+		noteData["transcription"] = transcription
+	}
+	if summary != "" {
+		noteData["summary"] = summary
 	}
 
 	content, err := json.Marshal(noteData)
@@ -370,10 +518,19 @@ func (h *Handler) handleNotesView(w http.ResponseWriter, r *http.Request) {
 	transcription, _ := noteData["transcription"].(string)
 	summary, _ := noteData["summary"].(string)
 	noteIDFromJSON, _ := noteData["id"].(string)
+	filename, _ := noteData["filename"].(string)
 	metadata, _ := noteData["metadata"].(map[string]interface{})
 
 	if noteIDFromJSON != "" {
 		noteID = noteIDFromJSON
+	}
+
+	if filename == "" && noteID != "" {
+		if idx := strings.Index(noteID, "_recording_"); idx != -1 {
+			filename = noteID[:idx]
+		} else {
+			filename = noteID
+		}
 	}
 
 	h.render(w, "notes/view", pageData{
@@ -386,6 +543,7 @@ func (h *Handler) handleNotesView(w http.ResponseWriter, r *http.Request) {
 				"created_at":    note.CreatedAt,
 				"updated_at":    note.UpdatedAt,
 				"note_id":       noteID,
+				"filename":      filename,
 				"transcription": transcription,
 				"summary":       summary,
 				"metadata":      metadata,
@@ -407,18 +565,10 @@ func (h *Handler) handleNotesUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	filename := r.FormValue("filename")
 	transcription := r.FormValue("transcription")
 	summary := r.FormValue("summary")
 	noteIDFromForm := r.FormValue("note_id")
-
-	if noteIDFromForm == "" && transcription == "" {
-		h.render(w, "notes/view", pageData{
-			Title: "Note",
-			User:  user,
-			Error: "At least one field is required",
-		})
-		return
-	}
 
 	existing, err := h.sync.GetNote(r.Context(), noteID, user.ID)
 	if err != nil {
@@ -443,6 +593,9 @@ func (h *Handler) handleNotesUpdate(w http.ResponseWriter, r *http.Request) {
 		existingData = map[string]interface{}{}
 	}
 
+	if filename != "" {
+		existingData["filename"] = filename
+	}
 	if transcription != "" || existingData["transcription"] != nil {
 		existingData["transcription"] = transcription
 	}
@@ -485,6 +638,87 @@ func (h *Handler) handleNotesUpdate(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/notes/"+noteID, http.StatusSeeOther)
 }
 
+func (h *Handler) handleNotesAutoSave(w http.ResponseWriter, r *http.Request) {
+	user := middleware.UserFromContext(r.Context())
+	noteID := r.PathValue("id")
+
+	var req struct {
+		Filename      string `json:"filename"`
+		Transcription string `json:"transcription"`
+		Summary       string `json:"summary"`
+		NoteID        string `json:"note_id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		jsonError(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	existing, err := h.sync.GetNote(r.Context(), noteID, user.ID)
+	if err != nil {
+		if err == sync.ErrNotFound {
+			jsonError(w, "Note not found", http.StatusNotFound)
+			return
+		}
+		slog.Error("get note for autosave failed", "error", err)
+		jsonError(w, "Failed to save note", http.StatusInternalServerError)
+		return
+	}
+
+	var existingData map[string]interface{}
+	if len(existing.Content) > 0 {
+		if err := json.Unmarshal(existing.Content, &existingData); err != nil {
+			existingData = map[string]interface{}{}
+		}
+	} else {
+		existingData = map[string]interface{}{}
+	}
+
+	if req.Filename != "" {
+		existingData["filename"] = req.Filename
+	}
+	if req.Transcription != "" || existingData["transcription"] != nil {
+		existingData["transcription"] = req.Transcription
+	}
+	if req.Summary != "" || existingData["summary"] != nil {
+		existingData["summary"] = req.Summary
+	}
+	if req.NoteID != "" {
+		existingData["id"] = req.NoteID
+	}
+
+	content, err := json.Marshal(existingData)
+	if err != nil {
+		slog.Error("marshal note for autosave failed", "error", err)
+		jsonError(w, "Failed to save note", http.StatusInternalServerError)
+		return
+	}
+
+	note := &database.Note{
+		ID:      noteID,
+		UserID:  user.ID,
+		Content: content,
+		Version: existing.Version,
+	}
+
+	result, err := h.sync.UpsertNote(r.Context(), note)
+	if err != nil {
+		if err == sync.ErrVersionConflict {
+			jsonError(w, "Version conflict", http.StatusConflict)
+			return
+		}
+		slog.Error("autosave note failed", "error", err)
+		jsonError(w, "Failed to save note", http.StatusInternalServerError)
+		return
+	}
+
+	jsonResponse(w, http.StatusOK, map[string]interface{}{
+		"success":    true,
+		"version":    result.Version,
+		"updated_at": result.UpdatedAt,
+	})
+}
+
 func (h *Handler) handleNotesDelete(w http.ResponseWriter, r *http.Request) {
 	user := middleware.UserFromContext(r.Context())
 	noteID := r.PathValue("id")
@@ -511,25 +745,161 @@ func (h *Handler) handleDevices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	type Device struct {
+		DeviceID      string
+		DeviceOS      string
+		DeviceVersion string
+		DeviceName    string
+		DisplayName   string
+		RevokeKey     string
+		LastActive    string
+		SessionCount  int
+	}
+
+	devices := make(map[string]*Device)
+	for _, s := range sessions {
+		key := s.DeviceID
+		if key == "" {
+			key = "web-" + s.DeviceName
+		}
+
+		if d, exists := devices[key]; exists {
+			d.SessionCount++
+		} else {
+			displayName := formatDeviceName(s.DeviceName, s.DeviceOS, s.DeviceVersion)
+			if displayName == "" {
+				if s.DeviceID == "" {
+					displayName = s.DeviceName
+					if displayName == "" {
+						displayName = "Web Session"
+					}
+				} else {
+					displayName = s.DeviceID
+				}
+			}
+			revokeKey := s.DeviceID
+			if revokeKey == "" {
+				revokeKey = "web"
+			}
+			devices[key] = &Device{
+				DeviceID:      s.DeviceID,
+				DeviceOS:      s.DeviceOS,
+				DeviceVersion: s.DeviceVersion,
+				DeviceName:    s.DeviceName,
+				DisplayName:   displayName,
+				RevokeKey:     revokeKey,
+				LastActive:    s.CreatedAt.Format("Jan 2, 2006 3:04pm"),
+				SessionCount:  1,
+			}
+		}
+	}
+
+	deviceList := make([]*Device, 0, len(devices))
+	for _, d := range devices {
+		deviceList = append(deviceList, d)
+	}
+
 	h.render(w, "devices", pageData{
 		Title: "Devices",
 		User:  user,
 		Data: map[string]interface{}{
-			"sessions": sessions,
+			"devices": deviceList,
 		},
 	})
 }
 
 func (h *Handler) handleDevicesRevoke(w http.ResponseWriter, r *http.Request) {
 	user := middleware.UserFromContext(r.Context())
-	sessionID := r.PathValue("id")
+	currentSession := middleware.SessionFromContext(r.Context())
+	deviceID := r.PathValue("id")
 
-	err := h.auth.RevokeSession(r.Context(), sessionID, user.ID)
-	if err != nil {
-		slog.Error("revoke session failed", "error", err)
+	isCurrentSessionRevoked := false
+
+	if deviceID == "" || deviceID == "web" {
+		sessions, err := h.auth.ListUserSessions(r.Context(), user.ID)
+		if err == nil {
+			for _, s := range sessions {
+				if s.DeviceID == "" {
+					h.auth.RevokeSession(r.Context(), s.ID, user.ID)
+					if currentSession != nil && s.ID == currentSession.ID {
+						isCurrentSessionRevoked = true
+					}
+				}
+			}
+		}
+	} else {
+		sessions, err := h.auth.ListUserSessions(r.Context(), user.ID)
+		if err == nil {
+			for _, s := range sessions {
+				if s.DeviceID == deviceID {
+					h.auth.RevokeSession(r.Context(), s.ID, user.ID)
+					if currentSession != nil && s.ID == currentSession.ID {
+						isCurrentSessionRevoked = true
+					}
+				}
+			}
+		}
 	}
 
-	http.Redirect(w, r, "/devices", http.StatusSeeOther)
+	if isCurrentSessionRevoked {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "session_token",
+			Value:    "",
+			Path:     "/",
+			Expires:  time.Now().Add(-time.Hour),
+			HttpOnly: true,
+		})
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	} else {
+		http.Redirect(w, r, "/devices", http.StatusSeeOther)
+	}
+}
+
+func (h *Handler) handleDeviceRevoke(w http.ResponseWriter, r *http.Request) {
+	user := middleware.UserFromContext(r.Context())
+	currentSession := middleware.SessionFromContext(r.Context())
+	deviceID := r.PathValue("id")
+
+	isCurrentSessionRevoked := false
+
+	if deviceID == "web" {
+		sessions, err := h.auth.ListUserSessions(r.Context(), user.ID)
+		if err == nil {
+			for _, s := range sessions {
+				if s.DeviceID == "" {
+					h.auth.RevokeSession(r.Context(), s.ID, user.ID)
+					if currentSession != nil && s.ID == currentSession.ID {
+						isCurrentSessionRevoked = true
+					}
+				}
+			}
+		}
+	} else {
+		sessions, err := h.auth.ListUserSessions(r.Context(), user.ID)
+		if err == nil {
+			for _, s := range sessions {
+				if s.DeviceID == deviceID {
+					h.auth.RevokeSession(r.Context(), s.ID, user.ID)
+					if currentSession != nil && s.ID == currentSession.ID {
+						isCurrentSessionRevoked = true
+					}
+				}
+			}
+		}
+	}
+
+	if isCurrentSessionRevoked {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "session_token",
+			Value:    "",
+			Path:     "/",
+			Expires:  time.Now().Add(-time.Hour),
+			HttpOnly: true,
+		})
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	} else {
+		http.Redirect(w, r, "/settings", http.StatusSeeOther)
+	}
 }
 
 // render executes the specified template with the given data and writes it to the response.
@@ -590,4 +960,61 @@ func extractToken(r *http.Request) string {
 		return cookie.Value
 	}
 	return ""
+}
+
+func parseUserAgent(ua string) (deviceOS, deviceName string) {
+	if ua == "" {
+		return "Web", "Web Session"
+	}
+
+	switch {
+	case strings.Contains(ua, "Firefox/"):
+		if strings.Contains(ua, "Windows") {
+			return "Windows", "Firefox on Windows"
+		} else if strings.Contains(ua, "Mac OS X") {
+			return "macOS", "Firefox on macOS"
+		} else if strings.Contains(ua, "Linux") {
+			return "Linux", "Firefox on Linux"
+		}
+		return "Web", "Firefox Browser"
+	case strings.Contains(ua, "Edg/"):
+		if strings.Contains(ua, "Windows") {
+			return "Windows", "Edge on Windows"
+		} else if strings.Contains(ua, "Mac OS X") {
+			return "macOS", "Edge on macOS"
+		} else if strings.Contains(ua, "Linux") {
+			return "Linux", "Edge on Linux"
+		}
+		return "Web", "Edge Browser"
+	case strings.Contains(ua, "Chrome/"):
+		if strings.Contains(ua, "Windows") {
+			return "Windows", "Chrome on Windows"
+		} else if strings.Contains(ua, "Mac OS X") {
+			return "macOS", "Chrome on macOS"
+		} else if strings.Contains(ua, "Linux") {
+			return "Linux", "Chrome on Linux"
+		}
+		return "Web", "Chrome Browser"
+	case strings.Contains(ua, "Safari/") && !strings.Contains(ua, "Chrome"):
+		if strings.Contains(ua, "Mac OS X") {
+			return "macOS", "Safari on macOS"
+		}
+		return "Web", "Safari Browser"
+	default:
+		return "Web", "Web Browser"
+	}
+}
+
+func jsonResponse(w http.ResponseWriter, status int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		slog.Error("encode json response failed", "error", err)
+	}
+}
+
+func jsonError(w http.ResponseWriter, message string, status int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(map[string]string{"error": message})
 }

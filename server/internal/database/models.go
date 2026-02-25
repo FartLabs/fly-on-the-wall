@@ -15,12 +15,15 @@ type User struct {
 
 // Session represents an active user session.
 type Session struct {
-	ID        string    `json:"id"`
-	UserID    string    `json:"user_id"`
-	Token     string    `json:"-"`
-	DeviceID  string    `json:"device_id,omitempty"`
-	ExpiresAt time.Time `json:"expires_at"`
-	CreatedAt time.Time `json:"created_at"`
+	ID            string    `json:"id"`
+	UserID        string    `json:"user_id"`
+	Token         string    `json:"-"`
+	DeviceID      string    `json:"device_id,omitempty"`
+	DeviceOS      string    `json:"device_os,omitempty"`
+	DeviceVersion string    `json:"device_version,omitempty"`
+	DeviceName    string    `json:"device_name,omitempty"`
+	ExpiresAt     time.Time `json:"expires_at"`
+	CreatedAt     time.Time `json:"created_at"`
 }
 
 // Note stores note metadata. Payload is stored in object storage.

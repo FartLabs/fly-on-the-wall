@@ -15,21 +15,63 @@
   <section class="settings-section">
     <h3>Connected Devices</h3>
     <div class="settings-card">
+      {{if .Data}} {{$devices := index .Data "devices"}} {{if $devices}}
       <p class="text-muted">
-        Devices registered for end-to-end encrypted sync will appear here.
+        These are your active devices. Revoke a device to log out all sessions
+        on that device.
       </p>
-      <p class="text-muted">Use the desktop app to register a device.</p>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Device</th>
+            <th>Last Active</th>
+            <th>Sessions</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range $device := $devices}}
+          <tr>
+            <td>{{$device.DisplayName}}</td>
+            <td>{{$device.LastActive}}</td>
+            <td>{{$device.SessionCount}}</td>
+            <td>
+              <form
+                method="POST"
+                action="/settings/devices/{{$device.RevokeKey}}/revoke"
+                style="display: inline"
+              >
+                <button
+                  type="submit"
+                  class="btn btn-small btn-danger"
+                  onclick="
+                    return confirm('Revoke all sessions on this device?');
+                  "
+                >
+                  Revoke
+                </button>
+              </form>
+            </td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+      {{else}}
+      <p class="text-muted">No active devices found.</p>
+      {{end}} {{else}}
+      <p class="text-muted">No active devices found.</p>
+      {{end}}
     </div>
   </section>
 
-  <section class="settings-section">
-    <h3>API Access</h3>
-    <div class="settings-card">
-      <p class="text-muted">
-        Use the API endpoints to connect your desktop application.
-      </p>
-      <code class="code-block">POST /api/v1/auth/login</code>
-    </div>
-  </section>
+  <!-- <section class="settings-section"> -->
+  <!--   <h3>API Access</h3> -->
+  <!--   <div class="settings-card"> -->
+  <!--     <p class="text-muted"> -->
+  <!--       Use the API endpoints to connect your desktop application. -->
+  <!--     </p> -->
+  <!--     <code class="code-block">POST /api/v1/auth/login</code> -->
+  <!--   </div> -->
+  <!-- </section> -->
 </div>
 {{end}}

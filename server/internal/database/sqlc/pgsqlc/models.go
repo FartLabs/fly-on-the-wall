@@ -62,12 +62,15 @@ type Job struct {
 }
 
 type Session struct {
-	ID        uuid.UUID     `json:"id"`
-	UserID    uuid.UUID     `json:"user_id"`
-	Token     string        `json:"token"`
-	DeviceID  uuid.NullUUID `json:"device_id"`
-	ExpiresAt time.Time     `json:"expires_at"`
-	CreatedAt time.Time     `json:"created_at"`
+	ID            uuid.UUID      `json:"id"`
+	UserID        uuid.UUID      `json:"user_id"`
+	Token         string         `json:"token"`
+	DeviceID      uuid.NullUUID  `json:"device_id"`
+	DeviceOs      sql.NullString `json:"device_os"`
+	DeviceVersion sql.NullString `json:"device_version"`
+	DeviceName    sql.NullString `json:"device_name"`
+	ExpiresAt     time.Time      `json:"expires_at"`
+	CreatedAt     time.Time      `json:"created_at"`
 }
 
 type Subscription struct {
