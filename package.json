@@ -6,10 +6,11 @@
     "make": "cd desktop && npm run make",
     "lint": "cd desktop && npm run lint",
     "knip": "cd desktop && npm run knip",
-    "server:dev": "cd server && go run ./cmd/web",
+    "server:web": "cd server && go run ./cmd/web",
     "server:sqlc": "cd server && sqlc generate -f sqlc.yaml",
     "server:docker": "cd server && docker compose up -d --build --force-recreate",
-    "server:docker:down": "cd server && docker compose down"
+    "server:docker:down": "cd server && docker compose down",
+    "server:minio": "cd server && docker compose up -d minio"
   },
   "dependencies": {
     "prettier": "^3.8.1"

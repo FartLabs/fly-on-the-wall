@@ -2,6 +2,7 @@ notes/
 *.wav
 models/
 recordings/
+tmp/
 
 *.db
 
