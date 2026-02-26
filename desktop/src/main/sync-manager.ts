@@ -169,8 +169,11 @@ async function requestJSON<T>(
   const cfg = readConfig();
   const baseUrl = getServerUrl();
   if (!baseUrl) {
+    console.warn("[sync] Server URL not configured, skipping request");
     throw new Error("Server URL is not configured");
   }
+
+  console.log(`[sync] ${method} ${endpoint}`);
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json"
@@ -178,6 +181,7 @@ async function requestJSON<T>(
 
   if (requireAuth) {
     if (!cfg.sync.authToken) {
+      console.warn("[sync] Not authenticated, skipping request");
       throw new Error("Not authenticated");
     }
     headers.Authorization = `Bearer ${cfg.sync.authToken}`;
@@ -193,15 +197,19 @@ async function requestJSON<T>(
   if (!response.ok) {
     const message =
       typeof json?.error === "string" ? json.error : `HTTP ${response.status}`;
+    console.error(`[sync] Request failed: ${message}`);
     throw new Error(message);
   }
 
+  console.log(`[sync] Request succeeded: ${method} ${endpoint}`);
   return json as T;
 }
 
 async function syncPull(
   localNotes: LocalNote[]
 ): Promise<{ pulled: number; skipped: number; cursor: string }> {
+  console.log("[sync] Pulling changes from server...");
+
   const cfg = readConfig();
   const params = new URLSearchParams();
   if (cfg.sync.notesCursor) params.set("since", cfg.sync.notesCursor);
@@ -213,6 +221,8 @@ async function syncPull(
     "GET",
     `/api/v1/sync/delta${params.toString() ? `?${params.toString()}` : ""}`
   );
+
+  console.log(`[sync] Pulled ${delta.notes?.length || 0} notes from server`);
 
   let pulled = 0;
   let skipped = 0;
@@ -314,6 +324,8 @@ async function syncPull(
 async function syncPush(
   localNotes: LocalNote[]
 ): Promise<{ pushed: number; skipped: number }> {
+  console.log("[sync] Pushing changes to server...");
+
   let pushed = 0;
   let skipped = 0;
 
@@ -350,6 +362,8 @@ async function syncPush(
     pushed += 1;
   }
 
+  console.log(`[sync] Pushed ${pushed} notes to server`);
+
   return { pushed, skipped };
 }
 
@@ -359,10 +373,24 @@ async function syncNowInternal(updateErrorState = true): Promise<SyncResult> {
   }
 
   const cfg = readConfig();
+  const serverUrl = getServerUrl();
+
   if (!cfg.sync.enabled) {
+    console.log("[sync] Sync disabled, skipping sync");
     return { success: true, pushed: 0, pulled: 0, skipped: 0 };
   }
 
+  if (!serverUrl) {
+    console.log("[sync] Server URL not configured, skipping sync");
+    return { success: true, pushed: 0, pulled: 0, skipped: 0 };
+  }
+
+  if (!cfg.sync.authToken) {
+    console.log("[sync] Not authenticated, skipping sync");
+    return { success: true, pushed: 0, pulled: 0, skipped: 0 };
+  }
+
+  console.log("[sync] Starting sync...");
   syncInFlight = true;
   try {
     const localNotes = readLocalNotes();
@@ -378,6 +406,10 @@ async function syncNowInternal(updateErrorState = true): Promise<SyncResult> {
       }
     });
 
+    console.log(
+      `[sync] Sync completed: pushed ${push.pushed}, pulled ${pull.pulled}, skipped ${pull.skipped + push.skipped}`
+    );
+
     return {
       success: true,
       pushed: push.pushed,
@@ -386,6 +418,7 @@ async function syncNowInternal(updateErrorState = true): Promise<SyncResult> {
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    console.error("[sync] Sync failed:", message);
     if (updateErrorState) {
       setConfig({
         sync: {
@@ -410,12 +443,30 @@ function clearSyncTimer() {
 function refreshSyncTimer() {
   clearSyncTimer();
   const cfg = readConfig();
-  if (!cfg.sync.enabled || !cfg.sync.authToken) return;
+  const serverUrl = getServerUrl();
+
+  if (!cfg.sync.enabled) {
+    console.log("[sync] Sync disabled, sync timer not started");
+    return;
+  }
+
+  if (!serverUrl) {
+    console.log("[sync] Server URL not configured, sync timer not started");
+    return;
+  }
+
+  if (!cfg.sync.authToken) {
+    console.log("[sync] Not authenticated, sync timer not started");
+    return;
+  }
 
   const intervalMinutes = Math.max(
     1,
     Number(cfg.sync.syncIntervalMinutes || 5)
   );
+
+  console.log(`[sync] Starting sync timer: every ${intervalMinutes} minute(s)`);
+
   syncIntervalId = setInterval(
     () => {
       syncNowInternal(false).catch((error) => {

@@ -165,12 +165,15 @@ func (h *Handler) handleMe(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleSyncDelta(w http.ResponseWriter, r *http.Request) {
 	user := middleware.UserFromContext(r.Context())
+	slog.Info("sync delta: request received", "user", user.ID)
+
 	sinceStr := r.URL.Query().Get("since")
 	var since time.Time
 	if sinceStr != "" {
 		var err error
 		since, err = time.Parse(time.RFC3339Nano, sinceStr)
 		if err != nil {
+			slog.Error("sync delta: invalid timestamp", "user", user.ID, "error", err)
 			jsonError(w, "Invalid 'since' timestamp", http.StatusBadRequest)
 			return
 		}
@@ -178,10 +181,12 @@ func (h *Handler) handleSyncDelta(w http.ResponseWriter, r *http.Request) {
 
 	delta, err := h.sync.GetDelta(r.Context(), user.ID, since, 100)
 	if err != nil {
-		slog.Error("sync delta failed", "error", err)
+		slog.Error("sync delta: failed", "user", user.ID, "error", err)
 		jsonError(w, "Failed to get sync delta", http.StatusInternalServerError)
 		return
 	}
+
+	slog.Info("sync delta: success", "user", user.ID, "notes", len(delta.Notes), "recordings", len(delta.Recordings))
 	jsonResponse(w, http.StatusOK, delta)
 }
 
