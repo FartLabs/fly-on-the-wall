@@ -4,7 +4,7 @@
     <a href="/" class="nav-brand">Fly on the Wall</a>
     <div class="nav-links">
       {{if .User}} {{if .User.IsAdmin}}
-      <span class="badge badge-admin">Admin</span>
+      <a href="/admin">Admin</a>
       {{end}}
       <a href="/dashboard">Dashboard</a>
       <a href="/notes">Notes</a>

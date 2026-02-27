@@ -11,6 +11,7 @@ import (
 type Querier interface {
 	CancelSubscriptionByUser(ctx context.Context, userID string) error
 	CountAdmins(ctx context.Context) (int64, error)
+	CountUsers(ctx context.Context) (int64, error)
 	CreateDevice(ctx context.Context, arg CreateDeviceParams) (Device, error)
 	CreateEncryptedNote(ctx context.Context, arg CreateEncryptedNoteParams) (EncryptedNote, error)
 	CreateEncryptedRecording(ctx context.Context, arg CreateEncryptedRecordingParams) (EncryptedRecording, error)
@@ -37,6 +38,7 @@ type Querier interface {
 	ListJobsByUser(ctx context.Context, userID string) ([]Job, error)
 	ListJobsByUserAndType(ctx context.Context, arg ListJobsByUserAndTypeParams) ([]Job, error)
 	ListSessionsByUser(ctx context.Context, userID string) ([]Session, error)
+	ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUsersRow, error)
 	RecordingOwnedByUser(ctx context.Context, arg RecordingOwnedByUserParams) (int64, error)
 	SetUserPremium(ctx context.Context, arg SetUserPremiumParams) error
 	SetUserPremiumFalse(ctx context.Context, id string) error
@@ -46,6 +48,8 @@ type Querier interface {
 	UpdateDeviceKey(ctx context.Context, arg UpdateDeviceKeyParams) (int64, error)
 	UpdateEncryptedNote(ctx context.Context, arg UpdateEncryptedNoteParams) (EncryptedNote, error)
 	UpdateJobStatus(ctx context.Context, arg UpdateJobStatusParams) error
+	UpdateUserAdmin(ctx context.Context, arg UpdateUserAdminParams) error
+	UpdateUserPremium(ctx context.Context, arg UpdateUserPremiumParams) error
 	UpsertSubscription(ctx context.Context, arg UpsertSubscriptionParams) error
 	UpsertSyncCursor(ctx context.Context, arg UpsertSyncCursorParams) error
 }

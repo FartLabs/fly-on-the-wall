@@ -14,6 +14,7 @@ import (
 type Querier interface {
 	CancelSubscriptionByUser(ctx context.Context, userID uuid.UUID) error
 	CountAdmins(ctx context.Context) (int64, error)
+	CountUsers(ctx context.Context) (int64, error)
 	CreateDevice(ctx context.Context, arg CreateDeviceParams) (CreateDeviceRow, error)
 	CreateEncryptedNote(ctx context.Context, arg CreateEncryptedNoteParams) (CreateEncryptedNoteRow, error)
 	CreateEncryptedRecording(ctx context.Context, arg CreateEncryptedRecordingParams) (CreateEncryptedRecordingRow, error)
@@ -40,6 +41,7 @@ type Querier interface {
 	ListJobsByUser(ctx context.Context, userID uuid.UUID) ([]ListJobsByUserRow, error)
 	ListJobsByUserAndType(ctx context.Context, arg ListJobsByUserAndTypeParams) ([]ListJobsByUserAndTypeRow, error)
 	ListSessionsByUser(ctx context.Context, dollar_1 uuid.UUID) ([]ListSessionsByUserRow, error)
+	ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUsersRow, error)
 	RecordingOwnedByUser(ctx context.Context, arg RecordingOwnedByUserParams) (bool, error)
 	SetUserPremium(ctx context.Context, arg SetUserPremiumParams) error
 	SetUserPremiumFalse(ctx context.Context, id uuid.UUID) error
@@ -49,6 +51,8 @@ type Querier interface {
 	UpdateDeviceKey(ctx context.Context, arg UpdateDeviceKeyParams) (int64, error)
 	UpdateEncryptedNote(ctx context.Context, arg UpdateEncryptedNoteParams) (UpdateEncryptedNoteRow, error)
 	UpdateJobStatus(ctx context.Context, arg UpdateJobStatusParams) error
+	UpdateUserAdmin(ctx context.Context, arg UpdateUserAdminParams) error
+	UpdateUserPremium(ctx context.Context, arg UpdateUserPremiumParams) error
 	UpsertSubscription(ctx context.Context, arg UpsertSubscriptionParams) error
 	UpsertSyncCursor(ctx context.Context, arg UpsertSyncCursorParams) error
 }

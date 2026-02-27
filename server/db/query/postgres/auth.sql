@@ -21,6 +21,25 @@ WHERE id = $1::uuid;
 -- name: CountAdmins :one
 SELECT count(*) FROM users WHERE is_admin = TRUE;
 
+-- name: CountUsers :one
+SELECT count(*) FROM users;
+
+-- name: ListUsers :many
+SELECT id::text, username, is_premium, is_admin, created_at, updated_at
+FROM users
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2;
+
+-- name: UpdateUserPremium :exec
+UPDATE users
+SET is_premium = $1, updated_at = NOW()
+WHERE id = $2::uuid;
+
+-- name: UpdateUserAdmin :exec
+UPDATE users
+SET is_admin = $1, updated_at = NOW()
+WHERE id = $2::uuid;
+
 -- name: SetUserPremium :exec
 UPDATE users
 SET is_premium = $1, updated_at = NOW()

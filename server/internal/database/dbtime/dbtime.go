@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+var timeFormat = "2006-01-02 15:04:05"
+
 // NullableTimeFromPG converts a sql.NullTime from PostgreSQL to a *time.Time.
 func NullableTimeFromPG(value sql.NullTime) *time.Time {
 	if !value.Valid {
@@ -32,7 +34,7 @@ func ParseSQLiteTime(value string) (time.Time, error) {
 	if value == "" {
 		return time.Time{}, nil
 	}
-	layouts := []string{time.RFC3339Nano, time.RFC3339, "2006-01-02 15:04:05"}
+	layouts := []string{time.RFC3339Nano, time.RFC3339, timeFormat}
 	for _, layout := range layouts {
 		if t, err := time.Parse(layout, value); err == nil {
 			return t, nil
@@ -43,5 +45,5 @@ func ParseSQLiteTime(value string) (time.Time, error) {
 
 // FormatSQLiteTime formats a time.Time for storage in SQLite.
 func FormatSQLiteTime(value time.Time) string {
-	return value.UTC().Format("2006-01-02 15:04:05")
+	return value.UTC().Format(timeFormat)
 }

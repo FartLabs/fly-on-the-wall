@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/fly-on-the-wall/server/internal/admin"
 	"github.com/fly-on-the-wall/server/internal/api"
 	"github.com/fly-on-the-wall/server/internal/auth"
 	"github.com/fly-on-the-wall/server/internal/billing"
@@ -99,6 +100,8 @@ func main() {
 		WorkerType: cfg.WorkerType,
 	}, cfg.DatabaseDriver)
 
+	adminService := admin.NewService(db, cfg.DatabaseDriver)
+
 	stack := middleware.Chain(
 		middleware.RequestID,
 		middleware.Logger(logger),
@@ -110,7 +113,7 @@ func main() {
 
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
-	webHandler := web.NewHandler(authService, syncService, billingService)
+	webHandler := web.NewHandler(authService, adminService, syncService, billingService)
 	webHandler.Register(mux)
 
 	apiHandler := api.NewHandler(authService, syncService, billingService, jobService)

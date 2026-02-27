@@ -20,6 +20,17 @@ func (q *Queries) CountAdmins(ctx context.Context) (int64, error) {
 	return count, err
 }
 
+const countUsers = `-- name: CountUsers :one
+SELECT count(*) FROM users
+`
+
+func (q *Queries) CountUsers(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countUsers)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createSession = `-- name: CreateSession :one
 INSERT INTO sessions (id, user_id, token, device_id, device_os, device_version, device_name, expires_at, created_at)
 VALUES (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))), ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
@@ -262,6 +273,57 @@ func (q *Queries) ListSessionsByUser(ctx context.Context, userID string) ([]Sess
 	return items, nil
 }
 
+const listUsers = `-- name: ListUsers :many
+SELECT id, username, is_premium, is_admin, created_at, updated_at
+FROM users
+ORDER BY created_at DESC
+LIMIT ? OFFSET ?
+`
+
+type ListUsersParams struct {
+	Limit  int64 `json:"limit"`
+	Offset int64 `json:"offset"`
+}
+
+type ListUsersRow struct {
+	ID        string `json:"id"`
+	Username  string `json:"username"`
+	IsPremium int64  `json:"is_premium"`
+	IsAdmin   int64  `json:"is_admin"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUsersRow, error) {
+	rows, err := q.db.QueryContext(ctx, listUsers, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListUsersRow
+	for rows.Next() {
+		var i ListUsersRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.IsPremium,
+			&i.IsAdmin,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const setUserPremium = `-- name: SetUserPremium :exec
 UPDATE users
 SET is_premium = ?, updated_at = CURRENT_TIMESTAMP
@@ -275,5 +337,37 @@ type SetUserPremiumParams struct {
 
 func (q *Queries) SetUserPremium(ctx context.Context, arg SetUserPremiumParams) error {
 	_, err := q.db.ExecContext(ctx, setUserPremium, arg.IsPremium, arg.ID)
+	return err
+}
+
+const updateUserAdmin = `-- name: UpdateUserAdmin :exec
+UPDATE users
+SET is_admin = ?, updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+`
+
+type UpdateUserAdminParams struct {
+	IsAdmin int64  `json:"is_admin"`
+	ID      string `json:"id"`
+}
+
+func (q *Queries) UpdateUserAdmin(ctx context.Context, arg UpdateUserAdminParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserAdmin, arg.IsAdmin, arg.ID)
+	return err
+}
+
+const updateUserPremium = `-- name: UpdateUserPremium :exec
+UPDATE users
+SET is_premium = ?, updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+`
+
+type UpdateUserPremiumParams struct {
+	IsPremium int64  `json:"is_premium"`
+	ID        string `json:"id"`
+}
+
+func (q *Queries) UpdateUserPremium(ctx context.Context, arg UpdateUserPremiumParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserPremium, arg.IsPremium, arg.ID)
 	return err
 }

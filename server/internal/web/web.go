@@ -8,9 +8,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
+	"github.com/fly-on-the-wall/server/internal/admin"
 	"github.com/fly-on-the-wall/server/internal/auth"
 	"github.com/fly-on-the-wall/server/internal/billing"
 	"github.com/fly-on-the-wall/server/internal/database"
@@ -20,15 +22,17 @@ import (
 
 type Handler struct {
 	auth         *auth.Service
+	admin        *admin.Service
 	sync         *sync.Service
 	billing      *billing.Service
 	templatesDir string
 }
 
 // NewHandler creates a new web handler with authentication, sync, and billing services.
-func NewHandler(auth *auth.Service, sync *sync.Service, billing *billing.Service) *Handler {
+func NewHandler(auth *auth.Service, admin *admin.Service, sync *sync.Service, billing *billing.Service) *Handler {
 	return &Handler{
 		auth:         auth,
+		admin:        admin,
 		sync:         sync,
 		billing:      billing,
 		templatesDir: "templates",
@@ -38,6 +42,8 @@ func NewHandler(auth *auth.Service, sync *sync.Service, billing *billing.Service
 // Register sets up the HTTP routes for the web handler.
 func (h *Handler) Register(mux *http.ServeMux) {
 	authMw := middleware.RequireAuth(h.auth)
+	adminMw := authMw
+	adminMw = middleware.Chain(authMw, middleware.RequireAdmin)
 
 	// public pages
 	mux.HandleFunc("GET /", h.handleHome)
@@ -51,6 +57,12 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.Handle("GET /dashboard", authMw(http.HandlerFunc(h.handleDashboard)))
 	mux.Handle("GET /settings", authMw(http.HandlerFunc(h.handleSettings)))
 	mux.Handle("GET /billing", authMw(http.HandlerFunc(h.handleBillingPage)))
+
+	// admin pages
+	mux.Handle("GET /admin", adminMw(http.HandlerFunc(h.handleAdminDashboard)))
+	mux.Handle("GET /admin/users", adminMw(http.HandlerFunc(h.handleAdminUsers)))
+	mux.Handle("POST /admin/users/premium", adminMw(http.HandlerFunc(h.handleAdminSetPremium)))
+	mux.Handle("POST /admin/users/admin", adminMw(http.HandlerFunc(h.handleAdminSetAdmin)))
 
 	// notes
 	mux.Handle("GET /notes", authMw(http.HandlerFunc(h.handleNotesList)))
@@ -397,6 +409,10 @@ func (h *Handler) handleNotesList(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 	}
+
+	sort.Slice(notes, func(i, j int) bool {
+		return notes[i].UpdatedAt.After(notes[j].UpdatedAt)
+	})
 
 	h.render(w, "notes/list", pageData{
 		Title: "Notes",
@@ -902,6 +918,147 @@ func (h *Handler) handleDeviceRevoke(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *Handler) handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
+	user := middleware.UserFromContext(r.Context())
+
+	result, err := h.admin.GetUsers(r.Context(), 1, 10)
+	if err != nil {
+		slog.Error("get users failed", "error", err)
+		h.render(w, "admin/dashboard", pageData{
+			Title: "Admin Dashboard",
+			User:  user,
+			Error: "Failed to load users",
+		})
+		return
+	}
+
+	h.render(w, "admin/dashboard", pageData{
+		Title: "Admin Dashboard",
+		User:  user,
+		Data: map[string]interface{}{
+			"total_users": result.TotalCount,
+		},
+	})
+}
+
+func (h *Handler) handleAdminUsers(w http.ResponseWriter, r *http.Request) {
+	user := middleware.UserFromContext(r.Context())
+
+	page := 1
+	pageStr := r.URL.Query().Get("page")
+	if pageStr != "" {
+		fmt.Sscanf(pageStr, "%d", &page)
+	}
+
+	result, err := h.admin.GetUsers(r.Context(), page, 20)
+	if err != nil {
+		slog.Error("get users failed", "error", err)
+		h.render(w, "admin/users", pageData{
+			Title: "User Management",
+			User:  user,
+			Error: "Failed to load users",
+		})
+		return
+	}
+
+	h.render(w, "admin/users", pageData{
+		Title: "User Management",
+		User:  user,
+		Data: map[string]interface{}{
+			"users":       result.Users,
+			"total_count": result.TotalCount,
+			"page":        result.Page,
+			"page_size":   result.PageSize,
+			"total_pages": result.TotalPages,
+		},
+	})
+}
+
+func (h *Handler) handleAdminSetPremium(w http.ResponseWriter, r *http.Request) {
+	user := middleware.UserFromContext(r.Context())
+
+	if err := r.ParseForm(); err != nil {
+		h.render(w, "admin/users", pageData{
+			Title: "User Management",
+			User:  user,
+			Error: "Invalid form data",
+		})
+		return
+	}
+
+	userID := r.FormValue("user_id")
+	isPremium := r.FormValue("is_premium") == "true"
+
+	if userID == "" {
+		h.render(w, "admin/users", pageData{
+			Title: "User Management",
+			User:  user,
+			Error: "User ID required",
+		})
+		return
+	}
+
+	err := h.admin.SetUserPremium(r.Context(), userID, isPremium)
+	if err != nil {
+		slog.Error("set user premium failed", "error", err, "user_id", userID)
+		h.render(w, "admin/users", pageData{
+			Title: "User Management",
+			User:  user,
+			Error: "Failed to update user premium status",
+		})
+		return
+	}
+
+	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+}
+
+func (h *Handler) handleAdminSetAdmin(w http.ResponseWriter, r *http.Request) {
+	currentUser := middleware.UserFromContext(r.Context())
+
+	if err := r.ParseForm(); err != nil {
+		h.render(w, "admin/users", pageData{
+			Title: "User Management",
+			User:  currentUser,
+			Error: "Invalid form data",
+		})
+		return
+	}
+
+	userID := r.FormValue("user_id")
+	isAdmin := r.FormValue("is_admin") == "true"
+
+	if userID == "" {
+		h.render(w, "admin/users", pageData{
+			Title: "User Management",
+			User:  currentUser,
+			Error: "User ID required",
+		})
+		return
+	}
+
+	if userID == currentUser.ID {
+		h.render(w, "admin/users", pageData{
+			Title: "User Management",
+			User:  currentUser,
+			Error: "Cannot modify your own admin status",
+		})
+		return
+	}
+
+	err := h.admin.SetUserAdmin(r.Context(), userID, isAdmin)
+	if err != nil {
+		slog.Error("set user admin failed", "error", err, "user_id", userID)
+		h.render(w, "admin/users", pageData{
+			Title: "User Management",
+			User:  currentUser,
+			Error: "Failed to update user admin status",
+		})
+		return
+	}
+
+	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+}
+
 // render executes the specified template with the given data and writes it to the response.
 func (h *Handler) render(w http.ResponseWriter, name string, data pageData) {
 	tpl, err := h.pageTemplate(name)
@@ -932,6 +1089,12 @@ func (h *Handler) pageTemplate(name string) (*template.Template, error) {
 		"CurrentYear": func() int {
 			return time.Now().Year()
 		},
+		"add": func(a, b int) int {
+			return a + b
+		},
+		"sub": func(a, b int) int {
+			return a - b
+		},
 	}
 
 	return template.New(name).Funcs(funcMap).ParseFiles(basePath, partialPath, pagePath)
@@ -950,6 +1113,10 @@ func templatePathFor(name string) string {
 		return filepath.Join("notes", name[strings.LastIndex(name, "/")+1:]+".html")
 	case "devices":
 		return "devices.html"
+	case "admin/dashboard":
+		return filepath.Join("admin", "dashboard.html")
+	case "admin/users":
+		return filepath.Join("admin", "users.html")
 	default:
 		return filepath.Join("auth", "home.html")
 	}
