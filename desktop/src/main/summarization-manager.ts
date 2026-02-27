@@ -413,7 +413,7 @@ async function healthCheck(): Promise<{
   return sendMessageAndWait({ type: "health-check" });
 }
 
-function stopSummarizationProcess(): void {
+function stopSummarizationProcess() {
   if (processRecycleTimer) {
     clearTimeout(processRecycleTimer);
     processRecycleTimer = null;

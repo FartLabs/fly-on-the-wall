@@ -16,9 +16,6 @@ export function setupHistoryListeners() {
   });
 }
 
-/**
- * Open a note in the standalone note viewer page (not the history page).
- */
 async function openNoteInViewer(filename: string) {
   try {
     const result = await window.electronAPI.readNote(filename);

@@ -4,47 +4,14 @@ import fs from "node:fs";
 import { formatBytes, ensureDir } from "../utils";
 import { exportNoteHtml } from "./exportedNote";
 import type { ModelDownloader } from "node-llama-cpp";
-import { readConfig } from "./config";
-
-function resolveConfiguredDir(
-  configuredPath: string,
-  fallbackPath: string
-): string {
-  const raw = configuredPath.trim();
-  if (!raw) return fallbackPath;
-  return path.isAbsolute(raw) ? raw : path.resolve(raw);
-}
-
-const getModelsDir = (): string => {
-  const modelsDir = path.join(app.getPath("userData"), "models");
-  return ensureDir(modelsDir);
-};
-
-const getModelsCacheDir = (): string => {
-  const cacheDir = path.join(app.getPath("userData"), "cache", "models");
-  return ensureDir(cacheDir);
-};
-
-const getSummarizationModelsDir = (): string => {
-  const config = readConfig();
-  return resolveConfiguredDir(
-    config.summarization.modelStoragePath || "",
-    path.join(app.getPath("userData"), "models", "summarization")
-  );
-};
-
-export const getTranscriptionModelsDir = (): string => {
-  const config = readConfig();
-  return resolveConfiguredDir(
-    config.transcription.modelStoragePath || "",
-    path.join(app.getPath("userData"), "models", "transcription")
-  );
-};
-
-const getNotesDir = (): string => {
-  const notesDir = path.join(app.getPath("userData"), "notes");
-  return ensureDir(notesDir);
-};
+import {
+  getModelsDir,
+  getModelsCacheDir,
+  getTranscriptionModelsDir,
+  getSummarizationModelsDir,
+  getNotesDir,
+  getRecordingsDir
+} from "./userData";
 
 ipcMain.handle("get-models-dir", () => {
   return getModelsDir();
@@ -375,10 +342,7 @@ ipcMain.handle(
         // save the recording file if it exists
         if (note.metadata && note.metadata.recordingFilename) {
           try {
-            const recordingsDir = path.join(
-              app.getPath("userData"),
-              "recordings"
-            );
+            const recordingsDir = getRecordingsDir();
             const recordingPath = path.join(
               recordingsDir,
               note.metadata.recordingFilename

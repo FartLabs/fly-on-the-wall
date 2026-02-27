@@ -3,8 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { readConfig, setConfig, onConfigUpdated } from "./config";
-import { ensureDir, toSafeName } from "../utils";
-
+import { toSafeName } from "../utils";
+import { getNotesDir } from "./userData";
 type SyncUser = {
   id: string;
   username: string;
@@ -39,16 +39,7 @@ let syncInFlight = false;
 
 function getServerUrl(): string {
   const raw = readConfig().sync.serverUrl || "";
-  return raw.trim().replace(/\/+$/, "");
-}
-
-function getNotesDir(): string {
-  const notesDir = path.join(app.getPath("userData"), "notes");
-  return ensureDir(notesDir);
-}
-
-function nowIso(): string {
-  return new Date().toISOString();
+  return raw.trim().replace(/\/+$/, ""); // remove trailing slashes
 }
 
 function readLocalNotes(): LocalNote[] {
@@ -282,12 +273,14 @@ async function syncPull(
       continue;
     }
 
+    const now = Date.now();
+
     const payload = decodeRemotePayload(content);
     const syncMeta: SyncMeta = {
       remoteId: remote.id,
       remoteVersion: Number(noteResponse.version || remote.version || 0),
-      localMtimeMs: Date.now(),
-      lastSyncedAt: nowIso()
+      localMtimeMs: now,
+      lastSyncedAt: new Date().toISOString()
     };
     setSyncMeta(payload, syncMeta);
 
@@ -295,9 +288,7 @@ async function syncPull(
     if (existing) {
       targetFilePath = existing.filePath;
     } else {
-      const preferred = String(
-        payload?.id || remote.id || `note_${Date.now()}`
-      );
+      const preferred = String(payload?.id || remote.id || `note_${now}`);
       targetFilePath = path.join(
         getNotesDir(),
         pickFilename(localNotes, preferred)
@@ -349,11 +340,13 @@ async function syncPush(
       }
     );
 
+    const now = Date.now();
+
     const newMeta: SyncMeta = {
       remoteId: response.id,
       remoteVersion: Number(response.version || 0),
-      localMtimeMs: Date.now(),
-      lastSyncedAt: nowIso()
+      localMtimeMs: now,
+      lastSyncedAt: new Date().toISOString()
     };
     setSyncMeta(local.content, newMeta);
     const written = writeNoteFile(local.filePath, local.content);
@@ -401,7 +394,7 @@ async function syncNowInternal(updateErrorState = true): Promise<SyncResult> {
       sync: {
         ...readConfig().sync,
         notesCursor: pull.cursor,
-        lastSyncAt: nowIso(),
+        lastSyncAt: new Date().toISOString(),
         lastSyncError: ""
       }
     });

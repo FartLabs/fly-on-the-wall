@@ -22,7 +22,7 @@ function getMeetingParticipants(): string[] {
   );
 }
 
-export function clearSummary(): void {
+export function clearSummary() {
   if (elements.summaryCard) {
     elements.summaryCard.classList.add("hidden");
   }
@@ -41,7 +41,7 @@ export function clearSummary(): void {
   lastSummary = null;
 }
 
-function updateSummaryProgress(progress: SummarizationProgress): void {
+function updateSummaryProgress(progress: SummarizationProgress) {
   if (
     !elements.summaryProgress ||
     !elements.summaryResult ||
@@ -153,7 +153,7 @@ export async function runSummarization(
   }
 }
 
-export function setupSummarizationListeners(): void {
+export function setupSummarizationListeners() {
   if (!elements.copySummaryBtn) {
     console.warn("Summary copy button not found");
     return;

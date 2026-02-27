@@ -36,7 +36,7 @@ const SIDEBAR_WIDTH_STORAGE_KEY = "sidebarWidth";
 
 let isSidebarResizing = false;
 
-function updateSidebarSelectionCounter(): void {
+function updateSidebarSelectionCounter() {
   const el = elements.sidebarSelectedCount;
   if (!el) return;
 
@@ -50,7 +50,7 @@ function updateSidebarSelectionCounter(): void {
   el.classList.remove("hidden");
 }
 
-function syncSidebarMultiSelectionClasses(): void {
+function syncSidebarMultiSelectionClasses() {
   elements.sidebarFileTree
     ?.querySelectorAll(".sidebar-file-item")
     .forEach((el) => {
@@ -68,13 +68,10 @@ function syncSidebarMultiSelectionClasses(): void {
 /**
  * Register a callback invoked when a note is clicked in the sidebar.
  */
-export function onSidebarNoteOpen(cb: NoteOpenCallback): void {
+export function onSidebarNoteOpen(cb: NoteOpenCallback) {
   onNoteOpen = cb;
 }
 
-/**
- * Load and render notes in the sidebar file tree.
- */
 export async function loadSidebarNotes() {
   const tree = elements.sidebarFileTree;
   if (!tree) return;
@@ -110,10 +107,7 @@ export async function loadSidebarNotes() {
   }
 }
 
-/**
- * Render the file tree with virtual date-based grouping.
- */
-function renderTree(): void {
+function renderTree() {
   const tree = elements.sidebarFileTree;
   if (!tree) return;
 
@@ -130,15 +124,13 @@ function renderTree(): void {
 
   tree.innerHTML = "";
 
+  // render each date group as a collapsible section
   groups.forEach((group) => {
-    const groupEl = createDateGroup(group);
+    const groupEl = createCollapsibleDateGroup(group);
     tree.appendChild(groupEl);
   });
 }
 
-/**
- * Group notes by date label (Today, Yesterday, or formatted date).
- */
 function groupByDate(files: NoteFile[]): DateGroup[] {
   const map = new Map<string, { sortKey: string; files: NoteFile[] }>();
 
@@ -176,10 +168,7 @@ function filterNotes(files: NoteFile[], term: string): NoteFile[] {
   return files.filter((f) => getBaseName(f.name).toLowerCase().includes(lower));
 }
 
-/**
- * Create a collapsible date group DOM element.
- */
-function createDateGroup(group: DateGroup): HTMLElement {
+function createCollapsibleDateGroup(group: DateGroup): HTMLElement {
   const container = document.createElement("div");
   container.className = "sidebar-date-group";
 
@@ -209,9 +198,6 @@ function createDateGroup(group: DateGroup): HTMLElement {
   return container;
 }
 
-/**
- * Create a single file item in the sidebar tree.
- */
 function createFileItem(file: NoteFile): HTMLElement {
   const item = document.createElement("div");
   item.className = "sidebar-file-item";
@@ -286,7 +272,6 @@ function createFileItem(file: NoteFile): HTMLElement {
       .forEach((el) => el.classList.remove("active"));
     item.classList.add("active");
 
-    // Fire callback
     if (onNoteOpen) {
       onNoteOpen(file.name);
     }
@@ -314,10 +299,7 @@ function createFileItem(file: NoteFile): HTMLElement {
   return item;
 }
 
-/**
- * Show context menu at position for a given filename.
- */
-function showContextMenu(x: number, y: number, filename: string): void {
+function showContextMenu(x: number, y: number, filename: string) {
   contextMenuTarget = filename;
   const menu = elements.sidebarContextMenu;
   if (!menu) return;
@@ -342,17 +324,11 @@ function showContextMenu(x: number, y: number, filename: string): void {
   });
 }
 
-/**
- * Hide the context menu.
- */
-function hideContextMenu(): void {
+function hideContextMenu() {
   elements.sidebarContextMenu?.classList.add("hidden");
   contextMenuTarget = null;
 }
 
-/**
- * Rename a note from sidebar: show inline input, then save+delete old.
- */
 async function renameNote(filename: string) {
   const item = elements.sidebarFileTree?.querySelector(
     `.sidebar-file-item[data-filename="${CSS.escape(filename)}"]`
@@ -380,8 +356,9 @@ async function renameNote(filename: string) {
     renameHandled = true;
 
     const newName = input.value.trim();
+
+    // revert to original if name is empty or unchanged
     if (!newName || newName === currentName) {
-      // Revert
       const span = document.createElement("span");
       span.className = "sidebar-file-name";
       span.title = currentName;
@@ -394,7 +371,6 @@ async function renameNote(filename: string) {
     const newFilename = `${safeBase || currentName}.json`;
 
     try {
-      // Read existing note content
       const readResult = await window.electronAPI.readNote(filename);
       if (!readResult.success || !readResult.content) {
         alert("Failed to read note for rename");
@@ -457,9 +433,6 @@ async function renameNote(filename: string) {
   });
 }
 
-/**
- * Delete a note from sidebar context menu.
- */
 async function deleteNoteFromSidebar(filename: string) {
   const confirmed = confirm(
     `Delete "${getBaseName(filename)}"? This cannot be undone.`
@@ -488,10 +461,7 @@ async function deleteNoteFromSidebar(filename: string) {
   }
 }
 
-/**
- * Highlight the active note in the sidebar.
- */
-export function setActiveSidebarNote(filename: string | null): void {
+export function setActiveSidebarNote(filename: string | null) {
   elements.sidebarFileTree
     ?.querySelectorAll(".sidebar-file-item.active")
     .forEach((el) => el.classList.remove("active"));
@@ -562,7 +532,7 @@ function getSidebarMaxWidth(): number {
   return Math.max(360, Math.min(640, window.innerWidth - 220));
 }
 
-function applySidebarWidth(width: number): void {
+function applySidebarWidth(width: number) {
   const clamped = Math.max(
     SIDEBAR_MIN_WIDTH,
     Math.min(width, getSidebarMaxWidth())
@@ -570,7 +540,7 @@ function applySidebarWidth(width: number): void {
   document.documentElement.style.setProperty("--sidebar-width", `${clamped}px`);
 }
 
-function loadSavedSidebarWidth(): void {
+function loadSavedSidebarWidth() {
   const raw = localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY);
   const parsed = raw ? Number(raw) : NaN;
 
@@ -582,7 +552,7 @@ function loadSavedSidebarWidth(): void {
   applySidebarWidth(parsed);
 }
 
-function setupSidebarResize(): void {
+function setupSidebarResize() {
   const handle = elements.sidebarResizeHandle;
   const sidebar = elements.leftSidebar;
   if (!handle || !sidebar) return;
@@ -632,26 +602,20 @@ function setupSidebarResize(): void {
   });
 }
 
-/**
- * Set up all sidebar event listeners.
- */
-export function setupSidebarListeners(): void {
+export function setupSidebarListeners() {
   loadSavedSidebarWidth();
 
-  // Collapse/expand sidebar
   elements.sidebarCollapseBtn?.addEventListener("click", () => {
     elements.leftSidebar?.classList.toggle("collapsed");
   });
 
   setupSidebarResize();
 
-  // Nav: Recorder
   elements.sidebarNavRecorder?.addEventListener("click", () => {
     navigateToPage("main");
     setActiveSidebarNote(null);
   });
 
-  // Nav: Settings
   elements.sidebarNavSettings?.addEventListener("click", () => {
     openSettingsModal();
   });
@@ -667,7 +631,6 @@ export function setupSidebarListeners(): void {
     });
   });
 
-  // Search
   elements.sidebarSearchInput?.addEventListener("input", () => {
     searchFilter = elements.sidebarSearchInput.value.trim();
     renderTree();

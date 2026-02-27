@@ -2,7 +2,7 @@ import { elements } from "./domNodes";
 import { saveNote } from "./saveNote";
 import { clamp } from "@/utils";
 
-/** Set of recordingFilenames that have already triggered auto-open */
+// track the recordings for which we've already auto-opened the sidebar to avoid repeated openings on transcription updates
 const autoOpenedRecordings = new Set<string>();
 
 const RIGHT_SIDEBAR_DEFAULT_WIDTH = 340;
@@ -15,11 +15,7 @@ function getRightSidebarMaxWidth(): number {
   return Math.max(420, Math.min(720, window.innerWidth - 220));
 }
 
-function applyRightSidebarWidth(width: number): void {
-  // const clamped = Math.max(
-  //   RIGHT_SIDEBAR_MIN_WIDTH,
-  //   Math.min(width, getRightSidebarMaxWidth())
-  // );
+function applyRightSidebarWidth(width: number) {
   const clamped = clamp(
     width,
     RIGHT_SIDEBAR_MIN_WIDTH,
@@ -32,7 +28,7 @@ function applyRightSidebarWidth(width: number): void {
   );
 }
 
-function loadSavedRightSidebarWidth(): void {
+function loadSavedRightSidebarWidth() {
   const raw = localStorage.getItem(RIGHT_SIDEBAR_WIDTH_STORAGE_KEY);
   const parsed = raw ? Number(raw) : NaN;
 
@@ -44,7 +40,7 @@ function loadSavedRightSidebarWidth(): void {
   applyRightSidebarWidth(parsed);
 }
 
-function setupRightSidebarResize(): void {
+function setupRightSidebarResize() {
   const handle = elements.rightSidebarResizeHandle;
   const sidebar = elements.rightSidebar;
   if (!handle || !sidebar) return;
@@ -105,7 +101,7 @@ function setupRightSidebarResize(): void {
 /**
  * Sync the app-content margin class with sidebar state.
  */
-function syncAppContentMargin(): void {
+function syncAppContentMargin() {
   if (elements.rightSidebar?.classList.contains("collapsed")) {
     elements.appContent?.classList.add("right-sidebar-collapsed");
   } else {
@@ -113,26 +109,17 @@ function syncAppContentMargin(): void {
   }
 }
 
-/**
- * Open the right sidebar (remove collapsed class).
- */
-function openRightSidebar(): void {
+function openRightSidebar() {
   elements.rightSidebar?.classList.remove("collapsed");
   syncAppContentMargin();
 }
 
-/**
- * Toggle right sidebar open/collapsed.
- */
-function toggleRightSidebar(): void {
+function toggleRightSidebar() {
   elements.rightSidebar?.classList.toggle("collapsed");
   syncAppContentMargin();
 }
 
-/**
- * Show the processing content and hide the empty state.
- */
-export function showRightSidebarProcessing(): void {
+export function showRightSidebarProcessing() {
   elements.rightSidebarEmpty?.classList.add("hidden");
 }
 
@@ -140,7 +127,7 @@ export function showRightSidebarProcessing(): void {
  * Auto-open the right sidebar once per recording when transcription starts.
  * Uses recordingFilename as key to avoid repeated openings.
  */
-export function autoOpenForRecording(recordingFilename: string | null): void {
+export function autoOpenForRecording(recordingFilename: string | null) {
   if (!recordingFilename) return;
 
   if (autoOpenedRecordings.has(recordingFilename)) {
@@ -160,15 +147,12 @@ export function setupRightSidebarListeners() {
     return;
   }
 
-  // Toggle collapse on button click
   rightSidebarCollapseBtn.addEventListener("click", () => {
     toggleRightSidebar();
   });
 
   loadSavedRightSidebarWidth();
   setupRightSidebarResize();
-
-  // Sync initial state — sidebar starts collapsed
   syncAppContentMargin();
 
   // Manual save button (in case auto-save didn't work)
