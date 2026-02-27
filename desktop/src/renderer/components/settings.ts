@@ -11,6 +11,7 @@ import { AppConfig } from "@/shared/electronAPI";
 import {
   DEFAULT_CONFIG,
   LIMITS,
+  getDefaultPromptTemplate,
   type AppSettings,
   type SummarizationSettings
 } from "@/shared/config";
@@ -30,41 +31,6 @@ let isRecordingOpenSettingsHotkey = false;
 let recordingModifierOrder: HotkeyModifier[] = [];
 
 const MODIFIER_KEYS = new Set(["Control", "Alt", "Shift", "Meta"]);
-
-function getDefaultPromptTemplate(
-  transcript: string,
-  participants: string[] = []
-): string {
-  const participantsStr =
-    participants.length > 0 ? participants.join(", ") : "Not specified";
-
-  return `You are a highly efficient and helpful assistant specializing in summarizing meeting transcripts.
-Please analyze the following raw text from a meeting and provide a structured summary. 
-Ignore filler words (e.g., 'um', 'ah', 'like'), repeated sentences, and conversational pleasantries. 
-Focus only on the substantive content. If no action items or decisions were made, explicitly state
-"No specific action items or decisions were recorded." 
-
-**IF** the transcript is empty, contains only filler words (e.g., 'um', 'ah'), or consists solely of conversational pleasantries with no substance:
-    - Your **ENTIRE** output should be a single, specific statement: "This meeting concluded with no substantive discussion."
-
-**ELSE** (if the transcript contains substantive discussion):
-    - Proceed as usual with the summarization.
-
-Participants in the meeting: ${participantsStr}
-
-The summary should include:
-1. A concise, one-paragraph overview of the meeting's purpose and key discussions.
-2. A bulleted list of the main topics discussed. Go into detail about each topic based on what was said.
-3. A bulleted list of any action items or decisions made.
-
-If nothing was discussed at all, state that clearly in the overview.
-
-Here is the transcript:
----
-${transcript}
----
-`;
-}
 
 async function loadCustomPromptIntoUI() {
   if (!elements.customPromptInput) return;
