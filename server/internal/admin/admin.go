@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fly-on-the-wall/server/internal/database/dbtime"
 	"github.com/fly-on-the-wall/server/internal/database/sqlc/pgsqlc"
 	"github.com/fly-on-the-wall/server/internal/database/sqlc/sqliteqlc"
 	"github.com/google/uuid"
@@ -103,13 +104,16 @@ func (s *Service) GetUsers(ctx context.Context, page, pageSize int) (*UserListRe
 
 		users = make([]UserListItem, len(rows))
 		for i, r := range rows {
+			createdAt, _ := dbtime.ParseSQLiteTime(r.CreatedAt)
+			updatedAt, _ := dbtime.ParseSQLiteTime(r.UpdatedAt)
+
 			users[i] = UserListItem{
 				ID:        r.ID,
 				Username:  r.Username,
 				IsPremium: r.IsPremium != 0,
 				IsAdmin:   r.IsAdmin != 0,
-				CreatedAt: parseSQLiteTime(r.CreatedAt),
-				UpdatedAt: parseSQLiteTime(r.UpdatedAt),
+				CreatedAt: createdAt,
+				UpdatedAt: updatedAt,
 			}
 		}
 	}
@@ -123,14 +127,6 @@ func (s *Service) GetUsers(ctx context.Context, page, pageSize int) (*UserListRe
 		PageSize:   pageSize,
 		TotalPages: totalPages,
 	}, nil
-}
-
-func parseSQLiteTime(s string) time.Time {
-	t, err := time.Parse("2006-01-02 15:04:05", s)
-	if err != nil {
-		return time.Time{}
-	}
-	return t
 }
 
 func (s *Service) SetUserPremium(ctx context.Context, userID string, isPremium bool) error {
