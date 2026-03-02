@@ -65,6 +65,9 @@ sqlc generate -f sqlc.yaml
 
 # Run server
 go run ./cmd/web
+
+# Alternatively, use air for hot reload
+air
 ```
 
 ## API Endpoints
