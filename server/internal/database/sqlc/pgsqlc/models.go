@@ -21,31 +21,6 @@ type Device struct {
 	CreatedAt      time.Time `json:"created_at"`
 }
 
-type EncryptedNote struct {
-	ID           uuid.UUID    `json:"id"`
-	UserID       uuid.UUID    `json:"user_id"`
-	ObjectKey    string       `json:"object_key"`
-	PayloadSize  int64        `json:"payload_size"`
-	Version      int32        `json:"version"`
-	RecordingRef string       `json:"recording_ref"`
-	CreatedAt    time.Time    `json:"created_at"`
-	UpdatedAt    time.Time    `json:"updated_at"`
-	DeletedAt    sql.NullTime `json:"deleted_at"`
-}
-
-type EncryptedRecording struct {
-	ID            uuid.UUID    `json:"id"`
-	UserID        uuid.UUID    `json:"user_id"`
-	ObjectKey     string       `json:"object_key"`
-	SizeBytes     int64        `json:"size_bytes"`
-	ContentNonce  []byte       `json:"content_nonce"`
-	EncryptedMeta []byte       `json:"encrypted_meta"`
-	Version       int32        `json:"version"`
-	CreatedAt     time.Time    `json:"created_at"`
-	UpdatedAt     time.Time    `json:"updated_at"`
-	DeletedAt     sql.NullTime `json:"deleted_at"`
-}
-
 type Job struct {
 	ID         uuid.UUID    `json:"id"`
 	UserID     uuid.UUID    `json:"user_id"`
@@ -92,6 +67,31 @@ type SyncCursor struct {
 	Entity    string    `json:"entity"`
 	Cursor    time.Time `json:"cursor"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type SyncNote struct {
+	ID           uuid.UUID    `json:"id"`
+	UserID       uuid.UUID    `json:"user_id"`
+	ObjectKey    string       `json:"object_key"`
+	PayloadSize  int64        `json:"payload_size"`
+	Version      int32        `json:"version"`
+	RecordingRef string       `json:"recording_ref"`
+	CreatedAt    time.Time    `json:"created_at"`
+	UpdatedAt    time.Time    `json:"updated_at"`
+	DeletedAt    sql.NullTime `json:"deleted_at"`
+}
+
+type SyncRecording struct {
+	ID           uuid.UUID    `json:"id"`
+	UserID       uuid.UUID    `json:"user_id"`
+	ObjectKey    string       `json:"object_key"`
+	SizeBytes    int64        `json:"size_bytes"`
+	ContentNonce []byte       `json:"content_nonce"`
+	Meta         []byte       `json:"meta"`
+	Version      int32        `json:"version"`
+	CreatedAt    time.Time    `json:"created_at"`
+	UpdatedAt    time.Time    `json:"updated_at"`
+	DeletedAt    sql.NullTime `json:"deleted_at"`
 }
 
 type User struct {

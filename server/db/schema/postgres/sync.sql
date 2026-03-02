@@ -8,7 +8,7 @@ CREATE TABLE devices (
     created_at TIMESTAMPTZ NOT NULL
 );
 
-CREATE TABLE encrypted_notes (
+CREATE TABLE sync_notes (
     id UUID PRIMARY KEY,
     user_id UUID NOT NULL,
     object_key TEXT NOT NULL,
@@ -20,13 +20,13 @@ CREATE TABLE encrypted_notes (
     deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE encrypted_recordings (
+CREATE TABLE sync_recordings (
     id UUID PRIMARY KEY,
     user_id UUID NOT NULL,
     object_key TEXT NOT NULL,
     size_bytes BIGINT NOT NULL,
     content_nonce BYTEA NOT NULL,
-    encrypted_meta BYTEA NOT NULL,
+    meta BYTEA NOT NULL,
     version INTEGER NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,

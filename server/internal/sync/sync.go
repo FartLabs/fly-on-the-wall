@@ -86,7 +86,7 @@ func (s *Service) UpsertNote(ctx context.Context, note *database.Note) (*databas
 			if err != nil {
 				return nil, fmt.Errorf("parse user id: %w", err)
 			}
-			row, err := s.pgQueries.CreateEncryptedNote(ctx, pgsqlc.CreateEncryptedNoteParams{
+			row, err := s.pgQueries.CreateSyncNote(ctx, pgsqlc.CreateSyncNoteParams{
 				Column1:      uid,
 				ObjectKey:    objectKey,
 				PayloadSize:  payloadSize,
@@ -105,7 +105,7 @@ func (s *Service) UpsertNote(ctx context.Context, note *database.Note) (*databas
 			return note, nil
 		}
 
-		row, err := s.sqliteQueries.CreateEncryptedNote(ctx, sqliteqlc.CreateEncryptedNoteParams{
+		row, err := s.sqliteQueries.CreateSyncNote(ctx, sqliteqlc.CreateSyncNoteParams{
 			UserID:       note.UserID,
 			ObjectKey:    objectKey,
 			PayloadSize:  payloadSize,
@@ -153,7 +153,7 @@ func (s *Service) UpsertNote(ctx context.Context, note *database.Note) (*databas
 		if err != nil {
 			return nil, fmt.Errorf("parse user id: %w", err)
 		}
-		row, err := s.pgQueries.UpdateEncryptedNote(ctx, pgsqlc.UpdateEncryptedNoteParams{
+		row, err := s.pgQueries.UpdateSyncNote(ctx, pgsqlc.UpdateSyncNoteParams{
 			ObjectKey:    objectKey,
 			PayloadSize:  payloadSize,
 			RecordingRef: note.RecordingRef,
@@ -176,7 +176,7 @@ func (s *Service) UpsertNote(ctx context.Context, note *database.Note) (*databas
 		return note, nil
 	}
 
-	row, err := s.sqliteQueries.UpdateEncryptedNote(ctx, sqliteqlc.UpdateEncryptedNoteParams{
+	row, err := s.sqliteQueries.UpdateSyncNote(ctx, sqliteqlc.UpdateSyncNoteParams{
 		ObjectKey:    objectKey,
 		PayloadSize:  payloadSize,
 		RecordingRef: note.RecordingRef,
@@ -224,7 +224,7 @@ func (s *Service) GetNote(ctx context.Context, noteID, userID string) (*database
 		if err != nil {
 			return nil, fmt.Errorf("parse user id: %w", err)
 		}
-		row, err := s.pgQueries.GetEncryptedNote(ctx, pgsqlc.GetEncryptedNoteParams{ID: nid, UserID: uid})
+		row, err := s.pgQueries.GetSyncNote(ctx, pgsqlc.GetSyncNoteParams{ID: nid, UserID: uid})
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, ErrNotFound
@@ -243,7 +243,7 @@ func (s *Service) GetNote(ctx context.Context, noteID, userID string) (*database
 			DeletedAt:    dbtime.NullableTimeFromPG(row.DeletedAt),
 		}
 	} else {
-		row, err := s.sqliteQueries.GetEncryptedNote(ctx, sqliteqlc.GetEncryptedNoteParams{ID: noteID, UserID: userID})
+		row, err := s.sqliteQueries.GetSyncNote(ctx, sqliteqlc.GetSyncNoteParams{ID: noteID, UserID: userID})
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, ErrNotFound
@@ -302,9 +302,9 @@ func (s *Service) DeleteNote(ctx context.Context, noteID, userID string) error {
 		if parseErr != nil {
 			return fmt.Errorf("parse user id: %w", parseErr)
 		}
-		n, err = s.pgQueries.SoftDeleteEncryptedNote(ctx, pgsqlc.SoftDeleteEncryptedNoteParams{ID: nid, UserID: uid})
+		n, err = s.pgQueries.SoftDeleteSyncNote(ctx, pgsqlc.SoftDeleteSyncNoteParams{ID: nid, UserID: uid})
 	} else {
-		n, err = s.sqliteQueries.SoftDeleteEncryptedNote(ctx, sqliteqlc.SoftDeleteEncryptedNoteParams{ID: noteID, UserID: userID})
+		n, err = s.sqliteQueries.SoftDeleteSyncNote(ctx, sqliteqlc.SoftDeleteSyncNoteParams{ID: noteID, UserID: userID})
 	}
 	if err != nil {
 		return fmt.Errorf("delete note: %w", err)
@@ -322,12 +322,12 @@ func (s *Service) CreateRecordingMeta(ctx context.Context, rec *database.Recordi
 		if err != nil {
 			return nil, fmt.Errorf("parse user id: %w", err)
 		}
-		row, err := s.pgQueries.CreateEncryptedRecording(ctx, pgsqlc.CreateEncryptedRecordingParams{
-			Column1:       uid,
-			ObjectKey:     rec.ObjectKey,
-			SizeBytes:     rec.SizeBytes,
-			ContentNonce:  []byte{},
-			EncryptedMeta: rec.Meta,
+		row, err := s.pgQueries.CreateSyncRecording(ctx, pgsqlc.CreateSyncRecordingParams{
+			Column1:      uid,
+			ObjectKey:    rec.ObjectKey,
+			SizeBytes:    rec.SizeBytes,
+			ContentNonce: []byte{},
+			Meta:         rec.Meta,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("insert recording meta: %w", err)
@@ -340,12 +340,12 @@ func (s *Service) CreateRecordingMeta(ctx context.Context, rec *database.Recordi
 		return rec, nil
 	}
 
-	row, err := s.sqliteQueries.CreateEncryptedRecording(ctx, sqliteqlc.CreateEncryptedRecordingParams{
-		UserID:        rec.UserID,
-		ObjectKey:     rec.ObjectKey,
-		SizeBytes:     rec.SizeBytes,
-		ContentNonce:  []byte{},
-		EncryptedMeta: rec.Meta,
+	row, err := s.sqliteQueries.CreateSyncRecording(ctx, sqliteqlc.CreateSyncRecordingParams{
+		UserID:       rec.UserID,
+		ObjectKey:    rec.ObjectKey,
+		SizeBytes:    rec.SizeBytes,
+		ContentNonce: []byte{},
+		Meta:         rec.Meta,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("insert recording meta: %w", err)
@@ -417,9 +417,9 @@ func (s *Service) DeleteRecording(ctx context.Context, recordingID, userID strin
 		if parseErr != nil {
 			return fmt.Errorf("parse user id: %w", parseErr)
 		}
-		n, err = s.pgQueries.SoftDeleteEncryptedRecording(ctx, pgsqlc.SoftDeleteEncryptedRecordingParams{ID: rid, UserID: uid})
+		n, err = s.pgQueries.SoftDeleteSyncRecording(ctx, pgsqlc.SoftDeleteSyncRecordingParams{ID: rid, UserID: uid})
 	} else {
-		n, err = s.sqliteQueries.SoftDeleteEncryptedRecording(ctx, sqliteqlc.SoftDeleteEncryptedRecordingParams{ID: recordingID, UserID: userID})
+		n, err = s.sqliteQueries.SoftDeleteSyncRecording(ctx, sqliteqlc.SoftDeleteSyncRecordingParams{ID: recordingID, UserID: userID})
 	}
 	if err != nil {
 		return fmt.Errorf("delete recording: %w", err)
@@ -456,7 +456,7 @@ func (s *Service) GetDelta(ctx context.Context, userID string, since time.Time, 
 		if err != nil {
 			return nil, fmt.Errorf("parse user id: %w", err)
 		}
-		noteRows, err := s.pgQueries.ListEncryptedNoteChanges(ctx, pgsqlc.ListEncryptedNoteChangesParams{
+		noteRows, err := s.pgQueries.ListSyncNoteChanges(ctx, pgsqlc.ListSyncNoteChangesParams{
 			UserID:    uid,
 			UpdatedAt: since,
 			Limit:     int32(limit),
@@ -482,7 +482,7 @@ func (s *Service) GetDelta(ctx context.Context, userID string, since time.Time, 
 			}
 		}
 
-		recRows, err := s.pgQueries.ListEncryptedRecordingChanges(ctx, pgsqlc.ListEncryptedRecordingChangesParams{
+		recRows, err := s.pgQueries.ListSyncRecordingChanges(ctx, pgsqlc.ListSyncRecordingChangesParams{
 			UserID:    uid,
 			UpdatedAt: since,
 			Limit:     int32(limit),
@@ -496,7 +496,7 @@ func (s *Service) GetDelta(ctx context.Context, userID string, since time.Time, 
 				UserID:    row.UserID,
 				ObjectKey: row.ObjectKey,
 				SizeBytes: row.SizeBytes,
-				Meta:      row.EncryptedMeta,
+				Meta:      row.Meta,
 				Version:   int(row.Version),
 				CreatedAt: row.CreatedAt,
 				UpdatedAt: row.UpdatedAt,
@@ -508,7 +508,7 @@ func (s *Service) GetDelta(ctx context.Context, userID string, since time.Time, 
 			}
 		}
 	} else {
-		noteRows, err := s.sqliteQueries.ListEncryptedNoteChanges(ctx, sqliteqlc.ListEncryptedNoteChangesParams{
+		noteRows, err := s.sqliteQueries.ListSyncNoteChanges(ctx, sqliteqlc.ListSyncNoteChangesParams{
 			UserID:    userID,
 			UpdatedAt: dbtime.FormatSQLiteTime(since),
 			Limit:     int64(limit),
@@ -546,7 +546,7 @@ func (s *Service) GetDelta(ctx context.Context, userID string, since time.Time, 
 			}
 		}
 
-		recRows, err := s.sqliteQueries.ListEncryptedRecordingChanges(ctx, sqliteqlc.ListEncryptedRecordingChangesParams{
+		recRows, err := s.sqliteQueries.ListSyncRecordingChanges(ctx, sqliteqlc.ListSyncRecordingChangesParams{
 			UserID:    userID,
 			UpdatedAt: dbtime.FormatSQLiteTime(since),
 			Limit:     int64(limit),
@@ -572,7 +572,7 @@ func (s *Service) GetDelta(ctx context.Context, userID string, since time.Time, 
 				UserID:    row.UserID,
 				ObjectKey: row.ObjectKey,
 				SizeBytes: row.SizeBytes,
-				Meta:      row.EncryptedMeta,
+				Meta:      row.Meta,
 				Version:   int(row.Version),
 				CreatedAt: createdAt,
 				UpdatedAt: updatedAt,

@@ -13,10 +13,10 @@ type Querier interface {
 	CountAdmins(ctx context.Context) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
 	CreateDevice(ctx context.Context, arg CreateDeviceParams) (Device, error)
-	CreateEncryptedNote(ctx context.Context, arg CreateEncryptedNoteParams) (EncryptedNote, error)
-	CreateEncryptedRecording(ctx context.Context, arg CreateEncryptedRecordingParams) (EncryptedRecording, error)
 	CreateJob(ctx context.Context, arg CreateJobParams) (Job, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
+	CreateSyncNote(ctx context.Context, arg CreateSyncNoteParams) (SyncNote, error)
+	CreateSyncRecording(ctx context.Context, arg CreateSyncRecordingParams) (SyncRecording, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserAdmin(ctx context.Context, arg CreateUserAdminParams) (User, error)
 	DeleteDevice(ctx context.Context, arg DeleteDeviceParams) error
@@ -24,30 +24,30 @@ type Querier interface {
 	DeleteSessionByID(ctx context.Context, arg DeleteSessionByIDParams) error
 	DeleteSessionByToken(ctx context.Context, token string) error
 	DeleteSessionsByDeviceID(ctx context.Context, deviceID interface{}) error
-	GetEncryptedNote(ctx context.Context, arg GetEncryptedNoteParams) (EncryptedNote, error)
 	GetJobByIDForUser(ctx context.Context, arg GetJobByIDForUserParams) (Job, error)
 	GetSessionByToken(ctx context.Context, token string) (Session, error)
 	GetSubscriptionByUser(ctx context.Context, userID string) (Subscription, error)
 	GetSyncCursor(ctx context.Context, arg GetSyncCursorParams) (string, error)
+	GetSyncNote(ctx context.Context, arg GetSyncNoteParams) (SyncNote, error)
 	GetUserByID(ctx context.Context, id string) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
 	GetUserPremiumFlag(ctx context.Context, id string) (int64, error)
 	ListDevicesByUser(ctx context.Context, userID string) ([]Device, error)
-	ListEncryptedNoteChanges(ctx context.Context, arg ListEncryptedNoteChangesParams) ([]EncryptedNote, error)
-	ListEncryptedRecordingChanges(ctx context.Context, arg ListEncryptedRecordingChangesParams) ([]EncryptedRecording, error)
 	ListJobsByUser(ctx context.Context, userID string) ([]Job, error)
 	ListJobsByUserAndType(ctx context.Context, arg ListJobsByUserAndTypeParams) ([]Job, error)
 	ListSessionsByUser(ctx context.Context, userID string) ([]Session, error)
+	ListSyncNoteChanges(ctx context.Context, arg ListSyncNoteChangesParams) ([]SyncNote, error)
+	ListSyncRecordingChanges(ctx context.Context, arg ListSyncRecordingChangesParams) ([]SyncRecording, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUsersRow, error)
 	RecordingOwnedByUser(ctx context.Context, arg RecordingOwnedByUserParams) (int64, error)
 	SetUserPremium(ctx context.Context, arg SetUserPremiumParams) error
 	SetUserPremiumFalse(ctx context.Context, id string) error
 	SetUserPremiumTrue(ctx context.Context, id string) error
-	SoftDeleteEncryptedNote(ctx context.Context, arg SoftDeleteEncryptedNoteParams) (int64, error)
-	SoftDeleteEncryptedRecording(ctx context.Context, arg SoftDeleteEncryptedRecordingParams) (int64, error)
+	SoftDeleteSyncNote(ctx context.Context, arg SoftDeleteSyncNoteParams) (int64, error)
+	SoftDeleteSyncRecording(ctx context.Context, arg SoftDeleteSyncRecordingParams) (int64, error)
 	UpdateDeviceKey(ctx context.Context, arg UpdateDeviceKeyParams) (int64, error)
-	UpdateEncryptedNote(ctx context.Context, arg UpdateEncryptedNoteParams) (EncryptedNote, error)
 	UpdateJobStatus(ctx context.Context, arg UpdateJobStatusParams) error
+	UpdateSyncNote(ctx context.Context, arg UpdateSyncNoteParams) (SyncNote, error)
 	UpdateUserAdmin(ctx context.Context, arg UpdateUserAdminParams) error
 	UpdateUserPremium(ctx context.Context, arg UpdateUserPremiumParams) error
 	UpsertSubscription(ctx context.Context, arg UpsertSubscriptionParams) error

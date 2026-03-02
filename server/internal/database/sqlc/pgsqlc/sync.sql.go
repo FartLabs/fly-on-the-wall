@@ -50,20 +50,20 @@ func (q *Queries) CreateDevice(ctx context.Context, arg CreateDeviceParams) (Cre
 	return i, err
 }
 
-const createEncryptedNote = `-- name: CreateEncryptedNote :one
-INSERT INTO encrypted_notes (id, user_id, object_key, payload_size, version, recording_ref, created_at, updated_at)
+const createSyncNote = `-- name: CreateSyncNote :one
+INSERT INTO sync_notes (id, user_id, object_key, payload_size, version, recording_ref, created_at, updated_at)
 VALUES (gen_random_uuid(), $1::uuid, $2, $3, 1, $4, NOW(), NOW())
 RETURNING id::text, user_id::text, object_key, payload_size, version, recording_ref, created_at, updated_at, deleted_at
 `
 
-type CreateEncryptedNoteParams struct {
+type CreateSyncNoteParams struct {
 	Column1      uuid.UUID `json:"column_1"`
 	ObjectKey    string    `json:"object_key"`
 	PayloadSize  int64     `json:"payload_size"`
 	RecordingRef string    `json:"recording_ref"`
 }
 
-type CreateEncryptedNoteRow struct {
+type CreateSyncNoteRow struct {
 	ID           string       `json:"id"`
 	UserID       string       `json:"user_id"`
 	ObjectKey    string       `json:"object_key"`
@@ -75,14 +75,14 @@ type CreateEncryptedNoteRow struct {
 	DeletedAt    sql.NullTime `json:"deleted_at"`
 }
 
-func (q *Queries) CreateEncryptedNote(ctx context.Context, arg CreateEncryptedNoteParams) (CreateEncryptedNoteRow, error) {
-	row := q.db.QueryRowContext(ctx, createEncryptedNote,
+func (q *Queries) CreateSyncNote(ctx context.Context, arg CreateSyncNoteParams) (CreateSyncNoteRow, error) {
+	row := q.db.QueryRowContext(ctx, createSyncNote,
 		arg.Column1,
 		arg.ObjectKey,
 		arg.PayloadSize,
 		arg.RecordingRef,
 	)
-	var i CreateEncryptedNoteRow
+	var i CreateSyncNoteRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
@@ -97,49 +97,49 @@ func (q *Queries) CreateEncryptedNote(ctx context.Context, arg CreateEncryptedNo
 	return i, err
 }
 
-const createEncryptedRecording = `-- name: CreateEncryptedRecording :one
-INSERT INTO encrypted_recordings (id, user_id, object_key, size_bytes, content_nonce, encrypted_meta, version, created_at, updated_at)
+const createSyncRecording = `-- name: CreateSyncRecording :one
+INSERT INTO sync_recordings (id, user_id, object_key, size_bytes, content_nonce, meta, version, created_at, updated_at)
 VALUES (gen_random_uuid(), $1::uuid, $2, $3, $4, $5, 1, NOW(), NOW())
-RETURNING id::text, user_id::text, object_key, size_bytes, content_nonce, encrypted_meta, version, created_at, updated_at, deleted_at
+RETURNING id::text, user_id::text, object_key, size_bytes, content_nonce, meta, version, created_at, updated_at, deleted_at
 `
 
-type CreateEncryptedRecordingParams struct {
-	Column1       uuid.UUID `json:"column_1"`
-	ObjectKey     string    `json:"object_key"`
-	SizeBytes     int64     `json:"size_bytes"`
-	ContentNonce  []byte    `json:"content_nonce"`
-	EncryptedMeta []byte    `json:"encrypted_meta"`
+type CreateSyncRecordingParams struct {
+	Column1      uuid.UUID `json:"column_1"`
+	ObjectKey    string    `json:"object_key"`
+	SizeBytes    int64     `json:"size_bytes"`
+	ContentNonce []byte    `json:"content_nonce"`
+	Meta         []byte    `json:"meta"`
 }
 
-type CreateEncryptedRecordingRow struct {
-	ID            string       `json:"id"`
-	UserID        string       `json:"user_id"`
-	ObjectKey     string       `json:"object_key"`
-	SizeBytes     int64        `json:"size_bytes"`
-	ContentNonce  []byte       `json:"content_nonce"`
-	EncryptedMeta []byte       `json:"encrypted_meta"`
-	Version       int32        `json:"version"`
-	CreatedAt     time.Time    `json:"created_at"`
-	UpdatedAt     time.Time    `json:"updated_at"`
-	DeletedAt     sql.NullTime `json:"deleted_at"`
+type CreateSyncRecordingRow struct {
+	ID           string       `json:"id"`
+	UserID       string       `json:"user_id"`
+	ObjectKey    string       `json:"object_key"`
+	SizeBytes    int64        `json:"size_bytes"`
+	ContentNonce []byte       `json:"content_nonce"`
+	Meta         []byte       `json:"meta"`
+	Version      int32        `json:"version"`
+	CreatedAt    time.Time    `json:"created_at"`
+	UpdatedAt    time.Time    `json:"updated_at"`
+	DeletedAt    sql.NullTime `json:"deleted_at"`
 }
 
-func (q *Queries) CreateEncryptedRecording(ctx context.Context, arg CreateEncryptedRecordingParams) (CreateEncryptedRecordingRow, error) {
-	row := q.db.QueryRowContext(ctx, createEncryptedRecording,
+func (q *Queries) CreateSyncRecording(ctx context.Context, arg CreateSyncRecordingParams) (CreateSyncRecordingRow, error) {
+	row := q.db.QueryRowContext(ctx, createSyncRecording,
 		arg.Column1,
 		arg.ObjectKey,
 		arg.SizeBytes,
 		arg.ContentNonce,
-		arg.EncryptedMeta,
+		arg.Meta,
 	)
-	var i CreateEncryptedRecordingRow
+	var i CreateSyncRecordingRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
 		&i.ObjectKey,
 		&i.SizeBytes,
 		&i.ContentNonce,
-		&i.EncryptedMeta,
+		&i.Meta,
 		&i.Version,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -162,46 +162,6 @@ func (q *Queries) DeleteDevice(ctx context.Context, arg DeleteDeviceParams) erro
 	return err
 }
 
-const getEncryptedNote = `-- name: GetEncryptedNote :one
-SELECT id::text, user_id::text, object_key, payload_size, version, recording_ref, created_at, updated_at, deleted_at
-FROM encrypted_notes
-WHERE id::text = $1 AND user_id::text = $2
-`
-
-type GetEncryptedNoteParams struct {
-	ID     uuid.UUID `json:"id"`
-	UserID uuid.UUID `json:"user_id"`
-}
-
-type GetEncryptedNoteRow struct {
-	ID           string       `json:"id"`
-	UserID       string       `json:"user_id"`
-	ObjectKey    string       `json:"object_key"`
-	PayloadSize  int64        `json:"payload_size"`
-	Version      int32        `json:"version"`
-	RecordingRef string       `json:"recording_ref"`
-	CreatedAt    time.Time    `json:"created_at"`
-	UpdatedAt    time.Time    `json:"updated_at"`
-	DeletedAt    sql.NullTime `json:"deleted_at"`
-}
-
-func (q *Queries) GetEncryptedNote(ctx context.Context, arg GetEncryptedNoteParams) (GetEncryptedNoteRow, error) {
-	row := q.db.QueryRowContext(ctx, getEncryptedNote, arg.ID, arg.UserID)
-	var i GetEncryptedNoteRow
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.ObjectKey,
-		&i.PayloadSize,
-		&i.Version,
-		&i.RecordingRef,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.DeletedAt,
-	)
-	return i, err
-}
-
 const getSyncCursor = `-- name: GetSyncCursor :one
 SELECT cursor
 FROM sync_cursors
@@ -218,6 +178,46 @@ func (q *Queries) GetSyncCursor(ctx context.Context, arg GetSyncCursorParams) (t
 	var cursor time.Time
 	err := row.Scan(&cursor)
 	return cursor, err
+}
+
+const getSyncNote = `-- name: GetSyncNote :one
+SELECT id::text, user_id::text, object_key, payload_size, version, recording_ref, created_at, updated_at, deleted_at
+FROM sync_notes
+WHERE id::text = $1 AND user_id::text = $2
+`
+
+type GetSyncNoteParams struct {
+	ID     uuid.UUID `json:"id"`
+	UserID uuid.UUID `json:"user_id"`
+}
+
+type GetSyncNoteRow struct {
+	ID           string       `json:"id"`
+	UserID       string       `json:"user_id"`
+	ObjectKey    string       `json:"object_key"`
+	PayloadSize  int64        `json:"payload_size"`
+	Version      int32        `json:"version"`
+	RecordingRef string       `json:"recording_ref"`
+	CreatedAt    time.Time    `json:"created_at"`
+	UpdatedAt    time.Time    `json:"updated_at"`
+	DeletedAt    sql.NullTime `json:"deleted_at"`
+}
+
+func (q *Queries) GetSyncNote(ctx context.Context, arg GetSyncNoteParams) (GetSyncNoteRow, error) {
+	row := q.db.QueryRowContext(ctx, getSyncNote, arg.ID, arg.UserID)
+	var i GetSyncNoteRow
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.ObjectKey,
+		&i.PayloadSize,
+		&i.Version,
+		&i.RecordingRef,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
 }
 
 const listDevicesByUser = `-- name: ListDevicesByUser :many
@@ -268,21 +268,21 @@ func (q *Queries) ListDevicesByUser(ctx context.Context, userID uuid.UUID) ([]Li
 	return items, nil
 }
 
-const listEncryptedNoteChanges = `-- name: ListEncryptedNoteChanges :many
+const listSyncNoteChanges = `-- name: ListSyncNoteChanges :many
 SELECT id::text, user_id::text, object_key, payload_size, version, recording_ref, created_at, updated_at, deleted_at
-FROM encrypted_notes
+FROM sync_notes
 WHERE user_id::text = $1 AND updated_at > $2
 ORDER BY updated_at ASC
 LIMIT $3
 `
 
-type ListEncryptedNoteChangesParams struct {
+type ListSyncNoteChangesParams struct {
 	UserID    uuid.UUID `json:"user_id"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Limit     int32     `json:"limit"`
 }
 
-type ListEncryptedNoteChangesRow struct {
+type ListSyncNoteChangesRow struct {
 	ID           string       `json:"id"`
 	UserID       string       `json:"user_id"`
 	ObjectKey    string       `json:"object_key"`
@@ -294,15 +294,15 @@ type ListEncryptedNoteChangesRow struct {
 	DeletedAt    sql.NullTime `json:"deleted_at"`
 }
 
-func (q *Queries) ListEncryptedNoteChanges(ctx context.Context, arg ListEncryptedNoteChangesParams) ([]ListEncryptedNoteChangesRow, error) {
-	rows, err := q.db.QueryContext(ctx, listEncryptedNoteChanges, arg.UserID, arg.UpdatedAt, arg.Limit)
+func (q *Queries) ListSyncNoteChanges(ctx context.Context, arg ListSyncNoteChangesParams) ([]ListSyncNoteChangesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listSyncNoteChanges, arg.UserID, arg.UpdatedAt, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListEncryptedNoteChangesRow
+	var items []ListSyncNoteChangesRow
 	for rows.Next() {
-		var i ListEncryptedNoteChangesRow
+		var i ListSyncNoteChangesRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -327,49 +327,49 @@ func (q *Queries) ListEncryptedNoteChanges(ctx context.Context, arg ListEncrypte
 	return items, nil
 }
 
-const listEncryptedRecordingChanges = `-- name: ListEncryptedRecordingChanges :many
-SELECT id::text, user_id::text, object_key, size_bytes, content_nonce, encrypted_meta, version, created_at, updated_at, deleted_at
-FROM encrypted_recordings
+const listSyncRecordingChanges = `-- name: ListSyncRecordingChanges :many
+SELECT id::text, user_id::text, object_key, size_bytes, content_nonce, meta, version, created_at, updated_at, deleted_at
+FROM sync_recordings
 WHERE user_id::text = $1 AND updated_at > $2
 ORDER BY updated_at ASC
 LIMIT $3
 `
 
-type ListEncryptedRecordingChangesParams struct {
+type ListSyncRecordingChangesParams struct {
 	UserID    uuid.UUID `json:"user_id"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Limit     int32     `json:"limit"`
 }
 
-type ListEncryptedRecordingChangesRow struct {
-	ID            string       `json:"id"`
-	UserID        string       `json:"user_id"`
-	ObjectKey     string       `json:"object_key"`
-	SizeBytes     int64        `json:"size_bytes"`
-	ContentNonce  []byte       `json:"content_nonce"`
-	EncryptedMeta []byte       `json:"encrypted_meta"`
-	Version       int32        `json:"version"`
-	CreatedAt     time.Time    `json:"created_at"`
-	UpdatedAt     time.Time    `json:"updated_at"`
-	DeletedAt     sql.NullTime `json:"deleted_at"`
+type ListSyncRecordingChangesRow struct {
+	ID           string       `json:"id"`
+	UserID       string       `json:"user_id"`
+	ObjectKey    string       `json:"object_key"`
+	SizeBytes    int64        `json:"size_bytes"`
+	ContentNonce []byte       `json:"content_nonce"`
+	Meta         []byte       `json:"meta"`
+	Version      int32        `json:"version"`
+	CreatedAt    time.Time    `json:"created_at"`
+	UpdatedAt    time.Time    `json:"updated_at"`
+	DeletedAt    sql.NullTime `json:"deleted_at"`
 }
 
-func (q *Queries) ListEncryptedRecordingChanges(ctx context.Context, arg ListEncryptedRecordingChangesParams) ([]ListEncryptedRecordingChangesRow, error) {
-	rows, err := q.db.QueryContext(ctx, listEncryptedRecordingChanges, arg.UserID, arg.UpdatedAt, arg.Limit)
+func (q *Queries) ListSyncRecordingChanges(ctx context.Context, arg ListSyncRecordingChangesParams) ([]ListSyncRecordingChangesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listSyncRecordingChanges, arg.UserID, arg.UpdatedAt, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListEncryptedRecordingChangesRow
+	var items []ListSyncRecordingChangesRow
 	for rows.Next() {
-		var i ListEncryptedRecordingChangesRow
+		var i ListSyncRecordingChangesRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
 			&i.ObjectKey,
 			&i.SizeBytes,
 			&i.ContentNonce,
-			&i.EncryptedMeta,
+			&i.Meta,
 			&i.Version,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -390,7 +390,7 @@ func (q *Queries) ListEncryptedRecordingChanges(ctx context.Context, arg ListEnc
 
 const recordingOwnedByUser = `-- name: RecordingOwnedByUser :one
 SELECT EXISTS(
-  SELECT 1 FROM encrypted_recordings
+  SELECT 1 FROM sync_recordings
   WHERE object_key = $1 AND user_id::text = $2
 )
 `
@@ -407,38 +407,38 @@ func (q *Queries) RecordingOwnedByUser(ctx context.Context, arg RecordingOwnedBy
 	return exists, err
 }
 
-const softDeleteEncryptedNote = `-- name: SoftDeleteEncryptedNote :execrows
-UPDATE encrypted_notes
+const softDeleteSyncNote = `-- name: SoftDeleteSyncNote :execrows
+UPDATE sync_notes
 SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP, version = version + 1
 WHERE id::text = $1 AND user_id::text = $2 AND deleted_at IS NULL
 `
 
-type SoftDeleteEncryptedNoteParams struct {
+type SoftDeleteSyncNoteParams struct {
 	ID     uuid.UUID `json:"id"`
 	UserID uuid.UUID `json:"user_id"`
 }
 
-func (q *Queries) SoftDeleteEncryptedNote(ctx context.Context, arg SoftDeleteEncryptedNoteParams) (int64, error) {
-	result, err := q.db.ExecContext(ctx, softDeleteEncryptedNote, arg.ID, arg.UserID)
+func (q *Queries) SoftDeleteSyncNote(ctx context.Context, arg SoftDeleteSyncNoteParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, softDeleteSyncNote, arg.ID, arg.UserID)
 	if err != nil {
 		return 0, err
 	}
 	return result.RowsAffected()
 }
 
-const softDeleteEncryptedRecording = `-- name: SoftDeleteEncryptedRecording :execrows
-UPDATE encrypted_recordings
+const softDeleteSyncRecording = `-- name: SoftDeleteSyncRecording :execrows
+UPDATE sync_recordings
 SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP, version = version + 1
 WHERE id::text = $1 AND user_id::text = $2 AND deleted_at IS NULL
 `
 
-type SoftDeleteEncryptedRecordingParams struct {
+type SoftDeleteSyncRecordingParams struct {
 	ID     uuid.UUID `json:"id"`
 	UserID uuid.UUID `json:"user_id"`
 }
 
-func (q *Queries) SoftDeleteEncryptedRecording(ctx context.Context, arg SoftDeleteEncryptedRecordingParams) (int64, error) {
-	result, err := q.db.ExecContext(ctx, softDeleteEncryptedRecording, arg.ID, arg.UserID)
+func (q *Queries) SoftDeleteSyncRecording(ctx context.Context, arg SoftDeleteSyncRecordingParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, softDeleteSyncRecording, arg.ID, arg.UserID)
 	if err != nil {
 		return 0, err
 	}
@@ -465,15 +465,15 @@ func (q *Queries) UpdateDeviceKey(ctx context.Context, arg UpdateDeviceKeyParams
 	return result.RowsAffected()
 }
 
-const updateEncryptedNote = `-- name: UpdateEncryptedNote :one
-UPDATE encrypted_notes
+const updateSyncNote = `-- name: UpdateSyncNote :one
+UPDATE sync_notes
 SET object_key = $1, payload_size = $2, recording_ref = $3,
     version = version + 1, updated_at = CURRENT_TIMESTAMP
 WHERE id::text = $4 AND user_id::text = $5 AND version = $6
 RETURNING id::text, user_id::text, object_key, payload_size, version, recording_ref, created_at, updated_at, deleted_at
 `
 
-type UpdateEncryptedNoteParams struct {
+type UpdateSyncNoteParams struct {
 	ObjectKey    string    `json:"object_key"`
 	PayloadSize  int64     `json:"payload_size"`
 	RecordingRef string    `json:"recording_ref"`
@@ -482,7 +482,7 @@ type UpdateEncryptedNoteParams struct {
 	Version      int32     `json:"version"`
 }
 
-type UpdateEncryptedNoteRow struct {
+type UpdateSyncNoteRow struct {
 	ID           string       `json:"id"`
 	UserID       string       `json:"user_id"`
 	ObjectKey    string       `json:"object_key"`
@@ -494,8 +494,8 @@ type UpdateEncryptedNoteRow struct {
 	DeletedAt    sql.NullTime `json:"deleted_at"`
 }
 
-func (q *Queries) UpdateEncryptedNote(ctx context.Context, arg UpdateEncryptedNoteParams) (UpdateEncryptedNoteRow, error) {
-	row := q.db.QueryRowContext(ctx, updateEncryptedNote,
+func (q *Queries) UpdateSyncNote(ctx context.Context, arg UpdateSyncNoteParams) (UpdateSyncNoteRow, error) {
+	row := q.db.QueryRowContext(ctx, updateSyncNote,
 		arg.ObjectKey,
 		arg.PayloadSize,
 		arg.RecordingRef,
@@ -503,7 +503,7 @@ func (q *Queries) UpdateEncryptedNote(ctx context.Context, arg UpdateEncryptedNo
 		arg.UserID,
 		arg.Version,
 	)
-	var i UpdateEncryptedNoteRow
+	var i UpdateSyncNoteRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,

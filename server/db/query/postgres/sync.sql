@@ -17,54 +17,54 @@ WHERE id::text = $2 AND user_id::text = $3;
 -- name: DeleteDevice :exec
 DELETE FROM devices WHERE id::text = $1 AND user_id::text = $2;
 
--- name: CreateEncryptedNote :one
-INSERT INTO encrypted_notes (id, user_id, object_key, payload_size, version, recording_ref, created_at, updated_at)
+-- name: CreateSyncNote :one
+INSERT INTO sync_notes (id, user_id, object_key, payload_size, version, recording_ref, created_at, updated_at)
 VALUES (gen_random_uuid(), $1::uuid, $2, $3, 1, $4, NOW(), NOW())
 RETURNING id::text, user_id::text, object_key, payload_size, version, recording_ref, created_at, updated_at, deleted_at;
 
--- name: UpdateEncryptedNote :one
-UPDATE encrypted_notes
+-- name: UpdateSyncNote :one
+UPDATE sync_notes
 SET object_key = $1, payload_size = $2, recording_ref = $3,
     version = version + 1, updated_at = CURRENT_TIMESTAMP
 WHERE id::text = $4 AND user_id::text = $5 AND version = $6
 RETURNING id::text, user_id::text, object_key, payload_size, version, recording_ref, created_at, updated_at, deleted_at;
 
--- name: GetEncryptedNote :one
+-- name: GetSyncNote :one
 SELECT id::text, user_id::text, object_key, payload_size, version, recording_ref, created_at, updated_at, deleted_at
-FROM encrypted_notes
+FROM sync_notes
 WHERE id::text = $1 AND user_id::text = $2;
 
--- name: SoftDeleteEncryptedNote :execrows
-UPDATE encrypted_notes
+-- name: SoftDeleteSyncNote :execrows
+UPDATE sync_notes
 SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP, version = version + 1
 WHERE id::text = $1 AND user_id::text = $2 AND deleted_at IS NULL;
 
--- name: CreateEncryptedRecording :one
-INSERT INTO encrypted_recordings (id, user_id, object_key, size_bytes, content_nonce, encrypted_meta, version, created_at, updated_at)
+-- name: CreateSyncRecording :one
+INSERT INTO sync_recordings (id, user_id, object_key, size_bytes, content_nonce, meta, version, created_at, updated_at)
 VALUES (gen_random_uuid(), $1::uuid, $2, $3, $4, $5, 1, NOW(), NOW())
-RETURNING id::text, user_id::text, object_key, size_bytes, content_nonce, encrypted_meta, version, created_at, updated_at, deleted_at;
+RETURNING id::text, user_id::text, object_key, size_bytes, content_nonce, meta, version, created_at, updated_at, deleted_at;
 
 -- name: RecordingOwnedByUser :one
 SELECT EXISTS(
-  SELECT 1 FROM encrypted_recordings
+  SELECT 1 FROM sync_recordings
   WHERE object_key = $1 AND user_id::text = $2
 );
 
--- name: SoftDeleteEncryptedRecording :execrows
-UPDATE encrypted_recordings
+-- name: SoftDeleteSyncRecording :execrows
+UPDATE sync_recordings
 SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP, version = version + 1
 WHERE id::text = $1 AND user_id::text = $2 AND deleted_at IS NULL;
 
--- name: ListEncryptedNoteChanges :many
+-- name: ListSyncNoteChanges :many
 SELECT id::text, user_id::text, object_key, payload_size, version, recording_ref, created_at, updated_at, deleted_at
-FROM encrypted_notes
+FROM sync_notes
 WHERE user_id::text = $1 AND updated_at > $2
 ORDER BY updated_at ASC
 LIMIT $3;
 
--- name: ListEncryptedRecordingChanges :many
-SELECT id::text, user_id::text, object_key, size_bytes, content_nonce, encrypted_meta, version, created_at, updated_at, deleted_at
-FROM encrypted_recordings
+-- name: ListSyncRecordingChanges :many
+SELECT id::text, user_id::text, object_key, size_bytes, content_nonce, meta, version, created_at, updated_at, deleted_at
+FROM sync_recordings
 WHERE user_id::text = $1 AND updated_at > $2
 ORDER BY updated_at ASC
 LIMIT $3;

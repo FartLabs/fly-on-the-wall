@@ -16,10 +16,10 @@ type Querier interface {
 	CountAdmins(ctx context.Context) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
 	CreateDevice(ctx context.Context, arg CreateDeviceParams) (CreateDeviceRow, error)
-	CreateEncryptedNote(ctx context.Context, arg CreateEncryptedNoteParams) (CreateEncryptedNoteRow, error)
-	CreateEncryptedRecording(ctx context.Context, arg CreateEncryptedRecordingParams) (CreateEncryptedRecordingRow, error)
 	CreateJob(ctx context.Context, arg CreateJobParams) (CreateJobRow, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (CreateSessionRow, error)
+	CreateSyncNote(ctx context.Context, arg CreateSyncNoteParams) (CreateSyncNoteRow, error)
+	CreateSyncRecording(ctx context.Context, arg CreateSyncRecordingParams) (CreateSyncRecordingRow, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
 	CreateUserAdmin(ctx context.Context, arg CreateUserAdminParams) (CreateUserAdminRow, error)
 	DeleteDevice(ctx context.Context, arg DeleteDeviceParams) error
@@ -27,30 +27,30 @@ type Querier interface {
 	DeleteSessionByID(ctx context.Context, arg DeleteSessionByIDParams) error
 	DeleteSessionByToken(ctx context.Context, token string) error
 	DeleteSessionsByDeviceID(ctx context.Context, dollar_1 uuid.UUID) error
-	GetEncryptedNote(ctx context.Context, arg GetEncryptedNoteParams) (GetEncryptedNoteRow, error)
 	GetJobByIDForUser(ctx context.Context, arg GetJobByIDForUserParams) (GetJobByIDForUserRow, error)
 	GetSessionByToken(ctx context.Context, token string) (GetSessionByTokenRow, error)
 	GetSubscriptionByUser(ctx context.Context, userID uuid.UUID) (GetSubscriptionByUserRow, error)
 	GetSyncCursor(ctx context.Context, arg GetSyncCursorParams) (time.Time, error)
+	GetSyncNote(ctx context.Context, arg GetSyncNoteParams) (GetSyncNoteRow, error)
 	GetUserByID(ctx context.Context, dollar_1 uuid.UUID) (GetUserByIDRow, error)
 	GetUserByUsername(ctx context.Context, username string) (GetUserByUsernameRow, error)
 	GetUserPremiumFlag(ctx context.Context, id uuid.UUID) (bool, error)
 	ListDevicesByUser(ctx context.Context, userID uuid.UUID) ([]ListDevicesByUserRow, error)
-	ListEncryptedNoteChanges(ctx context.Context, arg ListEncryptedNoteChangesParams) ([]ListEncryptedNoteChangesRow, error)
-	ListEncryptedRecordingChanges(ctx context.Context, arg ListEncryptedRecordingChangesParams) ([]ListEncryptedRecordingChangesRow, error)
 	ListJobsByUser(ctx context.Context, userID uuid.UUID) ([]ListJobsByUserRow, error)
 	ListJobsByUserAndType(ctx context.Context, arg ListJobsByUserAndTypeParams) ([]ListJobsByUserAndTypeRow, error)
 	ListSessionsByUser(ctx context.Context, dollar_1 uuid.UUID) ([]ListSessionsByUserRow, error)
+	ListSyncNoteChanges(ctx context.Context, arg ListSyncNoteChangesParams) ([]ListSyncNoteChangesRow, error)
+	ListSyncRecordingChanges(ctx context.Context, arg ListSyncRecordingChangesParams) ([]ListSyncRecordingChangesRow, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUsersRow, error)
 	RecordingOwnedByUser(ctx context.Context, arg RecordingOwnedByUserParams) (bool, error)
 	SetUserPremium(ctx context.Context, arg SetUserPremiumParams) error
 	SetUserPremiumFalse(ctx context.Context, id uuid.UUID) error
 	SetUserPremiumTrue(ctx context.Context, id uuid.UUID) error
-	SoftDeleteEncryptedNote(ctx context.Context, arg SoftDeleteEncryptedNoteParams) (int64, error)
-	SoftDeleteEncryptedRecording(ctx context.Context, arg SoftDeleteEncryptedRecordingParams) (int64, error)
+	SoftDeleteSyncNote(ctx context.Context, arg SoftDeleteSyncNoteParams) (int64, error)
+	SoftDeleteSyncRecording(ctx context.Context, arg SoftDeleteSyncRecordingParams) (int64, error)
 	UpdateDeviceKey(ctx context.Context, arg UpdateDeviceKeyParams) (int64, error)
-	UpdateEncryptedNote(ctx context.Context, arg UpdateEncryptedNoteParams) (UpdateEncryptedNoteRow, error)
 	UpdateJobStatus(ctx context.Context, arg UpdateJobStatusParams) error
+	UpdateSyncNote(ctx context.Context, arg UpdateSyncNoteParams) (UpdateSyncNoteRow, error)
 	UpdateUserAdmin(ctx context.Context, arg UpdateUserAdminParams) error
 	UpdateUserPremium(ctx context.Context, arg UpdateUserPremiumParams) error
 	UpsertSubscription(ctx context.Context, arg UpsertSubscriptionParams) error
