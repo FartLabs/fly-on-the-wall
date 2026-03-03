@@ -7,6 +7,7 @@
     "lint": "cd desktop && npm run lint",
     "knip": "cd desktop && npm run knip",
     "server:web": "cd server && go run ./cmd/web",
+    "server:web-air": "cd server && air",
     "server:sqlc": "cd server && sqlc generate -f sqlc.yaml",
     "server:docker": "cd server && docker compose up -d --build --force-recreate",
     "server:docker:down": "cd server && docker compose down",
