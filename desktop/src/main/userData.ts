@@ -51,3 +51,7 @@ export const getNotesDir = (): string => {
   const notesDir = path.join(app.getPath("userData"), "notes");
   return ensureDir(notesDir);
 };
+
+export const getPendingDeletesPath = (): string => {
+  return path.join(app.getPath("userData"), "pending-deletes.json");
+};

@@ -439,8 +439,28 @@ async function deleteNoteFromSidebar(filename: string) {
   );
   if (!confirmed) return;
 
+  // Check if the note has an associated recording
+  let deleteRecording = false;
   try {
-    const result = await window.electronAPI.deleteNote(filename);
+    const noteResult = await window.electronAPI.readNote(filename);
+    const recordingFilename =
+      noteResult.success && noteResult.content
+        ? (noteResult.content as any)?.metadata?.recordingFilename
+        : null;
+    if (recordingFilename) {
+      deleteRecording = confirm(
+        `This note has an associated recording (${recordingFilename}). Delete it too?`
+      );
+    }
+  } catch (error) {
+    console.warn("Failed to check for associated recording:", error);
+  }
+
+  try {
+    const result = await window.electronAPI.deleteNote(
+      filename,
+      deleteRecording
+    );
     if (!result.success) {
       alert("Failed to delete note: " + result.error);
       return;
@@ -496,10 +516,30 @@ async function deleteSelectedSidebarNotes() {
   );
   if (!confirmed) return;
 
+  // Check which of the selected notes have associated recordings
+  const filenames = Array.from(selectedSidebarNotes);
+  let deleteRecording = false;
   try {
-    const filenames = Array.from(selectedSidebarNotes);
+    const noteContents = await Promise.all(
+      filenames.map((f) => window.electronAPI.readNote(f))
+    );
+    const withRecordings = noteContents.filter(
+      (r) => r.success && (r.content as any)?.metadata?.recordingFilename
+    );
+    if (withRecordings.length > 0) {
+      deleteRecording = confirm(
+        `${withRecordings.length} of the selected note${withRecordings.length > 1 ? "s have" : " has"} an associated recording. Delete the recording${withRecordings.length > 1 ? "s" : ""} too?`
+      );
+    }
+  } catch (error) {
+    console.warn("Failed to check for associated recordings:", error);
+  }
+
+  try {
     const results = await Promise.all(
-      filenames.map((filename) => window.electronAPI.deleteNote(filename))
+      filenames.map((filename) =>
+        window.electronAPI.deleteNote(filename, deleteRecording)
+      )
     );
 
     const failed = results.filter((r) => !r.success);

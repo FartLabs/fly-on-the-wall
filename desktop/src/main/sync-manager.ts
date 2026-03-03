@@ -4,7 +4,8 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { readConfig, setConfig, onConfigUpdated } from "./config";
 import { toSafeName } from "../utils";
-import { getNotesDir } from "./userData";
+import { getNotesDir, getPendingDeletesPath } from "./userData";
+
 type SyncUser = {
   id: string;
   username: string;
@@ -33,6 +34,37 @@ type SyncResult = {
   skipped: number;
   error?: string;
 };
+
+type PendingDelete = { remoteId: string; filename: string };
+
+function readPendingDeletes(): PendingDelete[] {
+  try {
+    const filePath = getPendingDeletesPath();
+    if (!fs.existsSync(filePath)) return [];
+    return JSON.parse(fs.readFileSync(filePath, "utf-8")) as PendingDelete[];
+  } catch {
+    return [];
+  }
+}
+
+function writePendingDeletes(items: PendingDelete[]): void {
+  try {
+    fs.writeFileSync(
+      getPendingDeletesPath(),
+      JSON.stringify(items, null, 2),
+      "utf-8"
+    );
+  } catch (err) {
+    console.warn("[sync] Failed to write pending-deletes.json:", err);
+  }
+}
+
+export function enqueuePendingDelete(remoteId: string, filename: string): void {
+  const existing = readPendingDeletes();
+  if (!existing.some((d) => d.remoteId === remoteId)) {
+    writePendingDeletes([...existing, { remoteId, filename }]);
+  }
+}
 
 let syncIntervalId: NodeJS.Timeout | null = null;
 let syncInFlight = false;
@@ -237,6 +269,16 @@ async function syncPull(
       continue;
     }
 
+    // if pending delete, skip pulling it
+    // pushDeletes will tombstone it on the server on the next sync cycle
+    const pendingDeleteIds = new Set(
+      readPendingDeletes().map((d) => d.remoteId)
+    );
+    if (pendingDeleteIds.has(remote.id)) {
+      skipped += 1;
+      continue;
+    }
+
     const existingSync = existing ? extractSyncMeta(existing.content) : null;
     const localVersion = existingSync?.remoteVersion || 0;
     const localDirty = existing ? isDirty(existing) : false;
@@ -360,6 +402,42 @@ async function syncPush(
   return { pushed, skipped };
 }
 
+export async function pushDeletes() {
+  const pending = readPendingDeletes();
+  if (pending.length === 0) return;
+
+  console.log(
+    `[sync] Processing ${pending.length} pending remote delete(s)...`
+  );
+
+  const remaining: Array<{ remoteId: string; filename: string }> = [];
+
+  for (const item of pending) {
+    try {
+      await requestJSON<unknown>(
+        "DELETE",
+        `/api/v1/notes/${encodeURIComponent(item.remoteId)}`
+      );
+      console.log(`[sync] Remote delete succeeded: ${item.remoteId}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const errorRegex = /404|not found/i;
+      if (errorRegex.test(msg)) {
+        console.log(
+          `[sync] Note already gone on server (404): ${item.remoteId}`
+        );
+      } else {
+        console.warn(
+          `[sync] Remote delete failed, will retry next sync: ${item.remoteId} — ${msg}`
+        );
+        remaining.push(item);
+      }
+    }
+  }
+
+  writePendingDeletes(remaining);
+}
+
 async function syncNowInternal(updateErrorState = true): Promise<SyncResult> {
   if (syncInFlight) {
     return { success: true, pushed: 0, pulled: 0, skipped: 0 };
@@ -387,6 +465,7 @@ async function syncNowInternal(updateErrorState = true): Promise<SyncResult> {
   syncInFlight = true;
   try {
     const localNotes = readLocalNotes();
+    await pushDeletes();
     const pull = await syncPull(localNotes);
     const push = await syncPush(localNotes);
 

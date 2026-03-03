@@ -179,7 +179,8 @@ export default interface IElectronAPI {
     filename: string
   ) => Promise<{ success: boolean; content?: string; error?: string }>;
   deleteNote: (
-    filename: string
+    filename: string,
+    deleteRecording?: boolean
   ) => Promise<{ success: boolean; error?: string }>;
   exportNote: (data: {
     filename: string;

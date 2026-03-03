@@ -3,6 +3,8 @@ import path from "node:path";
 import fs from "node:fs";
 import { formatBytes, ensureDir } from "../utils";
 import { exportNoteHtml } from "./exportedNote";
+import { readConfig, setConfig } from "./config";
+import { pushDeletes, enqueuePendingDelete } from "./sync-manager";
 import type { ModelDownloader } from "node-llama-cpp";
 import {
   getModelsDir,
@@ -208,10 +210,11 @@ ipcMain.handle(
       const ts = new Date();
       const filename =
         data.filename ||
+        // TODO: refactor this to make it more readable and maintainable
         `note_${ts.getFullYear()}${String(ts.getMonth() + 1).padStart(2, "0")}${String(ts.getDate()).padStart(2, "0")}_${String(ts.getHours()).padStart(2, "0")}${String(ts.getMinutes()).padStart(2, "0")}${String(ts.getSeconds()).padStart(2, "0")}.json`;
 
       const note = {
-        id: filename.replace(/\.[^.]+$/, ""),
+        id: filename.replace(/\.[^.]+$/, ""), // remove file extension
         created: ts.toISOString(),
         transcription: data.transcription,
         summary: data.summary || "",
@@ -279,19 +282,60 @@ ipcMain.handle("read-note", async (_event, filename: string) => {
   }
 });
 
-ipcMain.handle("delete-note", async (_event, filename: string) => {
-  try {
-    const notesDir = getNotesDir();
-    const filePath = path.join(notesDir, filename);
+ipcMain.handle(
+  "delete-note",
+  async (_event, filename: string, deleteRecording = false) => {
+    try {
+      const notesDir = getNotesDir();
+      const filePath = path.join(notesDir, filename);
 
-    fs.unlinkSync(filePath);
-    console.log(`Note deleted: ${filePath}`);
-    return { success: true };
-  } catch (error) {
-    console.error("Error deleting note:", error);
-    return { success: false, error: String(error) };
+      // Before unlinking, extract recording filename and queue any remote deletes
+      let recordingFilename: string | undefined;
+      try {
+        if (fs.existsSync(filePath)) {
+          const raw = fs.readFileSync(filePath, "utf-8");
+          const content = JSON.parse(raw);
+          recordingFilename = content?.metadata?.recordingFilename;
+
+          const remoteId: string | undefined =
+            content?.metadata?.sync?.remoteId;
+
+          if (remoteId) {
+            enqueuePendingDelete(remoteId, filename);
+            console.log(`[sync] Queued remote delete for note: ${remoteId}`);
+            pushDeletes().catch((e) =>
+              console.warn("[sync] Eager pushDeletes failed:", e)
+            );
+          }
+        }
+      } catch (enqueueErr) {
+        console.warn("[sync] Failed to enqueue remote delete:", enqueueErr);
+      }
+
+      if (deleteRecording && recordingFilename) {
+        try {
+          const recordingPath = path.join(
+            getRecordingsDir(),
+            recordingFilename
+          );
+          if (fs.existsSync(recordingPath)) {
+            fs.unlinkSync(recordingPath);
+            console.log(`Recording deleted: ${recordingPath}`);
+          }
+        } catch (recErr) {
+          console.warn("[delete-note] Failed to delete recording:", recErr);
+        }
+      }
+
+      fs.unlinkSync(filePath);
+      console.log(`Note deleted: ${filePath}`);
+      return { success: true };
+    } catch (error) {
+      console.error("Error deleting note:", error);
+      return { success: false, error: String(error) };
+    }
   }
-});
+);
 
 ipcMain.handle(
   "export-note",
