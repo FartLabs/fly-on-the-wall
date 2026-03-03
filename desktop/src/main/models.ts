@@ -1,9 +1,8 @@
-import { app, ipcMain, dialog, shell, BrowserWindow } from "electron";
+import { ipcMain, dialog, shell, BrowserWindow } from "electron";
 import path from "node:path";
 import fs from "node:fs";
 import { formatBytes, ensureDir } from "../utils";
 import { exportNoteHtml } from "./exportedNote";
-import { readConfig, setConfig } from "./config";
 import { pushDeletes, enqueuePendingDelete } from "./sync-manager";
 import type { ModelDownloader } from "node-llama-cpp";
 import {
@@ -206,15 +205,23 @@ ipcMain.handle(
   ) => {
     try {
       const notesDir = getNotesDir();
-
       const ts = new Date();
+
+      const pad = (num: number) => String(num).padStart(2, "0");
+      const year = ts.getFullYear();
+      const month = pad(ts.getMonth() + 1);
+      const day = pad(ts.getDate());
+      const hours = pad(ts.getHours());
+      const minutes = pad(ts.getMinutes());
+      const seconds = pad(ts.getSeconds());
+
       const filename =
         data.filename ||
-        // TODO: refactor this to make it more readable and maintainable
-        `note_${ts.getFullYear()}${String(ts.getMonth() + 1).padStart(2, "0")}${String(ts.getDate()).padStart(2, "0")}_${String(ts.getHours()).padStart(2, "0")}${String(ts.getMinutes()).padStart(2, "0")}${String(ts.getSeconds()).padStart(2, "0")}.json`;
+        `note_${year}${month}${day}_${hours}${minutes}${seconds}.json`;
 
+      const fileExtRegex = /\.[^.]+$/;
       const note = {
-        id: filename.replace(/\.[^.]+$/, ""), // remove file extension
+        id: filename.replace(fileExtRegex, ""),
         created: ts.toISOString(),
         transcription: data.transcription,
         summary: data.summary || "",
