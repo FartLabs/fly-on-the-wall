@@ -290,5 +290,35 @@ export const elements = {
   ) as HTMLButtonElement,
   noteViewCopySummary: document.getElementById(
     "noteViewCopySummary"
+  ) as HTMLButtonElement,
+  noteResummarizeBtn: document.getElementById(
+    "noteResummarizeBtn"
+  ) as HTMLButtonElement,
+  noteResummarizeCancelBtn: document.getElementById(
+    "noteResummarizeCancelBtn"
+  ) as HTMLButtonElement,
+  noteResummarizeStatus: document.getElementById(
+    "noteResummarizeStatus"
+  ) as HTMLSpanElement,
+  noteResummarizeParticipants: document.getElementById(
+    "noteResummarizeParticipants"
+  ) as HTMLDivElement,
+  noteResummarizeParticipantsInput: document.getElementById(
+    "noteResummarizeParticipantsInput"
+  ) as HTMLInputElement,
+  noteResummarizeReview: document.getElementById(
+    "noteResummarizeReview"
+  ) as HTMLDivElement,
+  noteResummarizeOldText: document.getElementById(
+    "noteResummarizeOldText"
+  ) as HTMLDivElement,
+  noteResummarizeReviewText: document.getElementById(
+    "noteResummarizeReviewText"
+  ) as HTMLDivElement,
+  noteResummarizeAcceptBtn: document.getElementById(
+    "noteResummarizeAcceptBtn"
+  ) as HTMLButtonElement,
+  noteResummarizeRejectBtn: document.getElementById(
+    "noteResummarizeRejectBtn"
   ) as HTMLButtonElement
 };

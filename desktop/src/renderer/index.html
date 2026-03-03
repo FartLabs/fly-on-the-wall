@@ -242,6 +242,24 @@
               <div class="section-header">
                 <h3 class="note-section-title">Summary</h3>
                 <div class="section-actions">
+                  <span
+                    class="note-resummarize-status hidden"
+                    id="noteResummarizeStatus"
+                  ></span>
+                  <button
+                    class="action-btn hidden"
+                    id="noteResummarizeCancelBtn"
+                    title="Cancel summarization"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    class="action-btn"
+                    id="noteResummarizeBtn"
+                    title="Re-summarize transcript"
+                  >
+                    Re-summarize
+                  </button>
                   <button
                     class="action-btn"
                     id="noteViewCopySummary"
@@ -251,11 +269,71 @@
                   </button>
                 </div>
               </div>
+
+              <div
+                class="note-resummarize-participants hidden"
+                id="noteResummarizeParticipants"
+              >
+                <label
+                  class="note-resummarize-participants-label"
+                  for="noteResummarizeParticipantsInput"
+                >
+                  Participants
+                  <span class="note-resummarize-participants-hint"
+                    >used in the summarization prompt via
+                    <code>{participants}</code></span
+                  >
+                </label>
+                <input
+                  type="text"
+                  class="note-resummarize-participants-input"
+                  id="noteResummarizeParticipantsInput"
+                  placeholder="e.g. Alice, Bob, Charlie"
+                />
+              </div>
+
               <div
                 class="note-section-body editable-body"
                 id="noteViewSummary"
                 contenteditable="true"
               ></div>
+
+              <div
+                class="note-resummarize-review hidden"
+                id="noteResummarizeReview"
+              >
+                <div class="note-resummarize-comparison">
+                  <div class="note-resummarize-comparison-col">
+                    <p class="note-resummarize-comparison-label">
+                      Current summary
+                    </p>
+                    <div
+                      class="note-resummarize-comparison-text"
+                      id="noteResummarizeOldText"
+                    ></div>
+                  </div>
+                  <div
+                    class="note-resummarize-comparison-col note-resummarize-comparison-col--new"
+                  >
+                    <p class="note-resummarize-comparison-label">New summary</p>
+                    <div
+                      class="note-resummarize-comparison-text"
+                      id="noteResummarizeReviewText"
+                    ></div>
+                  </div>
+                </div>
+                <div class="note-resummarize-review-actions">
+                  <button
+                    class="action-btn primary"
+                    id="noteResummarizeAcceptBtn"
+                  >
+                    Use new summary
+                  </button>
+                  <button class="action-btn" id="noteResummarizeRejectBtn">
+                    Keep current summary
+                  </button>
+                </div>
+              </div>
             </section>
           </div>
         </div>

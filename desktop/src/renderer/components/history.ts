@@ -6,8 +6,17 @@ import {
   setActiveSidebarNote,
   onSidebarNoteOpen
 } from "./sidebar";
+import { summarizeText } from "@/summarization";
+import { getMeetingParticipants } from "./summarizer";
 
 let currentNoteFilename: string | null = null;
+let activeResummarize: { cancelled: boolean } | null = null;
+
+type ResummarizeResult = {
+  summary: string;
+  participants: string[];
+  previousSummaryHtml: string;
+};
 
 export function setupHistoryListeners() {
   // open note from sidebar when clicked
@@ -16,7 +25,55 @@ export function setupHistoryListeners() {
   });
 }
 
+function setResummarizeIdle() {
+  const btn = elements.noteResummarizeBtn;
+  const cancelBtn = elements.noteResummarizeCancelBtn;
+  const statusEl = elements.noteResummarizeStatus;
+  const summaryEl = elements.noteViewSummary;
+
+  if (btn) btn.disabled = false;
+  if (elements.noteViewCopySummary)
+    elements.noteViewCopySummary.disabled = false;
+
+  btn?.classList.remove("hidden");
+  elements.noteViewCopySummary?.classList.remove("hidden");
+  cancelBtn?.classList.add("hidden");
+
+  if (statusEl) {
+    statusEl.textContent = "";
+    statusEl.classList.add("hidden");
+  }
+
+  // ensure review panel is hidden and editable summary is visible
+  elements.noteResummarizeReview?.classList.add("hidden");
+  summaryEl.classList.remove("hidden");
+}
+
+function setResummarizeRunning(msg: string) {
+  const btn = elements.noteResummarizeBtn;
+  const cancelBtn = elements.noteResummarizeCancelBtn;
+  const statusEl = elements.noteResummarizeStatus;
+
+  if (btn) btn.disabled = true;
+  if (elements.noteViewCopySummary)
+    elements.noteViewCopySummary.disabled = true;
+
+  btn?.classList.add("hidden");
+  elements.noteViewCopySummary?.classList.add("hidden");
+  cancelBtn?.classList.remove("hidden");
+
+  if (statusEl) {
+    statusEl.textContent = msg;
+    statusEl.classList.remove("hidden");
+  }
+}
+
 async function openNoteInViewer(filename: string) {
+  if (activeResummarize) {
+    activeResummarize.cancelled = true;
+    activeResummarize = null;
+  }
+
   try {
     const result = await window.electronAPI.readNote(filename);
 
@@ -172,6 +229,195 @@ async function openNoteInViewer(filename: string) {
           } catch (error) {
             console.error("Error deleting note:", error);
             alert("Failed to delete note");
+          }
+        };
+      }
+
+      // reset previous run's state
+      setResummarizeIdle();
+
+      // Show participants input only when the summarization prompt uses {participants}
+      // should always true for the default template; false only for custom prompts without it.
+      // populate from note metadata if available
+      const savedParticipants: string[] =
+        (content.metadata && content.metadata.participants) || [];
+      if (elements.noteResummarizeParticipantsInput) {
+        // always overwrite to clear stale value from previously viewed note
+        elements.noteResummarizeParticipantsInput.value =
+          savedParticipants.join(", ");
+      }
+
+      window.electronAPI
+        .configGet()
+        .then((config) => {
+          const customPrompt = config.summarization.customPrompt || "";
+          const showParticipants =
+            !customPrompt || customPrompt.includes("{participants}");
+          if (elements.noteResummarizeParticipants) {
+            elements.noteResummarizeParticipants.classList.toggle(
+              "hidden",
+              !showParticipants
+            );
+          }
+        })
+        .catch(() => {
+          elements.noteResummarizeParticipants?.classList.add("hidden");
+        });
+
+      if (elements.noteResummarizeCancelBtn) {
+        elements.noteResummarizeCancelBtn.onclick = () => {
+          if (activeResummarize) {
+            activeResummarize.cancelled = true;
+            activeResummarize = null;
+          }
+          setResummarizeIdle();
+        };
+      }
+
+      let pendingReview: ResummarizeResult | null = null;
+
+      if (elements.noteResummarizeAcceptBtn) {
+        elements.noteResummarizeAcceptBtn.onclick = async () => {
+          if (!pendingReview) return;
+          const {
+            summary,
+            participants,
+            previousSummaryHtml: _prev
+          } = pendingReview;
+          pendingReview = null;
+
+          summaryEl.innerHTML = `<div>${escapeHtml(summary)}</div>`;
+          summaryEl.classList.remove("hidden");
+
+          elements.noteResummarizeReview?.classList.add("hidden");
+          elements.noteResummarizeBtn?.classList.remove("hidden");
+          elements.noteViewCopySummary?.classList.remove("hidden");
+
+          const targetFilename = currentNoteFilename ?? filename;
+          try {
+            const readRes = await window.electronAPI.readNote(targetFilename);
+            if (
+              readRes.success &&
+              readRes.content &&
+              typeof readRes.content === "object"
+            ) {
+              const existing = readRes.content as any;
+              const meta = { ...(existing.metadata || {}) };
+              meta.participants = participants;
+              await window.electronAPI.saveNote({
+                transcription:
+                  existing.transcription || transcriptionEl.textContent || "",
+                summary,
+                filename: targetFilename,
+                metadata: meta
+              });
+              loadSidebarNotes();
+            } else {
+              await boundSaveEdits(true);
+            }
+          } catch {
+            await boundSaveEdits(true);
+          }
+        };
+      }
+
+      if (elements.noteResummarizeRejectBtn) {
+        elements.noteResummarizeRejectBtn.onclick = () => {
+          if (!pendingReview) return;
+          const { previousSummaryHtml } = pendingReview;
+          pendingReview = null;
+
+          summaryEl.innerHTML = previousSummaryHtml;
+          summaryEl.classList.remove("hidden");
+          elements.noteResummarizeReview?.classList.add("hidden");
+          elements.noteResummarizeBtn?.classList.remove("hidden");
+          elements.noteViewCopySummary?.classList.remove("hidden");
+        };
+      }
+
+      if (elements.noteResummarizeBtn) {
+        elements.noteResummarizeBtn.onclick = async () => {
+          const transcript = (transcriptionEl.textContent || "").trim();
+          if (!transcript) {
+            alert("No transcript available to summarize.");
+            return;
+          }
+
+          const previousSummaryHtml = summaryEl.innerHTML;
+          const previousSummaryText = summaryEl.textContent || "";
+
+          const raw = elements.noteResummarizeParticipantsInput?.value ?? "";
+          const participants = getMeetingParticipants(raw);
+
+          // nav-away or a second click cancels the prior run
+          const run = { cancelled: false };
+          activeResummarize = run;
+
+          setResummarizeRunning("Loading summarization model...");
+
+          try {
+            const result = await summarizeText(
+              transcript,
+              (progress) => {
+                if (!run.cancelled) {
+                  setResummarizeRunning(progress.message);
+                }
+              },
+              null,
+              participants
+            );
+
+            if (run.cancelled) return;
+
+            activeResummarize = null;
+            setResummarizeIdle();
+
+            pendingReview = {
+              summary: result.summary,
+              participants,
+              previousSummaryHtml
+            };
+
+            // show review panel comparing old and new summaries
+            if (elements.noteResummarizeOldText) {
+              elements.noteResummarizeOldText.textContent = previousSummaryText;
+            }
+            if (elements.noteResummarizeReviewText) {
+              elements.noteResummarizeReviewText.textContent = result.summary;
+            }
+
+            elements.noteResummarizeReview?.classList.remove("hidden");
+            summaryEl.classList.add("hidden");
+
+            elements.noteResummarizeBtn?.classList.add("hidden");
+            elements.noteViewCopySummary?.classList.add("hidden");
+          } catch (err) {
+            if (run.cancelled) return;
+            activeResummarize = null;
+            console.error("Re-summarization failed:", err);
+
+            const statusEl = elements.noteResummarizeStatus;
+            if (statusEl) {
+              statusEl.textContent = `Error: ${
+                err instanceof Error ? err.message : String(err)
+              }`;
+              statusEl.classList.remove("hidden");
+            }
+            if (elements.noteResummarizeBtn) {
+              elements.noteResummarizeBtn.disabled = false;
+              elements.noteResummarizeBtn.classList.remove("hidden");
+            }
+            if (elements.noteViewCopySummary) {
+              elements.noteViewCopySummary.disabled = false;
+              elements.noteViewCopySummary.classList.remove("hidden");
+            }
+            elements.noteResummarizeCancelBtn?.classList.add("hidden");
+
+            setTimeout(() => {
+              if (!run.cancelled && statusEl) {
+                statusEl.classList.add("hidden");
+              }
+            }, 6000);
           }
         };
       }

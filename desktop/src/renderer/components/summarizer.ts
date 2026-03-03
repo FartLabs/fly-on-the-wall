@@ -10,8 +10,9 @@ import { showNotification } from "./notifications";
 
 let lastSummary: string | null = null;
 
-function getMeetingParticipants(): string[] {
-  const raw = elements.meetingParticipantsInput?.value || "";
+export function getMeetingParticipants(inputValue: string): string[] {
+  // const raw = elements.meetingParticipantsInput?.value || "";
+  const raw = inputValue || "";
   return (
     raw
       // split by either newlines, commas, or semicolons
@@ -111,13 +112,17 @@ export async function runSummarization(
 
   try {
     console.log("Calling summarizeText...");
-    const participants = getMeetingParticipants();
+
+    const participants = getMeetingParticipants(
+      elements.meetingParticipantsInput?.value || ""
+    );
     const result = await summarizeText(
       transcription,
       updateSummaryProgress,
       selectedModelPath,
       participants
     );
+
     lastSummary = result.summary;
 
     console.log("Summary result:", result);
@@ -137,9 +142,11 @@ export async function runSummarization(
     }
 
     console.log("Auto-saving note after summarization...");
-    await saveNote();
-    showNotification("Summary generated successfully", "success");
 
+    const participantsObj = participants.length > 0 ? { participants } : {};
+    await saveNote(participantsObj);
+
+    showNotification("Summary generated successfully", "success");
     console.log(`Summary generated in ${result.duration.toFixed(1)}s`);
   } catch (error) {
     console.error("Summarization failed:", error);
