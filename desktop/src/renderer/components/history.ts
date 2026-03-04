@@ -68,6 +68,65 @@ function setResummarizeRunning(msg: string) {
   }
 }
 
+async function copyTextToClipboard(
+  text: string,
+  noteViewCopyElement: HTMLElement
+) {
+  try {
+    await navigator.clipboard.writeText(text);
+    const orig = noteViewCopyElement.textContent;
+    noteViewCopyElement.textContent = "Copied!";
+    setTimeout(() => (noteViewCopyElement.textContent = orig), 2000);
+  } catch (err) {
+    console.error("Copy to clipboard failed:", err);
+  }
+}
+
+async function handleExportNote(filename: string, content: any) {
+  try {
+    const res = await window.electronAPI.exportNote({
+      filename: filename,
+      format: "pdf"
+    });
+    if (res && res.success) {
+      const hasRecording =
+        content.metadata && content.metadata.recordingFilename;
+      const message = hasRecording
+        ? `Exported PDF and audio recording to ${res.path}`
+        : `Exported to ${res.path}`;
+      alert(message);
+    } else {
+      alert(`Export failed: ${res && res.error}`);
+    }
+  } catch (err) {
+    console.error("Export failed:", err);
+    alert("Export failed");
+  }
+}
+
+async function handleDeleteNote() {
+  if (!currentNoteFilename) return;
+  const confirmed = confirm(
+    "Are you sure you want to delete this note? This cannot be undone."
+  );
+  if (!confirmed) return;
+
+  try {
+    const delResult = await window.electronAPI.deleteNote(currentNoteFilename);
+    if (!delResult.success) {
+      alert("Failed to delete note: " + delResult.error);
+      return;
+    }
+    currentNoteFilename = null;
+    setActiveSidebarNote(null);
+    navigateToPage("main");
+    loadSidebarNotes();
+  } catch (error) {
+    console.error("Error deleting note:", error);
+    alert("Failed to delete note");
+  }
+}
+
 async function openNoteInViewer(filename: string) {
   if (activeResummarize) {
     activeResummarize.cancelled = true;
@@ -151,85 +210,31 @@ async function openNoteInViewer(filename: string) {
 
       if (elements.noteViewCopyTranscription) {
         elements.noteViewCopyTranscription.onclick = async () => {
-          try {
-            await navigator.clipboard.writeText(
-              transcriptionEl.textContent || ""
-            );
-            const orig = elements.noteViewCopyTranscription.textContent;
-            elements.noteViewCopyTranscription.textContent = "Copied!";
-            setTimeout(
-              () => (elements.noteViewCopyTranscription.textContent = orig),
-              2000
-            );
-          } catch (err) {
-            console.error("Copy transcription failed:", err);
-          }
+          await copyTextToClipboard(
+            transcriptionEl.textContent || "",
+            elements.noteViewCopyTranscription
+          );
         };
       }
 
       if (elements.noteViewCopySummary) {
         elements.noteViewCopySummary.onclick = async () => {
-          try {
-            await navigator.clipboard.writeText(summaryEl.textContent || "");
-            const orig = elements.noteViewCopySummary.textContent;
-            elements.noteViewCopySummary.textContent = "Copied!";
-            setTimeout(
-              () => (elements.noteViewCopySummary.textContent = orig),
-              2000
-            );
-          } catch (err) {
-            console.error("Copy summary failed:", err);
-          }
+          await copyTextToClipboard(
+            summaryEl.textContent || "",
+            elements.noteViewCopySummary
+          );
         };
       }
 
       if (elements.noteViewExportBtn) {
         elements.noteViewExportBtn.onclick = async () => {
-          try {
-            const res = await window.electronAPI.exportNote({
-              filename: filename,
-              format: "pdf"
-            });
-            if (res && res.success) {
-              const hasRecording =
-                content.metadata && content.metadata.recordingFilename;
-              const message = hasRecording
-                ? `Exported PDF and audio recording to ${res.path}`
-                : `Exported to ${res.path}`;
-              alert(message);
-            } else {
-              alert(`Export failed: ${res && res.error}`);
-            }
-          } catch (err) {
-            console.error("Export failed:", err);
-            alert("Export failed");
-          }
+          await handleExportNote(filename, content);
         };
       }
 
       if (elements.noteViewDeleteBtn) {
         elements.noteViewDeleteBtn.onclick = async () => {
-          if (!currentNoteFilename) return;
-          const confirmed = confirm(
-            "Are you sure you want to delete this note? This cannot be undone."
-          );
-          if (!confirmed) return;
-
-          try {
-            const delResult =
-              await window.electronAPI.deleteNote(currentNoteFilename);
-            if (!delResult.success) {
-              alert("Failed to delete note: " + delResult.error);
-              return;
-            }
-            currentNoteFilename = null;
-            setActiveSidebarNote(null);
-            navigateToPage("main");
-            loadSidebarNotes();
-          } catch (error) {
-            console.error("Error deleting note:", error);
-            alert("Failed to delete note");
-          }
+          await handleDeleteNote();
         };
       }
 
