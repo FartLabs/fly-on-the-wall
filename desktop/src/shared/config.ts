@@ -32,7 +32,7 @@ export const DEFAULT_CONFIG: AppConfig = {
     }
   },
   sync: {
-    enabled: true,
+    enabled: false,
     serverUrl: "",
     authToken: "",
     userId: "",
