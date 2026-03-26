@@ -131,7 +131,6 @@ function renderTree() {
   });
 }
 
-
 function groupByDate(files: NoteFile[]): DateGroup[] {
   const map = new Map<string, { sortKey: string; files: NoteFile[] }>();
 
@@ -198,7 +197,6 @@ function createCollapsibleDateGroup(group: DateGroup): HTMLElement {
 
   return container;
 }
-
 
 function createFileItem(file: NoteFile): HTMLElement {
   const item = document.createElement("div");
@@ -273,7 +271,6 @@ function createFileItem(file: NoteFile): HTMLElement {
       ?.querySelectorAll(".sidebar-file-item.active")
       .forEach((el) => el.classList.remove("active"));
     item.classList.add("active");
-
 
     if (onNoteOpen) {
       onNoteOpen(file.name);

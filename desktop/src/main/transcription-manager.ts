@@ -436,7 +436,6 @@ function sendMessageAndWait(
   });
 }
 
-
 async function transcribe(
   audioData: Float32Array,
   modelId: string,

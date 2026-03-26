@@ -424,8 +424,6 @@ async function openNoteInViewer(filename: string) {
           }
         };
       }
-
-
     } else {
       alert("Note format not supported");
     }

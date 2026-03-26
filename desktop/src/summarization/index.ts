@@ -65,7 +65,6 @@ export async function checkSummarizationModelDownloaded(
   }
 }
 
-
 export async function summarizeText(
   text: string,
   onProgress?: ProgressCallback,

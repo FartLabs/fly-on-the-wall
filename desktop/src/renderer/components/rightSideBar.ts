@@ -147,7 +147,6 @@ export function setupRightSidebarListeners() {
     return;
   }
 
-
   rightSidebarCollapseBtn.addEventListener("click", () => {
     toggleRightSidebar();
   });
