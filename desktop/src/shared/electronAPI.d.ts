@@ -2,6 +2,12 @@
 import type { HotkeysConfig } from "./hotkeys";
 import type { UtilityProcessSettings, SummarizationSettings } from "./config";
 
+export type DeepPartial<T> = T extends object
+  ? {
+      [P in keyof T]?: DeepPartial<T[P]>;
+    }
+  : T;
+
 export interface SyncUser {
   id: string;
   username: string;
@@ -82,7 +88,7 @@ export type IPCResponse<T = {}> = Promise<
 export default interface IElectronAPI {
   // config
   configGet: () => Promise<AppConfig>;
-  configSet: (partialConfig: Partial<AppConfig>) => Promise<AppConfig>;
+  configSet: (partialConfig: DeepPartial<AppConfig>) => Promise<AppConfig>;
 
   // recording, transcription, summarization
   saveRecording: (data: {

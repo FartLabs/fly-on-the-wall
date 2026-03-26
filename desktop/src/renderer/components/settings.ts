@@ -262,6 +262,7 @@ async function saveSettings(settings: Partial<AppSettings>) {
 
   if (settings.transcriptionModelPath !== undefined) {
     update.transcription = {
+      ...(update.transcription || {}),
       modelStoragePath: settings.transcriptionModelPath.trim()
     };
   }
@@ -365,19 +366,6 @@ async function saveSettings(settings: Partial<AppSettings>) {
     };
   }
 
-  if (settings.summarizationModelPath !== undefined) {
-    update.summarization = {
-      ...(update.summarization || {}),
-      modelStoragePath: settings.summarizationModelPath.trim()
-    } as any;
-  }
-
-  if (settings.transcriptionModelPath !== undefined) {
-    update.transcription = {
-      modelStoragePath: settings.transcriptionModelPath.trim()
-    } as any;
-  }
-
   if (settings.hotkeyOpenSettings !== undefined) {
     update.hotkeys = {
       openSettings: normalizeHotkeyBindings(settings.hotkeyOpenSettings)
@@ -418,7 +406,7 @@ async function saveSettings(settings: Partial<AppSettings>) {
     update.summarizationParameters = params;
   }
 
-  await window.electronAPI.configSet(update as Partial<AppConfig>);
+  await window.electronAPI.configSet(update);
 }
 
 async function resetSettings() {
@@ -741,7 +729,7 @@ async function persistSettingsFromUI() {
 
   const customPrompt = elements.customPromptInput?.value?.trim() ?? "";
   await window.electronAPI.configSet({
-    summarization: { customPrompt } as any
+    summarization: { customPrompt }
   });
 
   await refreshModelsList();
