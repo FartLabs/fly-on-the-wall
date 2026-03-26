@@ -242,6 +242,24 @@
               <div class="section-header">
                 <h3 class="note-section-title">Summary</h3>
                 <div class="section-actions">
+                  <span
+                    class="note-resummarize-status hidden"
+                    id="noteResummarizeStatus"
+                  ></span>
+                  <button
+                    class="action-btn hidden"
+                    id="noteResummarizeCancelBtn"
+                    title="Cancel summarization"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    class="action-btn"
+                    id="noteResummarizeBtn"
+                    title="Re-summarize transcript"
+                  >
+                    Re-summarize
+                  </button>
                   <button
                     class="action-btn"
                     id="noteViewCopySummary"
@@ -251,11 +269,71 @@
                   </button>
                 </div>
               </div>
+
+              <div
+                class="note-resummarize-participants hidden"
+                id="noteResummarizeParticipants"
+              >
+                <label
+                  class="note-resummarize-participants-label"
+                  for="noteResummarizeParticipantsInput"
+                >
+                  Participants
+                  <span class="note-resummarize-participants-hint"
+                    >used in the summarization prompt via
+                    <code>{participants}</code></span
+                  >
+                </label>
+                <input
+                  type="text"
+                  class="note-resummarize-participants-input"
+                  id="noteResummarizeParticipantsInput"
+                  placeholder="e.g. Alice, Bob, Charlie"
+                />
+              </div>
+
               <div
                 class="note-section-body editable-body"
                 id="noteViewSummary"
                 contenteditable="true"
               ></div>
+
+              <div
+                class="note-resummarize-review hidden"
+                id="noteResummarizeReview"
+              >
+                <div class="note-resummarize-comparison">
+                  <div class="note-resummarize-comparison-col">
+                    <p class="note-resummarize-comparison-label">
+                      Current summary
+                    </p>
+                    <div
+                      class="note-resummarize-comparison-text"
+                      id="noteResummarizeOldText"
+                    ></div>
+                  </div>
+                  <div
+                    class="note-resummarize-comparison-col note-resummarize-comparison-col--new"
+                  >
+                    <p class="note-resummarize-comparison-label">New summary</p>
+                    <div
+                      class="note-resummarize-comparison-text"
+                      id="noteResummarizeReviewText"
+                    ></div>
+                  </div>
+                </div>
+                <div class="note-resummarize-review-actions">
+                  <button
+                    class="action-btn primary"
+                    id="noteResummarizeAcceptBtn"
+                  >
+                    Use new summary
+                  </button>
+                  <button class="action-btn" id="noteResummarizeRejectBtn">
+                    Keep current summary
+                  </button>
+                </div>
+              </div>
             </section>
           </div>
         </div>
@@ -418,6 +496,12 @@
                 </button>
               </li>
               <li>
+                <button class="settings-nav-item" data-settings-section="sync">
+                  <span class="settings-nav-icon">🔄</span>
+                  <span>Sync</span>
+                </button>
+              </li>
+              <li>
                 <button
                   class="settings-nav-item"
                   data-settings-section="summarization"
@@ -556,6 +640,66 @@
                   step="1"
                   value="5"
                 />
+              </div>
+            </div>
+
+            <div class="settings-panel" id="settingsPanel-sync">
+              <h3 class="settings-panel-title">Sync</h3>
+
+              <div class="settings-group">
+                <label class="settings-label" for="serverUrlInput">
+                  Server URL
+                  <span class="settings-hint"
+                    >Base URL of your server (e.g. http://localhost:8080)</span
+                  >
+                </label>
+                <input
+                  type="text"
+                  id="serverUrlInput"
+                  class="settings-input"
+                  placeholder="http://localhost:8080"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label class="settings-label" for="syncIntervalMinutesInput">
+                  Auto Sync Interval (minutes)
+                  <span class="settings-hint"
+                    >How often to sync notes in the background</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="syncIntervalMinutesInput"
+                  class="settings-input"
+                  min="1"
+                  max="240"
+                  step="1"
+                  value="5"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label class="settings-label">
+                  Connection
+                  <span class="settings-hint" id="syncStatusText"
+                    >Not connected</span
+                  >
+                </label>
+                <span class="settings-hint" id="syncLastSyncText"
+                  >Last sync: never</span
+                >
+                <span class="settings-hint" id="syncLastErrorText"></span>
+              </div>
+
+              <div class="settings-actions">
+                <button class="action-btn" id="syncConnectBtn">Connect</button>
+                <button class="action-btn" id="syncLogoutBtn">
+                  Disconnect
+                </button>
+                <button class="action-btn primary" id="syncNowBtn">
+                  Sync Now
+                </button>
               </div>
             </div>
 
@@ -857,6 +1001,52 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay hidden" id="syncAuthModal">
+      <div class="modal-container settings-modal-container">
+        <div class="modal-header">
+          <div>
+            <h2>Connect to Server</h2>
+          </div>
+          <button class="modal-close-btn" id="closeSyncAuthModal" title="Close">
+            ✕
+          </button>
+        </div>
+
+        <div class="settings-group">
+          <label class="settings-label" for="syncAuthUsernameInput"
+            >Username</label
+          >
+          <input
+            type="text"
+            id="syncAuthUsernameInput"
+            class="settings-input"
+            placeholder="your_username"
+          />
+        </div>
+
+        <div class="settings-group">
+          <label class="settings-label" for="syncAuthPasswordInput"
+            >Password</label
+          >
+          <input
+            type="password"
+            id="syncAuthPasswordInput"
+            class="settings-input"
+            placeholder="At least 8 characters"
+          />
+        </div>
+
+        <div class="settings-group">
+          <span class="settings-hint" id="syncAuthStatusText"></span>
+        </div>
+
+        <div class="settings-actions">
+          <button class="action-btn" id="syncSignupBtn">Sign Up</button>
+          <button class="action-btn primary" id="syncLoginBtn">Login</button>
         </div>
       </div>
     </div>

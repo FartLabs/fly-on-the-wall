@@ -76,7 +76,7 @@ function statusClass(status: ImportStatus): string {
   }
 }
 
-function renderQueue(): void {
+function renderQueue() {
   const container = elements.importQueue;
   const list = elements.importQueueList;
   const count = elements.importQueueCount;
@@ -365,7 +365,7 @@ async function processQueue() {
   }
 }
 
-export function setupImportListeners(): void {
+export function setupImportListeners() {
   const importBtn = document.getElementById("importAudioBtn");
   importBtn?.addEventListener("click", openImportDialog);
 }

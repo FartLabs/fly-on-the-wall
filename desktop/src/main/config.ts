@@ -1,15 +1,12 @@
-import { app, ipcMain } from "electron";
+import { ipcMain } from "electron";
 import path from "node:path";
 import fs from "node:fs";
 import { AppConfig } from "@/shared/electronAPI";
 import { DEFAULT_CONFIG } from "@/shared/config";
+import { getConfigPath } from "./userData";
 
 type ConfigUpdateListener = (config: AppConfig) => void;
 const configUpdateListeners = new Set<ConfigUpdateListener>();
-
-function getConfigPath() {
-  return path.join(app.getPath("userData"), "config.json");
-}
 
 export function readConfig(): AppConfig {
   const configPath = getConfigPath();
@@ -19,6 +16,9 @@ export function readConfig(): AppConfig {
       const parsed = JSON.parse(raw);
 
       // deep merge with defaults to handle missing keys from older configs
+      // TODO: consider migration old configs to new ones if certain keys from
+      // previous versions are missing, instead of just merging them into the new config.
+      // That way, the user's configs aren't messy
       return deepMerge(structuredClone(DEFAULT_CONFIG), parsed);
     }
   } catch (error) {
@@ -127,11 +127,15 @@ ipcMain.handle("config-get", () => {
   return readConfig();
 });
 
-ipcMain.handle("config-set", (_event, partialConfig: Partial<AppConfig>) => {
+export function setConfig(partialConfig: Partial<AppConfig>): AppConfig {
   const current = readConfig();
   const merged = deepMerge(current, partialConfig as Record<string, any>);
   writeConfig(merged);
   logUtilityProcessSettingChanges(current, merged);
   notifyConfigUpdated(merged);
   return merged;
+}
+
+ipcMain.handle("config-set", (_event, partialConfig: Partial<AppConfig>) => {
+  return setConfig(partialConfig);
 });

@@ -1,0 +1,44 @@
+{{define "dashboard"}} {{template "base" .}} {{end}} {{define "content"}}
+<div class="dashboard">
+  <div class="dashboard-header">
+    <h2>Dashboard</h2>
+    {{if .Data}} {{if index .Data "is_premium"}}
+    <span class="badge badge-premium">Premium</span>
+    {{end}} {{end}}
+  </div>
+
+  <div class="dashboard-grid">
+    <div class="dashboard-card">
+      <h3>Notes</h3>
+      <p>Create and manage your notes. Notes are stored on the server.</p>
+      <div class="card-actions">
+        <a href="/notes" class="btn btn-primary">View Notes</a>
+        <a href="/notes/new" class="btn btn-secondary">New Note</a>
+      </div>
+    </div>
+
+    <div class="dashboard-card">
+      <h3>Devices</h3>
+      <p>Manage devices connected to your account.</p>
+      <div class="card-actions">
+        <a href="/devices" class="btn btn-secondary">View Devices</a>
+      </div>
+    </div>
+
+    <div class="dashboard-card">
+      <h3>Cloud Processing</h3>
+      {{if .Data}} {{if index .Data "is_premium"}}
+      <p>Submit transcription and summarization jobs to cloud GPU workers.</p>
+      {{else}}
+      <p>
+        Upgrade to premium to offload transcription and summarization to the
+        cloud.
+      </p>
+      <div class="card-actions">
+        <a href="/billing" class="btn btn-primary">Upgrade</a>
+      </div>
+      {{end}} {{end}}
+    </div>
+  </div>
+</div>
+{{end}}

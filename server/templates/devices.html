@@ -1,0 +1,52 @@
+{{define "devices"}} {{template "base" .}} {{end}} {{define "content"}}
+<div class="devices-page">
+  <div class="page-header">
+    <h2>Devices</h2>
+  </div>
+
+  {{if .Error}}
+  <div class="alert alert-error">{{.Error}}</div>
+  {{end}} {{if .Data}} {{$devices := index .Data "devices"}} {{if $devices}}
+  <p class="text-muted">
+    These are your active devices. Revoke a device to log out all sessions on
+    that device.
+  </p>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Device</th>
+        <th>Last Active</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range $device := $devices}}
+      <tr>
+        <td>{{$device.DisplayName}}</td>
+        <td>{{$device.LastActive}}</td>
+        <td>
+          <form
+            method="POST"
+            action="/devices/{{$device.RevokeKey}}/revoke"
+            style="display: inline"
+          >
+            <button
+              type="submit"
+              class="btn btn-small btn-danger"
+              onclick="return confirm('Revoke all sessions on this device?');"
+            >
+              Revoke
+            </button>
+          </form>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <div class="empty-state">
+    <p>No active devices found.</p>
+  </div>
+  {{end}} {{end}}
+</div>
+{{end}}

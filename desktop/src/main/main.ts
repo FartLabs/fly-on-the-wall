@@ -5,3 +5,4 @@ import "./models";
 import "./notifications";
 import "./summarization-manager";
 import "./transcription-manager";
+import "./sync-manager";

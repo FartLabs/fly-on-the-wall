@@ -12,6 +12,7 @@ export function getActiveInputDeviceIds(): string[] {
   const allDeviceItems = Array.from(
     elements.devicesList.querySelectorAll(".device-item")
   );
+  // include only those that are not muted and are input devices
   return allDeviceItems
     .filter((el) => {
       const deviceId = (el as HTMLElement).dataset.deviceId;

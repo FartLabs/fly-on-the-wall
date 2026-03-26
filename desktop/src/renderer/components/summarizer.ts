@@ -10,8 +10,9 @@ import { showNotification } from "./notifications";
 
 let lastSummary: string | null = null;
 
-function getMeetingParticipants(): string[] {
-  const raw = elements.meetingParticipantsInput?.value || "";
+export function getMeetingParticipants(inputValue: string): string[] {
+  // const raw = elements.meetingParticipantsInput?.value || "";
+  const raw = inputValue || "";
   return (
     raw
       // split by either newlines, commas, or semicolons
@@ -22,7 +23,7 @@ function getMeetingParticipants(): string[] {
   );
 }
 
-export function clearSummary(): void {
+export function clearSummary() {
   if (elements.summaryCard) {
     elements.summaryCard.classList.add("hidden");
   }
@@ -41,7 +42,7 @@ export function clearSummary(): void {
   lastSummary = null;
 }
 
-function updateSummaryProgress(progress: SummarizationProgress): void {
+function updateSummaryProgress(progress: SummarizationProgress) {
   if (
     !elements.summaryProgress ||
     !elements.summaryResult ||
@@ -111,13 +112,17 @@ export async function runSummarization(
 
   try {
     console.log("Calling summarizeText...");
-    const participants = getMeetingParticipants();
+
+    const participants = getMeetingParticipants(
+      elements.meetingParticipantsInput?.value || ""
+    );
     const result = await summarizeText(
       transcription,
       updateSummaryProgress,
       selectedModelPath,
       participants
     );
+
     lastSummary = result.summary;
 
     console.log("Summary result:", result);
@@ -137,9 +142,11 @@ export async function runSummarization(
     }
 
     console.log("Auto-saving note after summarization...");
-    await saveNote();
-    showNotification("Summary generated successfully", "success");
 
+    const participantsObj = participants.length > 0 ? { participants } : {};
+    await saveNote(participantsObj);
+
+    showNotification("Summary generated successfully", "success");
     console.log(`Summary generated in ${result.duration.toFixed(1)}s`);
   } catch (error) {
     console.error("Summarization failed:", error);
@@ -153,7 +160,7 @@ export async function runSummarization(
   }
 }
 
-export function setupSummarizationListeners(): void {
+export function setupSummarizationListeners() {
   if (!elements.copySummaryBtn) {
     console.warn("Summary copy button not found");
     return;

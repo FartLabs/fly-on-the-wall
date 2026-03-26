@@ -2,7 +2,7 @@ import { elements } from "./domNodes";
 import { showNotification } from "./notifications";
 import { getLastRecordingFilename } from "./transcriber";
 
-export async function saveNote() {
+export async function saveNote(additionalMetadata: Record<string, any> = {}) {
   const transcription = elements.transcriptionText?.textContent || "";
   const summary = elements.summaryText?.textContent || "";
 
@@ -18,7 +18,7 @@ export async function saveNote() {
     const recordingFilename = getLastRecordingFilename();
     console.log("[saveNote] Recording filename:", recordingFilename);
 
-    const metadata: Record<string, any> = {};
+    const metadata: Record<string, any> = { ...additionalMetadata };
 
     if (recordingFilename) {
       metadata.recordingFilename = recordingFilename;

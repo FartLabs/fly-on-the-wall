@@ -11,6 +11,7 @@ import { AppConfig } from "@/shared/electronAPI";
 import {
   DEFAULT_CONFIG,
   LIMITS,
+  getDefaultPromptTemplate,
   type AppSettings,
   type SummarizationSettings
 } from "@/shared/config";
@@ -30,41 +31,6 @@ let isRecordingOpenSettingsHotkey = false;
 let recordingModifierOrder: HotkeyModifier[] = [];
 
 const MODIFIER_KEYS = new Set(["Control", "Alt", "Shift", "Meta"]);
-
-function getDefaultPromptTemplate(
-  transcript: string,
-  participants: string[] = []
-): string {
-  const participantsStr =
-    participants.length > 0 ? participants.join(", ") : "Not specified";
-
-  return `You are a highly efficient and helpful assistant specializing in summarizing meeting transcripts.
-Please analyze the following raw text from a meeting and provide a structured summary. 
-Ignore filler words (e.g., 'um', 'ah', 'like'), repeated sentences, and conversational pleasantries. 
-Focus only on the substantive content. If no action items or decisions were made, explicitly state
-"No specific action items or decisions were recorded." 
-
-**IF** the transcript is empty, contains only filler words (e.g., 'um', 'ah'), or consists solely of conversational pleasantries with no substance:
-    - Your **ENTIRE** output should be a single, specific statement: "This meeting concluded with no substantive discussion."
-
-**ELSE** (if the transcript contains substantive discussion):
-    - Proceed as usual with the summarization.
-
-Participants in the meeting: ${participantsStr}
-
-The summary should include:
-1. A concise, one-paragraph overview of the meeting's purpose and key discussions.
-2. A bulleted list of the main topics discussed. Go into detail about each topic based on what was said.
-3. A bulleted list of any action items or decisions made.
-
-If nothing was discussed at all, state that clearly in the overview.
-
-Here is the transcript:
----
-${transcript}
----
-`;
-}
 
 async function loadCustomPromptIntoUI() {
   if (!elements.customPromptInput) return;
@@ -242,6 +208,15 @@ async function getSettings(): Promise<AppSettings> {
         LIMITS.processRecycleTimeoutMs.max
       )
     ),
+    serverUrl: config.sync.serverUrl || DEFAULT_CONFIG.sync.serverUrl,
+    syncIntervalMinutes: clamp(
+      Number(
+        config.sync.syncIntervalMinutes ||
+          DEFAULT_CONFIG.sync.syncIntervalMinutes
+      ),
+      1,
+      240
+    ),
     hotkeyOpenSettings: hasExplicitOpenSettingsValue
       ? normalizedOpenSettings
       : [...HOTKEY_DEFAULTS.openSettings]
@@ -374,6 +349,23 @@ async function saveSettings(settings: Partial<AppSettings>) {
     };
   }
 
+  if (
+    settings.serverUrl !== undefined ||
+    settings.syncIntervalMinutes !== undefined
+  ) {
+    update.sync = {
+      ...(update.sync || {}),
+      ...(settings.serverUrl !== undefined
+        ? { serverUrl: settings.serverUrl.trim() }
+        : {}),
+      ...(settings.syncIntervalMinutes !== undefined
+        ? {
+            syncIntervalMinutes: clamp(settings.syncIntervalMinutes, 1, 240)
+          }
+        : {})
+    };
+  }
+
   const params: Partial<AppConfig["summarizationParameters"]> = {};
 
   if (settings.maxTokens !== undefined) {
@@ -492,6 +484,14 @@ async function loadSettingsIntoUI() {
       settings.summarizationProcessRecycleTimeoutMinutes
     );
   }
+  if (elements.serverUrlInput) {
+    elements.serverUrlInput.value = settings.serverUrl;
+  }
+  if (elements.syncIntervalMinutesInput) {
+    elements.syncIntervalMinutesInput.value = String(
+      settings.syncIntervalMinutes
+    );
+  }
 
   hotkeyOpenSettingsBindings = [...settings.hotkeyOpenSettings];
   renderHotkeyOpenSettingsBindings();
@@ -551,6 +551,10 @@ function readSettingsFromUI(): AppSettings {
       msToMinutes(
         DEFAULT_CONFIG.summarization.utilityProcess.processRecycleTimeoutMs
       ),
+    serverUrl: elements.serverUrlInput?.value || DEFAULT_CONFIG.sync.serverUrl,
+    syncIntervalMinutes:
+      parseFloat(elements.syncIntervalMinutesInput?.value) ||
+      DEFAULT_CONFIG.sync.syncIntervalMinutes,
     hotkeyOpenSettings: [...hotkeyOpenSettingsBindings]
   };
 }
@@ -747,15 +751,158 @@ async function handleResetSettings() {
   await refreshModelPathHints();
   await refreshModelsList();
   await refreshHotkeysFromConfig();
+  await refreshSyncStatus();
   console.log("Settings reset to defaults");
+}
+
+function openSyncAuthModal() {
+  elements.syncAuthModal?.classList.remove("hidden");
+  if (elements.syncAuthStatusText) {
+    elements.syncAuthStatusText.textContent = "";
+  }
+}
+
+function closeSyncAuthModal() {
+  elements.syncAuthModal?.classList.add("hidden");
+}
+
+async function refreshSyncStatus() {
+  try {
+    const config = await window.electronAPI.configGet();
+    const hasToken = Boolean(config.sync.authToken);
+
+    if (elements.syncStatusText) {
+      elements.syncStatusText.textContent = hasToken
+        ? `Connected as ${config.sync.username || "user"}`
+        : "Not connected";
+    }
+
+    if (elements.syncLastSyncText) {
+      elements.syncLastSyncText.textContent = config.sync.lastSyncAt
+        ? `Last sync: ${new Date(config.sync.lastSyncAt).toLocaleString()}`
+        : "Last sync: never";
+    }
+
+    if (elements.syncLastErrorText) {
+      elements.syncLastErrorText.textContent = config.sync.lastSyncError
+        ? `Last error: ${config.sync.lastSyncError}`
+        : "";
+    }
+
+    if (hasToken) {
+      const whoami = await window.electronAPI.syncWhoAmI();
+      if (!whoami.authenticated && elements.syncStatusText) {
+        elements.syncStatusText.textContent =
+          "Session expired. Please reconnect.";
+      }
+    }
+  } catch (error) {
+    if (elements.syncStatusText) {
+      elements.syncStatusText.textContent = "Sync unavailable";
+    }
+  }
+}
+
+async function handleSyncAuth(mode: "login" | "signup") {
+  const username = elements.syncAuthUsernameInput?.value?.trim() || "";
+  const password = elements.syncAuthPasswordInput?.value || "";
+
+  if (!username || !password) {
+    if (elements.syncAuthStatusText) {
+      elements.syncAuthStatusText.textContent =
+        "Username and password are required.";
+    }
+    return;
+  }
+
+  const response =
+    mode === "login"
+      ? await window.electronAPI.syncLogin({ username, password })
+      : await window.electronAPI.syncSignUp({ username, password });
+
+  if (!response.success) {
+    if (elements.syncAuthStatusText) {
+      elements.syncAuthStatusText.textContent =
+        response.error || "Request failed";
+    }
+    return;
+  }
+
+  if (elements.syncAuthStatusText) {
+    elements.syncAuthStatusText.textContent =
+      mode === "login"
+        ? "Logged in successfully."
+        : "Account created and connected.";
+  }
+
+  await refreshSyncStatus();
+  closeSyncAuthModal();
+}
+
+async function handleSyncNow() {
+  if (elements.syncStatusText) {
+    elements.syncStatusText.textContent = "Syncing...";
+  }
+
+  const result = await window.electronAPI.syncNow();
+  if (elements.syncLastErrorText) {
+    elements.syncLastErrorText.textContent = result.success
+      ? ""
+      : `Last error: ${result.error || "Sync failed"}`;
+  }
+
+  if (elements.syncLastSyncText && result.success) {
+    elements.syncLastSyncText.textContent = `Last sync: ${new Date().toLocaleString()} (pushed ${result.pushed}, pulled ${result.pulled})`;
+  }
+
+  await refreshSyncStatus();
+}
+
+async function handleSyncLogout() {
+  await window.electronAPI.syncLogout();
+  await refreshSyncStatus();
+}
+
+function setupSyncControlsListeners() {
+  elements.syncConnectBtn?.addEventListener("click", () => {
+    openSyncAuthModal();
+  });
+
+  elements.syncLogoutBtn?.addEventListener("click", () => {
+    handleSyncLogout();
+  });
+
+  elements.syncNowBtn?.addEventListener("click", () => {
+    handleSyncNow();
+  });
+
+  elements.syncLoginBtn?.addEventListener("click", () => {
+    handleSyncAuth("login");
+  });
+
+  elements.syncSignupBtn?.addEventListener("click", () => {
+    handleSyncAuth("signup");
+  });
+
+  elements.closeSyncAuthModal?.addEventListener("click", () => {
+    closeSyncAuthModal();
+  });
+
+  elements.syncAuthModal?.addEventListener("click", (event) => {
+    if (event.target === elements.syncAuthModal) {
+      closeSyncAuthModal();
+    }
+  });
 }
 
 export function setupSettingsListeners() {
   loadSettingsIntoUI().then(() => {
     refreshModelPathHints();
+    refreshSyncStatus();
   });
 
   setupHotkeyEditorListeners();
+  setupSyncControlsListeners();
 
   if (elements.resetSettingsBtn) {
     elements.resetSettingsBtn.addEventListener("click", handleResetSettings);
@@ -779,6 +926,8 @@ export function setupSettingsListeners() {
     elements.summarizationMemoryThresholdInput,
     elements.summarizationRestartDelayInput,
     elements.summarizationProcessRecycleTimeoutInput,
+    elements.serverUrlInput,
+    elements.syncIntervalMinutesInput,
     elements.customPromptInput
   ];
 

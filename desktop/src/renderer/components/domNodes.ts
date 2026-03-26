@@ -178,6 +178,38 @@ export const elements = {
   summarizationProcessRecycleTimeoutInput: document.getElementById(
     "summarizationProcessRecycleTimeoutInput"
   ) as HTMLInputElement,
+
+  serverUrlInput: document.getElementById("serverUrlInput") as HTMLInputElement,
+  syncIntervalMinutesInput: document.getElementById(
+    "syncIntervalMinutesInput"
+  ) as HTMLInputElement,
+  syncStatusText: document.getElementById("syncStatusText") as HTMLSpanElement,
+  syncLastSyncText: document.getElementById(
+    "syncLastSyncText"
+  ) as HTMLSpanElement,
+  syncLastErrorText: document.getElementById(
+    "syncLastErrorText"
+  ) as HTMLSpanElement,
+  syncConnectBtn: document.getElementById(
+    "syncConnectBtn"
+  ) as HTMLButtonElement,
+  syncLogoutBtn: document.getElementById("syncLogoutBtn") as HTMLButtonElement,
+  syncNowBtn: document.getElementById("syncNowBtn") as HTMLButtonElement,
+  syncAuthModal: document.getElementById("syncAuthModal") as HTMLDivElement,
+  closeSyncAuthModal: document.getElementById(
+    "closeSyncAuthModal"
+  ) as HTMLButtonElement,
+  syncAuthUsernameInput: document.getElementById(
+    "syncAuthUsernameInput"
+  ) as HTMLInputElement,
+  syncAuthPasswordInput: document.getElementById(
+    "syncAuthPasswordInput"
+  ) as HTMLInputElement,
+  syncAuthStatusText: document.getElementById(
+    "syncAuthStatusText"
+  ) as HTMLSpanElement,
+  syncSignupBtn: document.getElementById("syncSignupBtn") as HTMLButtonElement,
+  syncLoginBtn: document.getElementById("syncLoginBtn") as HTMLButtonElement,
   resetSettingsBtn: document.getElementById(
     "resetSettingsBtn"
   ) as HTMLButtonElement,
@@ -258,5 +290,35 @@ export const elements = {
   ) as HTMLButtonElement,
   noteViewCopySummary: document.getElementById(
     "noteViewCopySummary"
+  ) as HTMLButtonElement,
+  noteResummarizeBtn: document.getElementById(
+    "noteResummarizeBtn"
+  ) as HTMLButtonElement,
+  noteResummarizeCancelBtn: document.getElementById(
+    "noteResummarizeCancelBtn"
+  ) as HTMLButtonElement,
+  noteResummarizeStatus: document.getElementById(
+    "noteResummarizeStatus"
+  ) as HTMLSpanElement,
+  noteResummarizeParticipants: document.getElementById(
+    "noteResummarizeParticipants"
+  ) as HTMLDivElement,
+  noteResummarizeParticipantsInput: document.getElementById(
+    "noteResummarizeParticipantsInput"
+  ) as HTMLInputElement,
+  noteResummarizeReview: document.getElementById(
+    "noteResummarizeReview"
+  ) as HTMLDivElement,
+  noteResummarizeOldText: document.getElementById(
+    "noteResummarizeOldText"
+  ) as HTMLDivElement,
+  noteResummarizeReviewText: document.getElementById(
+    "noteResummarizeReviewText"
+  ) as HTMLDivElement,
+  noteResummarizeAcceptBtn: document.getElementById(
+    "noteResummarizeAcceptBtn"
+  ) as HTMLButtonElement,
+  noteResummarizeRejectBtn: document.getElementById(
+    "noteResummarizeRejectBtn"
   ) as HTMLButtonElement
 };

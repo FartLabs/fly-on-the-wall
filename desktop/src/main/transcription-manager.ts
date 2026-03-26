@@ -4,7 +4,8 @@ import type {
   TranscriptionMessage,
   TranscriptionResponse
 } from "../transcription/utility-process";
-import { getTranscriptionModelsDir, broadcastToRenderer } from "./models";
+import { broadcastToRenderer } from "./models";
+import { getTranscriptionModelsDir } from "./userData";
 import { MemoryUsage } from "@/shared/utilityProcess";
 import {
   DEFAULT_CONFIG,
@@ -553,7 +554,7 @@ async function healthCheck(): Promise<{
   return sendMessageAndWait({ type: "health-check" });
 }
 
-function stopTranscriptionProcess(): void {
+function stopTranscriptionProcess() {
   if (processRecycleTimer) {
     clearTimeout(processRecycleTimer);
     processRecycleTimer = null;
