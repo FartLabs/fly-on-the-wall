@@ -1,23 +1,20 @@
-import {
-  utilityProcess,
-  UtilityProcess,
-  app,
-  ipcMain,
-  BrowserWindow
-} from "electron";
+import { utilityProcess, UtilityProcess, app, ipcMain } from "electron";
 import path from "node:path";
 import type {
   TranscriptionMessage,
   TranscriptionResponse
 } from "../transcription/utility-process";
-import { getTranscriptionModelsDir } from "./models";
+import { broadcastToRenderer } from "./models";
+import { getTranscriptionModelsDir } from "./userData";
 import { MemoryUsage } from "@/shared/utilityProcess";
-
-// TODO: Make these configurable via a settings page
-const MEMORY_CHECK_INTERVAL_MS = 10_000;
-const MEMORY_THRESHOLD_MB = 4096; // restart if RSS exceeds the specified threshold
-const RESTART_DELAY_MS = 1000;
-const PROCESS_RECYCLE_TIMEOUT_MS = 5 * 60 * 1000;
+import {
+  DEFAULT_CONFIG,
+  LIMITS,
+  type UtilityProcessSettings
+} from "@/shared/config";
+import { AppConfig } from "@/shared/electronAPI";
+import { onConfigUpdated, readConfig } from "./config";
+import { clamp } from "@/utils";
 
 let utilityProc: UtilityProcess | null = null;
 let memoryCheckTimer: NodeJS.Timeout | null = null;
@@ -34,6 +31,99 @@ let requestIdCounter = 0;
 let isRestarting = false;
 let isRecycling = false;
 let initializedModelsPath: string | null = null;
+let utilitySettings: UtilityProcessSettings =
+  getTranscriptionUtilitySettings(readConfig());
+
+function getTranscriptionUtilitySettings(
+  config: AppConfig
+): UtilityProcessSettings {
+  const defaults = DEFAULT_CONFIG.transcription.utilityProcess;
+  const current = config.transcription.utilityProcess ?? defaults;
+
+  return {
+    memoryCheckIntervalMs: clamp(
+      current.memoryCheckIntervalMs ?? defaults.memoryCheckIntervalMs,
+      LIMITS.memoryCheckIntervalMs.min,
+      LIMITS.memoryCheckIntervalMs.max
+    ),
+    memoryThresholdMb: clamp(
+      current.memoryThresholdMb ?? defaults.memoryThresholdMb,
+      LIMITS.memoryThresholdMb.min,
+      LIMITS.memoryThresholdMb.max
+    ),
+    restartDelayMs: clamp(
+      current.restartDelayMs ?? defaults.restartDelayMs,
+      LIMITS.restartDelayMs.min,
+      LIMITS.restartDelayMs.max
+    ),
+    processRecycleTimeoutMs: clamp(
+      current.processRecycleTimeoutMs ?? defaults.processRecycleTimeoutMs,
+      LIMITS.processRecycleTimeoutMs.min,
+      LIMITS.processRecycleTimeoutMs.max
+    )
+  };
+}
+
+function applyUtilitySettings(config: AppConfig) {
+  const previous = utilitySettings;
+  utilitySettings = getTranscriptionUtilitySettings(config);
+
+  const changed: string[] = [];
+  if (
+    previous.memoryCheckIntervalMs !== utilitySettings.memoryCheckIntervalMs
+  ) {
+    changed.push(
+      `memoryCheckIntervalMs: ${previous.memoryCheckIntervalMs} -> ${utilitySettings.memoryCheckIntervalMs}`
+    );
+  }
+  if (previous.memoryThresholdMb !== utilitySettings.memoryThresholdMb) {
+    changed.push(
+      `memoryThresholdMb: ${previous.memoryThresholdMb} -> ${utilitySettings.memoryThresholdMb}`
+    );
+  }
+  if (previous.restartDelayMs !== utilitySettings.restartDelayMs) {
+    changed.push(
+      `restartDelayMs: ${previous.restartDelayMs} -> ${utilitySettings.restartDelayMs}`
+    );
+  }
+  if (
+    previous.processRecycleTimeoutMs !== utilitySettings.processRecycleTimeoutMs
+  ) {
+    changed.push(
+      `processRecycleTimeoutMs: ${previous.processRecycleTimeoutMs} -> ${utilitySettings.processRecycleTimeoutMs}`
+    );
+  }
+
+  if (changed.length > 0) {
+    console.log(
+      `[TranscriptionManager] Applied utility settings update (${changed.join(", ")})`
+    );
+  }
+
+  if (
+    memoryCheckTimer &&
+    previous.memoryCheckIntervalMs !== utilitySettings.memoryCheckIntervalMs
+  ) {
+    console.log(
+      `[TranscriptionManager] Reconfiguring memory check timer to ${utilitySettings.memoryCheckIntervalMs}ms`
+    );
+    startMemoryMonitoring(true);
+  }
+
+  if (
+    processRecycleTimer &&
+    previous.processRecycleTimeoutMs !== utilitySettings.processRecycleTimeoutMs
+  ) {
+    console.log(
+      `[TranscriptionManager] Reconfiguring recycle timeout to ${utilitySettings.processRecycleTimeoutMs}ms`
+    );
+    resetProcessRecycleTimer();
+  }
+}
+
+const unsubscribeConfigUpdates = onConfigUpdated((config) => {
+  applyUtilitySettings(config);
+});
 
 function getUtilityProcessPath(): string {
   if (app.isPackaged) {
@@ -69,8 +159,8 @@ async function spawnTranscriptionProcess(): Promise<UtilityProcess> {
   console.log(`[TranscriptionManager] Script path: ${scriptPath}`);
 
   utilityProc = utilityProcess.fork(scriptPath, [], {
-    serviceName: "transcription-utility",
-    execArgv: ["--expose-gc"]
+    serviceName: "transcription-utility"
+    // execArgv: ["--expose-gc"]
   });
 
   utilityProc.on("message", (message: TranscriptionResponse) => {
@@ -86,13 +176,14 @@ async function spawnTranscriptionProcess(): Promise<UtilityProcess> {
 
   await initializeModelsPath();
 
+  applyUtilitySettings(readConfig());
   startMemoryMonitoring();
 
   console.log("[TranscriptionManager] Utility process spawned successfully");
   return utilityProc;
 }
 
-async function initializeModelsPath(): Promise<void> {
+async function initializeModelsPath() {
   const modelsDir = getTranscriptionModelsDir();
   if (initializedModelsPath === modelsDir) return;
 
@@ -120,29 +211,65 @@ function handleUtilityMessage(message: TranscriptionResponse) {
     return;
   }
 
-  for (const [id, handler] of pendingRequests.entries()) {
-    if (message.type === "status") {
-      handler.onStatus?.(message);
-    } else if (message.type === "result") {
-      console.log(
-        `[TranscriptionManager] Resolving request ${id} with result:`,
-        message.result
+  const requestId =
+    "requestId" in message && typeof message.requestId === "string"
+      ? message.requestId
+      : undefined;
+
+  if (message.type === "status") {
+    if (requestId) {
+      const handler = pendingRequests.get(requestId);
+      handler?.onStatus?.(message);
+    } else {
+      for (const [_, handler] of pendingRequests.entries()) {
+        handler.onStatus?.(message);
+      }
+    }
+
+    broadcastToRenderer("transcription-status", message);
+    return;
+  }
+
+  if (!requestId) {
+    // Backward compatibility fallback: if a response has no requestId, only map it
+    // when there is exactly one pending request.
+    if (pendingRequests.size !== 1) {
+      console.warn(
+        "[TranscriptionManager] Received response without requestId while multiple requests are pending"
       );
-      handler.resolve(message.result);
-      pendingRequests.delete(id);
-      resetProcessRecycleTimer();
-    } else if (message.type === "error") {
-      console.log(
-        `[TranscriptionManager] Rejecting request ${id} with error:`,
-        message.error
-      );
-      handler.reject(new Error(message.error));
-      pendingRequests.delete(id);
-      resetProcessRecycleTimer();
+      return;
     }
   }
 
-  broadcastToRenderers("transcription-status", message);
+  const targetRequestId = requestId ?? pendingRequests.keys().next().value;
+  const handler = pendingRequests.get(targetRequestId);
+
+  if (!handler) {
+    console.warn(
+      `[TranscriptionManager] No pending request handler found for requestId=${String(targetRequestId)}`
+    );
+    return;
+  }
+
+  if (message.type === "result") {
+    console.log(
+      `[TranscriptionManager] Resolving request ${targetRequestId} with result:`,
+      message.result
+    );
+    handler.resolve(message.result);
+    pendingRequests.delete(targetRequestId);
+    resetProcessRecycleTimer();
+  } else if (message.type === "error") {
+    console.log(
+      `[TranscriptionManager] Rejecting request ${targetRequestId} with error:`,
+      message.error
+    );
+    handler.reject(new Error(message.error));
+    pendingRequests.delete(targetRequestId);
+    resetProcessRecycleTimer();
+  }
+
+  broadcastToRenderer("transcription-status", message);
 }
 
 function handleProcessExit(code: number | null) {
@@ -160,19 +287,23 @@ function handleProcessExit(code: number | null) {
     setTimeout(async () => {
       isRestarting = false;
       await spawnTranscriptionProcess();
-    }, RESTART_DELAY_MS);
+    }, utilitySettings.restartDelayMs);
     isRestarting = true;
   }
 }
 
-function startMemoryMonitoring() {
-  if (memoryCheckTimer) return;
+function startMemoryMonitoring(force = false) {
+  if (memoryCheckTimer) {
+    if (!force) return;
+    clearInterval(memoryCheckTimer);
+    memoryCheckTimer = null;
+  }
 
   memoryCheckTimer = setInterval(() => {
     if (utilityProc) {
       sendToUtility({ type: "get-memory-usage" });
     }
-  }, MEMORY_CHECK_INTERVAL_MS);
+  }, utilitySettings.memoryCheckIntervalMs);
 
   console.log("[TranscriptionManager] Memory monitoring started");
 }
@@ -191,15 +322,15 @@ function checkMemoryThreshold(usage: MemoryUsage) {
     `[TranscriptionManager] Memory usage: ${rssMb.toFixed(1)} MB RSS`
   );
 
-  if (rssMb > MEMORY_THRESHOLD_MB) {
+  if (rssMb > utilitySettings.memoryThresholdMb) {
     console.warn(
-      `[TranscriptionManager] Memory threshold exceeded (${rssMb.toFixed(1)} MB > ${MEMORY_THRESHOLD_MB} MB). Restarting...`
+      `[TranscriptionManager] Memory threshold exceeded (${rssMb.toFixed(1)} MB > ${utilitySettings.memoryThresholdMb} MB). Restarting...`
     );
     restartProcess();
   }
 }
 
-async function restartProcess(): Promise<void> {
+async function restartProcess() {
   if (isRestarting) return;
   isRestarting = true;
 
@@ -221,7 +352,7 @@ async function restartProcess(): Promise<void> {
   setTimeout(async () => {
     isRestarting = false;
     await spawnTranscriptionProcess();
-  }, RESTART_DELAY_MS);
+  }, utilitySettings.restartDelayMs);
 }
 
 function resetProcessRecycleTimer() {
@@ -235,7 +366,7 @@ function resetProcessRecycleTimer() {
       );
       recycleProcess();
     }
-  }, PROCESS_RECYCLE_TIMEOUT_MS);
+  }, utilitySettings.processRecycleTimeoutMs);
 }
 
 function recycleProcess() {
@@ -300,19 +431,11 @@ function sendMessageAndWait(
         }
       });
 
-      sendToUtility(message);
+      sendToUtility({ ...message, requestId } as TranscriptionMessage);
     })();
   });
 }
 
-function broadcastToRenderers(channel: string, data: any): void {
-  const windows = BrowserWindow.getAllWindows();
-  for (const win of windows) {
-    if (!win.isDestroyed()) {
-      win.webContents.send(channel, data);
-    }
-  }
-}
 
 async function transcribe(
   audioData: Float32Array,
@@ -340,7 +463,8 @@ async function transcribe(
       type: "transcribe",
       audioData: audioArray,
       modelId,
-      language
+      language,
+      requestId
     });
   });
 }
@@ -380,7 +504,7 @@ async function checkModel(
   return sendMessageAndWait({ type: "check-model", modelId });
 }
 
-async function disposeModel(): Promise<void> {
+async function disposeModel() {
   if (!utilityProc) return;
   await sendMessageAndWait({ type: "dispose" });
 }
@@ -431,7 +555,7 @@ async function healthCheck(): Promise<{
   return sendMessageAndWait({ type: "health-check" });
 }
 
-function stopTranscriptionProcess(): void {
+function stopTranscriptionProcess() {
   if (processRecycleTimer) {
     clearTimeout(processRecycleTimer);
     processRecycleTimer = null;
@@ -443,6 +567,7 @@ function stopTranscriptionProcess(): void {
   }
   initializedModelsPath = null;
   pendingRequests.clear();
+  unsubscribeConfigUpdates();
   console.log("[TranscriptionManager] Utility process stopped");
 }
 

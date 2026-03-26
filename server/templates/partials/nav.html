@@ -1,0 +1,24 @@
+{{define "nav"}}
+<nav class="navbar">
+  <div class="container nav-container">
+    <a href="/" class="nav-brand">Fly on the Wall</a>
+    <div class="nav-links">
+      {{if .User}} {{if .User.IsAdmin}}
+      <a href="/admin">Admin</a>
+      {{end}}
+      <a href="/dashboard">Dashboard</a>
+      <a href="/notes">Notes</a>
+      <a href="/devices">Devices</a>
+      <a href="/settings">Settings</a>
+      <a href="/billing">Billing</a>
+      <form method="POST" action="/logout" class="nav-form">
+        <button type="submit" class="btn btn-link">Logout</button>
+      </form>
+      {{else}}
+      <a href="/login">Login</a>
+      <a href="/register">Sign Up</a>
+      {{end}}
+    </div>
+  </div>
+</nav>
+{{end}}

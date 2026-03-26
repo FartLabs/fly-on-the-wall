@@ -18,11 +18,13 @@ let isTranscribing = false;
 let isDownloadingGguf = false;
 let ggufDownloadProgressUnsub: (() => void) | null = null;
 
-async function saveSelectedTranscriptionModel(
-  modelSize: WhisperModelSize
-): Promise<void> {
+async function saveSelectedTranscriptionModel(modelSize: WhisperModelSize) {
+  const config = await window.electronAPI.configGet();
   await window.electronAPI.configSet({
-    transcription: { selectedModel: modelSize } as any
+    transcription: {
+      ...config.transcription,
+      selectedModel: modelSize
+    }
   });
 }
 
@@ -31,7 +33,7 @@ export async function getSelectedTranscriptionModel(): Promise<WhisperModelSize 
   return (config.transcription.selectedModel as WhisperModelSize) || null;
 }
 
-export function setTranscriptionInProgress(inProgress: boolean): void {
+export function setTranscriptionInProgress(inProgress: boolean) {
   isTranscribing = inProgress;
   refreshModelsList();
 }
@@ -51,7 +53,7 @@ function createModelItemHTML(
       <div class="model-info">
         <div class="model-name">
           Whisper ${status.modelSize.charAt(0).toUpperCase() + status.modelSize.slice(1)}
-          ${isSelected ? '<span style="color: #4CAF50; margin-left: 0.5rem;">● Active</span>' : ""}
+          ${isSelected ? '<span class="model-active-indicator">● Active</span>' : ""}
         </div>
         <div class="model-meta">
           <span class="model-size">${status.size}</span>
@@ -59,11 +61,11 @@ function createModelItemHTML(
             ${status.downloaded ? "Downloaded" : "Not downloaded"}
           </span>
         </div>
-        <div class="model-description" style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">
+        <div class="model-description">
           ${MODEL_DESCRIPTIONS[status.modelSize]}
-          ${status.downloaded && !isSelected && !isTranscribing && !isRecording ? '<span style="color: #888; font-style: italic;"> • Click to use for transcription</span>' : ""}
-          ${isTranscribing ? '<span style="color: #ff9800; font-style: italic;"> • Locked during transcription</span>' : ""}
-          ${isRecording && !isTranscribing ? '<span style="color: #ff9800; font-style: italic;"> • Locked during recording</span>' : ""}
+          ${status.downloaded && !isSelected && !isTranscribing && !isRecording ? '<span class="model-hint"> • Click to use for transcription</span>' : ""}
+          ${isTranscribing ? '<span class="model-locked"> • Locked during transcription</span>' : ""}
+          ${isRecording && !isTranscribing ? '<span class="model-locked"> • Locked during recording</span>' : ""}
         </div>
       </div>
       <div class="model-actions">
@@ -136,15 +138,14 @@ function createSummaryModelHTML(): string {
           id="ggufFilenameInput"
           class="gguf-download-input"
           placeholder="Filename (e.g. llama-2-7b.Q4_K_M.gguf)"
-          style="margin-top: 0.5rem;"
+          class="gguf-download-input gguf-input-spacing"
           ${isDownloadingGguf ? "disabled" : ""}
         />
         <input
           type="text"
           id="ggufRevisionInput"
-          class="gguf-download-input"
+          class="gguf-download-input gguf-input-spacing"
           placeholder="Branch/tag (default: main)"
-          style="margin-top: 0.5rem;"
           ${isDownloadingGguf ? "disabled" : ""}
         />
       </div>
@@ -170,7 +171,7 @@ function createSummaryModelHTML(): string {
 }
 
 // dynamically render the list of .gguf models
-async function renderGgufModelsList(): Promise<void> {
+async function renderGgufModelsList() {
   const container = document.getElementById("ggufModelsList");
   if (!container) return;
 
@@ -204,7 +205,7 @@ async function renderGgufModelsList(): Promise<void> {
           <div class="gguf-model-item-content">
             <div class="gguf-model-name">
               ${model.name}
-              ${isSelected ? '<span style="color: #4CAF50; margin-left: 0.5rem;">● Active</span>' : ""}
+              ${isSelected ? '<span class="model-active-indicator">● Active</span>' : ""}
             </div>
             <div class="gguf-model-meta">
               ${model.sizeFormatted}
@@ -255,7 +256,7 @@ async function renderGgufModelsList(): Promise<void> {
 }
 
 // this is used frequently, may need to be optimized in future if performance issues arise
-export async function refreshModelsList(): Promise<void> {
+export async function refreshModelsList() {
   try {
     const statuses = await getAllModelStatus();
     const transcriptionContainer = document.getElementById(
@@ -420,9 +421,7 @@ export async function refreshModelsList(): Promise<void> {
   }
 }
 
-async function selectTranscriptionModel(
-  modelSize: WhisperModelSize
-): Promise<void> {
+async function selectTranscriptionModel(modelSize: WhisperModelSize) {
   if (isTranscribing) {
     console.log("Cannot change model during transcription");
     return;
@@ -468,7 +467,7 @@ async function handleModelDelete(modelSize: WhisperModelSize) {
   await refreshModelsList();
 }
 
-async function handleSelectSummaryModel(): Promise<void> {
+async function handleSelectSummaryModel() {
   try {
     const result = await window.electronAPI.selectModelFile();
 
@@ -511,7 +510,7 @@ async function handleSelectSummaryModel(): Promise<void> {
   }
 }
 
-async function handleSelectGgufModel(modelPath: string): Promise<void> {
+async function handleSelectGgufModel(modelPath: string) {
   if (isTranscribing || isRecordingState()) {
     console.log("Cannot select model during operation");
     return;
@@ -522,7 +521,7 @@ async function handleSelectGgufModel(modelPath: string): Promise<void> {
   await renderGgufModelsList();
 }
 
-async function handleOpenModelsFolder(): Promise<void> {
+async function handleOpenModelsFolder() {
   try {
     const result = await window.electronAPI.openModelsFolder();
     if (!result.success) {
@@ -534,7 +533,7 @@ async function handleOpenModelsFolder(): Promise<void> {
   }
 }
 
-async function handleImportGgufModel(): Promise<void> {
+async function handleImportGgufModel() {
   try {
     const result = await window.electronAPI.selectModelFile();
 
@@ -578,7 +577,7 @@ async function handleImportGgufModel(): Promise<void> {
   }
 }
 
-async function handleDownloadGgufModel(): Promise<void> {
+async function handleDownloadGgufModel() {
   const activeTab = document.querySelector(".gguf-tab.active") as HTMLElement;
   const tabName = activeTab?.dataset.tab || "url";
 
@@ -716,7 +715,7 @@ async function handleDownloadGgufModel(): Promise<void> {
   }
 }
 
-async function handleDeleteGgufModel(modelPath: string): Promise<void> {
+async function handleDeleteGgufModel(modelPath: string) {
   const modelName = modelPath.split(/[/\\]/).pop();
 
   if (

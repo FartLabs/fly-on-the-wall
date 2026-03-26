@@ -1,17 +1,17 @@
-.container#mainPage {
+.container#main-page {
   align-items: center;
 }
 
-#mainPage .recorder-card,
-#mainPage .participants-card,
-#mainPage .audio-devices-card {
+#main-page .recorder-card,
+#main-page .participants-card,
+#main-page .audio-devices-card {
   width: min(100%, 760px);
 }
 
-@media (max-width: 980px) {
-  #mainPage .recorder-card,
-  #mainPage .participants-card,
-  #mainPage .audio-devices-card {
+@media (width <= 980px) {
+  #main-page .recorder-card,
+  #main-page .participants-card,
+  #main-page .audio-devices-card {
     width: min(100%, 640px);
   }
 }
@@ -48,6 +48,7 @@
     opacity: 1;
     transform: scale(1);
   }
+
   50% {
     opacity: 0.5;
     transform: scale(1.2);
@@ -62,7 +63,7 @@
 .timer {
   font-size: 3rem;
   font-weight: 300;
-  font-family: "SF Mono", "Monaco", "Inconsolata", monospace;
+  font-family: "SF Mono", Monaco, Inconsolata, monospace;
   margin-bottom: 2rem;
   letter-spacing: 2px;
 }
@@ -86,7 +87,7 @@
 
 .record-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 10px 30px rgb(102 126 234 / 0.4);
 }
 
 .record-btn:active {
@@ -98,7 +99,7 @@
 }
 
 .record-btn.recording:hover {
-  box-shadow: 0 10px 30px rgba(255, 71, 87, 0.4);
+  box-shadow: 0 10px 30px rgb(255 71 87 / 0.4);
 }
 
 .btn-icon {
@@ -133,7 +134,7 @@
 
 .pause-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(243, 156, 18, 0.4);
+  box-shadow: 0 8px 20px rgb(243 156 18 / 0.4);
 }
 
 .resume-btn {
@@ -142,7 +143,7 @@
 
 .resume-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(39, 174, 96, 0.4);
+  box-shadow: 0 8px 20px rgb(39 174 96 / 0.4);
 }
 
 .stop-btn {
@@ -151,9 +152,38 @@
 
 .stop-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(255, 71, 87, 0.4);
+  box-shadow: 0 8px 20px rgb(255 71 87 / 0.4);
 }
 
 .control-btn:active {
   transform: translateY(0);
+}
+
+.preflight-warning {
+  background: rgb(255 152 0 / 0.12);
+  border: 1px solid rgb(255 152 0 / 0.4);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  text-align: left;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #ffb74d;
+}
+
+.preflight-warning .preflight-warning-title {
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.preflight-warning .preflight-warning-item {
+  padding-left: 0.25rem;
+  color: #ffcc80;
+}
+
+.preflight-warning .preflight-warning-item + .preflight-warning-item {
+  margin-top: 0.2rem;
 }

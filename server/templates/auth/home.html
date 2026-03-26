@@ -1,0 +1,39 @@
+{{define "home"}} {{template "base" .}} {{end}} {{define "content"}}
+<div class="hero">
+  <h1>Fly on the Wall</h1>
+  <p class="hero-subtitle">
+    Record, transcribe, and summarize your meetings with AI — locally first,
+    with optional cloud sync.
+  </p>
+  <div class="hero-actions">
+    <a href="/register" class="btn btn-primary btn-lg">Get Started</a>
+    <a href="/login" class="btn btn-secondary btn-lg">Login</a>
+  </div>
+</div>
+
+<section class="features">
+  <div class="feature-grid">
+    <div class="feature-card">
+      <h3>Cross-Device Sync</h3>
+      <p>
+        Securely synchronize your notes and recordings across all your devices
+        with encrypted delta sync.
+      </p>
+    </div>
+    <div class="feature-card">
+      <h3>Self-Hostable</h3>
+      <p>
+        Run your own server with Docker. Full control over your data and
+        infrastructure.
+      </p>
+    </div>
+    <div class="feature-card">
+      <h3>Cloud AI Processing</h3>
+      <p>
+        Premium users can offload transcription and summarization to powerful
+        GPU workers in the cloud.
+      </p>
+    </div>
+  </div>
+</section>
+{{end}}

@@ -5,18 +5,16 @@ import { elements } from "./domNodes";
 
 type Page = "main" | "noteView";
 
-export function navigateToPage(page: Page): void {
+export function navigateToPage(page: Page) {
   elements.mainPage?.classList.add("hidden");
-
-  const noteViewPage = document.getElementById("noteViewPage");
-  noteViewPage?.classList.add("hidden");
+  elements.noteViewPage?.classList.add("hidden");
 
   switch (page) {
     case "main":
       elements.mainPage?.classList.remove("hidden");
       break;
     case "noteView":
-      noteViewPage?.classList.remove("hidden");
+      elements.noteViewPage?.classList.remove("hidden");
       break;
   }
 
@@ -37,17 +35,17 @@ export function navigateToPage(page: Page): void {
   console.log(`Navigated to ${page} page`);
 }
 
-export function openSettingsModal(): void {
+export function openSettingsModal() {
   elements.settingsModal?.classList.remove("hidden");
   console.log("Settings modal opened");
 }
 
-function closeSettingsModal(): void {
+function closeSettingsModal() {
   elements.settingsModal?.classList.add("hidden");
   console.log("Settings modal closed");
 }
 
-export function setupNavigationListeners(): void {
+export function setupNavigationListeners() {
   if (elements.viewSettingsBtn) {
     elements.viewSettingsBtn.addEventListener("click", () => {
       openSettingsModal();
@@ -69,7 +67,6 @@ export function setupNavigationListeners(): void {
     });
   }
 
-  // TODO: add keybindings tab in settings page
   // close modal with Escape key
   document.addEventListener("keydown", (e) => {
     if (

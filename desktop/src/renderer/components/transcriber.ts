@@ -13,11 +13,12 @@ import {
   autoOpenForRecording,
   showRightSidebarProcessing
 } from "./rightSideBar";
+import { showNotification } from "./notifications";
 
 let lastTranscription: string | null = null;
 let lastRecordingFilename: string | null = null;
 
-function updateProgress(progress: TranscriptionProgress): void {
+function updateProgress(progress: TranscriptionProgress) {
   if (
     !elements.transcriptionProgress ||
     !elements.transcriptionResult ||
@@ -45,7 +46,7 @@ export async function runTranscription(
   buffer: ArrayBuffer,
   timestamp: string,
   recordingFilename?: string
-): Promise<void> {
+) {
   console.log(
     "[runTranscription] Recording filename received:",
     recordingFilename
@@ -123,6 +124,7 @@ export async function runTranscription(
     if (elements.statusText) {
       elements.statusText.textContent = "Transcription complete!";
     }
+    showNotification("Transcription complete", "success");
 
     console.log(`Transcription length: ${result.text.length} chars`);
 
@@ -152,7 +154,7 @@ export async function runTranscription(
     }
     if (elements.transcriptionEmpty) {
       elements.transcriptionEmpty.classList.remove("hidden");
-      elements.transcriptionEmpty.innerHTML = `<p style="color: #ff6b81;">Failed: ${error}</p>`;
+      elements.transcriptionEmpty.innerHTML = `<p class="status-error">Failed: ${error}</p>`;
     }
   } finally {
     setTranscriptionInProgress(false);

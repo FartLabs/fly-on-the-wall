@@ -1,7 +1,9 @@
-notes/
 *.wav
 models/
 recordings/
+tmp/
+
+*.db
 
 # Logs
 logs

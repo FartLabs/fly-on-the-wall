@@ -1,23 +1,20 @@
-import {
-  utilityProcess,
-  UtilityProcess,
-  app,
-  ipcMain,
-  BrowserWindow
-} from "electron";
+import { utilityProcess, UtilityProcess, app, ipcMain } from "electron";
 import path from "node:path";
 import type {
   SummarizationProcessMessage,
   SummarizationProcessResponse
 } from "../summarization/utility-process";
 import type { MemoryUsage } from "@/shared/utilityProcess";
-import { SummarizeParams } from "@/summarization";
-
-// TODO: Make these configurable via a settings page
-const MEMORY_CHECK_INTERVAL_MS = 10_000;
-const MEMORY_THRESHOLD_MB = 4096; // restart if RSS exceeds the specified threshold
-const RESTART_DELAY_MS = 1000;
-const PROCESS_RECYCLE_TIMEOUT_MS = 5 * 60 * 1000;
+import type { SummarizeParams } from "@/summarization";
+import { broadcastToRenderer } from "./models";
+import {
+  DEFAULT_CONFIG,
+  LIMITS,
+  type UtilityProcessSettings
+} from "@/shared/config";
+import { AppConfig } from "@/shared/electronAPI";
+import { onConfigUpdated, readConfig } from "./config";
+import { clamp } from "@/utils";
 
 let utilityProc: UtilityProcess | null = null;
 let memoryCheckTimer: NodeJS.Timeout | null = null;
@@ -33,6 +30,99 @@ const pendingRequests: Map<
 let requestIdCounter = 0;
 let isRestarting = false;
 let isRecycling = false;
+let utilitySettings: UtilityProcessSettings =
+  getSummarizationUtilitySettings(readConfig());
+
+function getSummarizationUtilitySettings(
+  config: AppConfig
+): UtilityProcessSettings {
+  const defaults = DEFAULT_CONFIG.summarization.utilityProcess;
+  const current = config.summarization.utilityProcess ?? defaults;
+
+  return {
+    memoryCheckIntervalMs: clamp(
+      current.memoryCheckIntervalMs ?? defaults.memoryCheckIntervalMs,
+      LIMITS.memoryCheckIntervalMs.min,
+      LIMITS.memoryCheckIntervalMs.max
+    ),
+    memoryThresholdMb: clamp(
+      current.memoryThresholdMb ?? defaults.memoryThresholdMb,
+      LIMITS.memoryThresholdMb.min,
+      LIMITS.memoryThresholdMb.max
+    ),
+    restartDelayMs: clamp(
+      current.restartDelayMs ?? defaults.restartDelayMs,
+      LIMITS.restartDelayMs.min,
+      LIMITS.restartDelayMs.max
+    ),
+    processRecycleTimeoutMs: clamp(
+      current.processRecycleTimeoutMs ?? defaults.processRecycleTimeoutMs,
+      LIMITS.processRecycleTimeoutMs.min,
+      LIMITS.processRecycleTimeoutMs.max
+    )
+  };
+}
+
+function applyUtilitySettings(config: AppConfig) {
+  const previous = utilitySettings;
+  utilitySettings = getSummarizationUtilitySettings(config);
+
+  const changed: string[] = [];
+  if (
+    previous.memoryCheckIntervalMs !== utilitySettings.memoryCheckIntervalMs
+  ) {
+    changed.push(
+      `memoryCheckIntervalMs: ${previous.memoryCheckIntervalMs} -> ${utilitySettings.memoryCheckIntervalMs}`
+    );
+  }
+  if (previous.memoryThresholdMb !== utilitySettings.memoryThresholdMb) {
+    changed.push(
+      `memoryThresholdMb: ${previous.memoryThresholdMb} -> ${utilitySettings.memoryThresholdMb}`
+    );
+  }
+  if (previous.restartDelayMs !== utilitySettings.restartDelayMs) {
+    changed.push(
+      `restartDelayMs: ${previous.restartDelayMs} -> ${utilitySettings.restartDelayMs}`
+    );
+  }
+  if (
+    previous.processRecycleTimeoutMs !== utilitySettings.processRecycleTimeoutMs
+  ) {
+    changed.push(
+      `processRecycleTimeoutMs: ${previous.processRecycleTimeoutMs} -> ${utilitySettings.processRecycleTimeoutMs}`
+    );
+  }
+
+  if (changed.length > 0) {
+    console.log(
+      `[SummarizationManager] Applied utility settings update (${changed.join(", ")})`
+    );
+  }
+
+  if (
+    memoryCheckTimer &&
+    previous.memoryCheckIntervalMs !== utilitySettings.memoryCheckIntervalMs
+  ) {
+    console.log(
+      `[SummarizationManager] Reconfiguring memory check timer to ${utilitySettings.memoryCheckIntervalMs}ms`
+    );
+    startMemoryMonitoring(true);
+  }
+
+  if (
+    processRecycleTimer &&
+    previous.processRecycleTimeoutMs !== utilitySettings.processRecycleTimeoutMs
+  ) {
+    console.log(
+      `[SummarizationManager] Reconfiguring recycle timeout to ${utilitySettings.processRecycleTimeoutMs}ms`
+    );
+    resetProcessRecycleTimer();
+  }
+}
+
+const unsubscribeConfigUpdates = onConfigUpdated((config) => {
+  applyUtilitySettings(config);
+});
 
 function getUtilityProcessPath(): string {
   if (app.isPackaged) {
@@ -68,9 +158,8 @@ function spawnSummarizationProcess(): UtilityProcess {
   console.log(`[SummarizationManager] Script path: ${scriptPath}`);
 
   utilityProc = utilityProcess.fork(scriptPath, [], {
-    serviceName: "summarization-utility",
-    // enable manual garbage collection
-    execArgv: ["--expose-gc"]
+    serviceName: "summarization-utility"
+    // execArgv: ["--expose-gc"]
   });
 
   utilityProc.on("message", (message: SummarizationProcessResponse) => {
@@ -84,13 +173,14 @@ function spawnSummarizationProcess(): UtilityProcess {
     handleProcessExit(code);
   });
 
+  applyUtilitySettings(readConfig());
   startMemoryMonitoring();
 
   console.log("[SummarizationManager] Utility process spawned successfully");
   return utilityProc;
 }
 
-function handleUtilityMessage(message: SummarizationProcessResponse): void {
+function handleUtilityMessage(message: SummarizationProcessResponse) {
   // handle memory response separately for monitoring
   if (message.type === "memory") {
     checkMemoryThreshold(message.usage);
@@ -118,10 +208,10 @@ function handleUtilityMessage(message: SummarizationProcessResponse): void {
     }
   }
 
-  broadcastToRenderers("summarization-status", message);
+  broadcastToRenderer("summarization-status", message);
 }
 
-function handleProcessExit(code: number | null): void {
+function handleProcessExit(code: number | null) {
   utilityProc = null;
   stopMemoryMonitoring();
 
@@ -136,24 +226,28 @@ function handleProcessExit(code: number | null): void {
     setTimeout(() => {
       isRestarting = false;
       spawnSummarizationProcess();
-    }, RESTART_DELAY_MS);
+    }, utilitySettings.restartDelayMs);
     isRestarting = true;
   }
 }
 
-function startMemoryMonitoring(): void {
-  if (memoryCheckTimer) return;
+function startMemoryMonitoring(force = false) {
+  if (memoryCheckTimer) {
+    if (!force) return;
+    clearInterval(memoryCheckTimer);
+    memoryCheckTimer = null;
+  }
 
   memoryCheckTimer = setInterval(() => {
     if (utilityProc) {
       sendToUtility({ type: "get-memory-usage" });
     }
-  }, MEMORY_CHECK_INTERVAL_MS);
+  }, utilitySettings.memoryCheckIntervalMs);
 
   console.log("[SummarizationManager] Memory monitoring started");
 }
 
-function stopMemoryMonitoring(): void {
+function stopMemoryMonitoring() {
   if (memoryCheckTimer) {
     clearInterval(memoryCheckTimer);
     memoryCheckTimer = null;
@@ -161,21 +255,21 @@ function stopMemoryMonitoring(): void {
   }
 }
 
-function checkMemoryThreshold(usage: MemoryUsage): void {
+function checkMemoryThreshold(usage: MemoryUsage) {
   const rssMb = usage.rss / (1024 * 1024);
   console.log(
     `[SummarizationManager] Memory usage: ${rssMb.toFixed(1)} MB RSS`
   );
 
-  if (rssMb > MEMORY_THRESHOLD_MB) {
+  if (rssMb > utilitySettings.memoryThresholdMb) {
     console.warn(
-      `[SummarizationManager] Memory threshold exceeded (${rssMb.toFixed(1)} MB > ${MEMORY_THRESHOLD_MB} MB). Restarting...`
+      `[SummarizationManager] Memory threshold exceeded (${rssMb.toFixed(1)} MB > ${utilitySettings.memoryThresholdMb} MB). Restarting...`
     );
     restartProcess();
   }
 }
 
-async function restartProcess(): Promise<void> {
+async function restartProcess() {
   if (isRestarting) return;
   isRestarting = true;
 
@@ -195,10 +289,10 @@ async function restartProcess(): Promise<void> {
   setTimeout(() => {
     isRestarting = false;
     spawnSummarizationProcess();
-  }, RESTART_DELAY_MS);
+  }, utilitySettings.restartDelayMs);
 }
 
-function resetProcessRecycleTimer(): void {
+function resetProcessRecycleTimer() {
   if (processRecycleTimer) {
     clearTimeout(processRecycleTimer);
   }
@@ -209,10 +303,10 @@ function resetProcessRecycleTimer(): void {
       );
       recycleProcess();
     }
-  }, PROCESS_RECYCLE_TIMEOUT_MS);
+  }, utilitySettings.processRecycleTimeoutMs);
 }
 
-function recycleProcess(): void {
+function recycleProcess() {
   if (processRecycleTimer) {
     clearTimeout(processRecycleTimer);
     processRecycleTimer = null;
@@ -229,7 +323,7 @@ function recycleProcess(): void {
   );
 }
 
-function sendToUtility(message: SummarizationProcessMessage): void {
+function sendToUtility(message: SummarizationProcessMessage) {
   if (!utilityProc) {
     console.warn("[SummarizationManager] No utility process running");
     return;
@@ -268,15 +362,6 @@ function sendMessageAndWait(
   });
 }
 
-function broadcastToRenderers(channel: string, data: any): void {
-  const windows = BrowserWindow.getAllWindows();
-  for (const win of windows) {
-    if (!win.isDestroyed()) {
-      win.webContents.send(channel, data);
-    }
-  }
-}
-
 // public API for main process
 async function summarize(
   text: string,
@@ -312,7 +397,7 @@ async function checkModel(modelPath: string): Promise<{
   return sendMessageAndWait({ type: "check-model", modelPath });
 }
 
-async function disposeModel(): Promise<void> {
+async function disposeModel() {
   if (!utilityProc) return;
   await sendMessageAndWait({ type: "dispose" });
 }
@@ -328,7 +413,7 @@ async function healthCheck(): Promise<{
   return sendMessageAndWait({ type: "health-check" });
 }
 
-function stopSummarizationProcess(): void {
+function stopSummarizationProcess() {
   if (processRecycleTimer) {
     clearTimeout(processRecycleTimer);
     processRecycleTimer = null;
@@ -339,6 +424,7 @@ function stopSummarizationProcess(): void {
     utilityProc = null;
   }
   pendingRequests.clear();
+  unsubscribeConfigUpdates();
   console.log("[SummarizationManager] Utility process stopped");
 }
 

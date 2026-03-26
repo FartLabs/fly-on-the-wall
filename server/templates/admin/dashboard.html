@@ -1,0 +1,18 @@
+{{define "admin/dashboard"}} {{template "base" .}} {{end}} {{define "content"}}
+<div class="admin-dashboard">
+  <h2>Admin Dashboard</h2>
+
+  <div class="admin-stats">
+    <div class="stat-card">
+      <h3>Total Users</h3>
+      <p class="stat-value">
+        {{if .Data}}{{index .Data "total_users"}}{{else}}0{{end}}
+      </p>
+    </div>
+  </div>
+
+  <div class="admin-links">
+    <a href="/admin/users" class="btn btn-primary">Manage Users</a>
+  </div>
+</div>
+{{end}}

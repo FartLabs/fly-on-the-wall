@@ -83,7 +83,8 @@ const electronAPI: IElectronAPI = {
 
   listNotes: () => ipcRenderer.invoke("list-notes"),
   readNote: (filename: string) => ipcRenderer.invoke("read-note", filename),
-  deleteNote: (filename: string) => ipcRenderer.invoke("delete-note", filename),
+  deleteNote: (filename: string, deleteRecording?: boolean) =>
+    ipcRenderer.invoke("delete-note", filename, deleteRecording),
   exportNote: (data: { filename: string; format: string }) =>
     ipcRenderer.invoke("export-note", data),
   getRecordingPath: (filename: string) =>
@@ -118,7 +119,18 @@ const electronAPI: IElectronAPI = {
 
   selectAudioFiles: () => ipcRenderer.invoke("select-audio-files"),
   importAudioFile: (data: { sourcePath: string; mode: "copy" | "move" }) =>
-    ipcRenderer.invoke("import-audio-file", data)
+    ipcRenderer.invoke("import-audio-file", data),
+
+  notify: (data: { message: string; type?: "success" | "error" | "info" }) =>
+    ipcRenderer.invoke("notify", data),
+
+  syncSignUp: (data: { username: string; password: string }) =>
+    ipcRenderer.invoke("sync-signup", data),
+  syncLogin: (data: { username: string; password: string }) =>
+    ipcRenderer.invoke("sync-login", data),
+  syncLogout: () => ipcRenderer.invoke("sync-logout"),
+  syncWhoAmI: () => ipcRenderer.invoke("sync-whoami"),
+  syncNow: () => ipcRenderer.invoke("sync-now")
 };
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);

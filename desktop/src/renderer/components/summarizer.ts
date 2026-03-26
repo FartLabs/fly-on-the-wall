@@ -6,11 +6,12 @@ import {
   type SummarizationProgress
 } from "@/summarization";
 import { saveNote } from "./saveNote";
+import { showNotification } from "./notifications";
 
 let lastSummary: string | null = null;
 
-function getMeetingParticipants(): string[] {
-  const raw = elements.meetingParticipantsInput?.value || "";
+export function getMeetingParticipants(inputValue: string): string[] {
+  const raw = inputValue || "";
   return (
     raw
       // split by either newlines, commas, or semicolons
@@ -21,7 +22,7 @@ function getMeetingParticipants(): string[] {
   );
 }
 
-export function clearSummary(): void {
+export function clearSummary() {
   if (elements.summaryCard) {
     elements.summaryCard.classList.add("hidden");
   }
@@ -40,7 +41,7 @@ export function clearSummary(): void {
   lastSummary = null;
 }
 
-function updateSummaryProgress(progress: SummarizationProgress): void {
+function updateSummaryProgress(progress: SummarizationProgress) {
   if (
     !elements.summaryProgress ||
     !elements.summaryResult ||
@@ -68,7 +69,7 @@ function updateSummaryProgress(progress: SummarizationProgress): void {
 export async function runSummarization(
   transcription: string,
   _timestamp: string
-): Promise<void> {
+) {
   const selectedModelPath = await getSelectedModelPath();
   console.log(`Using summarization model: ${selectedModelPath || "none"}`);
 
@@ -76,7 +77,7 @@ export async function runSummarization(
     console.log("No summarization model selected");
     if (elements.summaryEmpty) {
       elements.summaryEmpty.classList.remove("hidden");
-      elements.summaryEmpty.innerHTML = `<p style="color: #ff9800;">No summarization model selected. Please select a GGUF model in Settings → Summarization.</p>`;
+      elements.summaryEmpty.innerHTML = `<p class="status-warning">No summarization model selected. Please select a GGUF model in Settings → Summarization.</p>`;
     }
     return;
   }
@@ -89,7 +90,7 @@ export async function runSummarization(
     console.log("Selected model file not found or invalid");
     if (elements.summaryEmpty) {
       elements.summaryEmpty.classList.remove("hidden");
-      elements.summaryEmpty.innerHTML = `<p style="color: #ff6b81;">Selected model file not found. Please select a valid GGUF model file.</p>`;
+      elements.summaryEmpty.innerHTML = `<p class="status-error">Selected model file not found. Please select a valid GGUF model file.</p>`;
     }
     return;
   }
@@ -110,13 +111,16 @@ export async function runSummarization(
 
   try {
     console.log("Calling summarizeText...");
-    const participants = getMeetingParticipants();
+    const participants = getMeetingParticipants(
+      elements.meetingParticipantsInput?.value || ""
+    );
     const result = await summarizeText(
       transcription,
       updateSummaryProgress,
       selectedModelPath,
       participants
     );
+
     lastSummary = result.summary;
 
     console.log("Summary result:", result);
@@ -136,8 +140,11 @@ export async function runSummarization(
     }
 
     console.log("Auto-saving note after summarization...");
-    await saveNote();
 
+    const participantsObj = participants.length > 0 ? { participants } : {};
+    await saveNote(participantsObj);
+
+    showNotification("Summary generated successfully", "success");
     console.log(`Summary generated in ${result.duration.toFixed(1)}s`);
   } catch (error) {
     console.error("Summarization failed:", error);
@@ -146,12 +153,12 @@ export async function runSummarization(
     }
     if (elements.summaryEmpty) {
       elements.summaryEmpty.classList.remove("hidden");
-      elements.summaryEmpty.innerHTML = `<p style="color: #ff6b81;">Summarization failed: ${error}</p>`;
+      elements.summaryEmpty.innerHTML = `<p class="status-error">Summarization failed: ${error}</p>`;
     }
   }
 }
 
-export function setupSummarizationListeners(): void {
+export function setupSummarizationListeners() {
   if (!elements.copySummaryBtn) {
     console.warn("Summary copy button not found");
     return;

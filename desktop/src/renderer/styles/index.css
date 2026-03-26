@@ -1,13 +1,14 @@
 /* mainly in charge of importing every component */
 
-@import "./base.css";
-@import "./common.css";
-@import "./recorder.css";
-@import "./devices.css";
-@import "./models.css";
-@import "./transcription.css";
-@import "./summarization.css";
-@import "./rightSideBar.css";
-@import "./leftSideBar.css";
-@import "./importAudio.css";
-@import "./modal.css";
+@import url("./base.css");
+@import url("./common.css");
+@import url("./recorder.css");
+@import url("./devices.css");
+@import url("./models.css");
+@import url("./transcription.css");
+@import url("./summarization.css");
+@import url("./rightSideBar.css");
+@import url("./leftSideBar.css");
+@import url("./importAudio.css");
+@import url("./modal.css");
+@import url("./noteViewer.css");

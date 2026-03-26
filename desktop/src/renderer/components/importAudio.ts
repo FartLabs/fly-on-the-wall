@@ -76,7 +76,7 @@ function statusClass(status: ImportStatus): string {
   }
 }
 
-function renderQueue(): void {
+function renderQueue() {
   const container = elements.importQueue;
   const list = elements.importQueueList;
   const count = elements.importQueueCount;
@@ -162,7 +162,7 @@ function showLargeFileDialog(
   });
 }
 
-async function openImportDialog(): Promise<void> {
+async function openImportDialog() {
   if (isProcessing) {
     showNotification(
       "An import is already in progress. Please wait for it to finish.",
@@ -207,7 +207,7 @@ async function openImportDialog(): Promise<void> {
   await processQueue();
 }
 
-async function processQueue(): Promise<void> {
+async function processQueue() {
   if (isProcessing) return;
   isProcessing = true;
 
@@ -275,6 +275,7 @@ async function processQueue(): Promise<void> {
       setTranscriptionInProgress(false);
 
       const transcription = transcriptionResult.text;
+      showNotification("Transcription complete", "success");
 
       // summarize if long enough
       let summary = "";
@@ -300,6 +301,7 @@ async function processQueue(): Promise<void> {
                 selectedModelPath
               );
               summary = sumResult.summary;
+              showNotification("Summary generated successfully", "success");
             } catch (err) {
               console.warn("Summarization failed for import, continuing:", err);
             }
@@ -363,7 +365,7 @@ async function processQueue(): Promise<void> {
   }
 }
 
-export function setupImportListeners(): void {
+export function setupImportListeners() {
   const importBtn = document.getElementById("importAudioBtn");
   importBtn?.addEventListener("click", openImportDialog);
 }

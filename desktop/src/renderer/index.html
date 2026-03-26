@@ -5,7 +5,6 @@
     <title>Fly on the Wall</title>
   </head>
   <body>
-    <!-- Left Sidebar -->
     <aside class="left-sidebar" id="leftSidebar">
       <div class="sidebar-header">
         <h2 class="sidebar-title">Fly on the Wall</h2>
@@ -83,15 +82,9 @@
     </aside>
 
     <div class="app-content" id="appContent">
-      <div class="container" id="mainPage">
-        <!-- <div class="header-with-nav">
-          <div>
-            <h1>Fly on the Wall</h1>
-            <p class="subtitle">Meeting Recorder</p>
-          </div>
-        </div> -->
-
+      <div class="container" id="main-page">
         <div class="recorder-card">
+          <div class="preflight-warning hidden" id="preflightWarning"></div>
           <div class="status-indicator" id="statusIndicator">
             <span class="status-dot"></span>
             <span class="status-text" id="statusText">Ready to record</span>
@@ -192,7 +185,7 @@
         </div>
       </div>
 
-      <div class="container hidden" id="noteViewPage">
+      <div class="container hidden" id="note-view-page">
         <div class="note-view-wrapper">
           <div class="note-view-header">
             <h2 class="note-view-title" id="noteViewTitle">Note</h2>
@@ -249,6 +242,24 @@
               <div class="section-header">
                 <h3 class="note-section-title">Summary</h3>
                 <div class="section-actions">
+                  <span
+                    class="note-resummarize-status hidden"
+                    id="noteResummarizeStatus"
+                  ></span>
+                  <button
+                    class="action-btn hidden"
+                    id="noteResummarizeCancelBtn"
+                    title="Cancel summarization"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    class="action-btn"
+                    id="noteResummarizeBtn"
+                    title="Re-summarize transcript"
+                  >
+                    Re-summarize
+                  </button>
                   <button
                     class="action-btn"
                     id="noteViewCopySummary"
@@ -259,16 +270,73 @@
                 </div>
               </div>
               <div
+                class="note-resummarize-participants hidden"
+                id="noteResummarizeParticipants"
+              >
+                <label
+                  class="note-resummarize-participants-label"
+                  for="noteResummarizeParticipantsInput"
+                >
+                  Participants
+                  <span class="note-resummarize-participants-hint"
+                    >used in the summarization prompt via
+                    <code>{participants}</code></span
+                  >
+                </label>
+                <input
+                  type="text"
+                  class="note-resummarize-participants-input"
+                  id="noteResummarizeParticipantsInput"
+                  placeholder="e.g. Alice, Bob, Charlie"
+                />
+              </div>
+              <div
                 class="note-section-body editable-body"
                 id="noteViewSummary"
                 contenteditable="true"
               ></div>
+              <div
+                class="note-resummarize-review hidden"
+                id="noteResummarizeReview"
+              >
+                <div class="note-resummarize-comparison">
+                  <div class="note-resummarize-comparison-col">
+                    <p class="note-resummarize-comparison-label">
+                      Current summary
+                    </p>
+                    <div
+                      class="note-resummarize-comparison-text"
+                      id="noteResummarizeOldText"
+                    ></div>
+                  </div>
+                  <div
+                    class="note-resummarize-comparison-col note-resummarize-comparison-col--new"
+                  >
+                    <p class="note-resummarize-comparison-label">New summary</p>
+                    <div
+                      class="note-resummarize-comparison-text"
+                      id="noteResummarizeReviewText"
+                    ></div>
+                  </div>
+                </div>
+                <div class="note-resummarize-review-actions">
+                  <button
+                    class="action-btn primary"
+                    id="noteResummarizeAcceptBtn"
+                  >
+                    Use new summary
+                  </button>
+                  <button class="action-btn" id="noteResummarizeRejectBtn">
+                    Keep current summary
+                  </button>
+                </div>
+              </div>
             </section>
           </div>
         </div>
       </div>
 
-      <!-- Sidebar context menu -->
+
       <div class="sidebar-context-menu hidden" id="sidebarContextMenu">
         <button class="context-menu-item" id="ctxRenameNote">Rename</button>
         <button class="context-menu-item danger" id="ctxDeleteNote">
@@ -277,6 +345,122 @@
       </div>
     </div>
     <!-- end .app-content -->
+
+    <aside class="right-sidebar collapsed" id="rightSidebar">
+      <div class="right-sidebar-header">
+        <button
+          class="right-sidebar-collapse-btn"
+          id="rightSidebarCollapseBtn"
+          title="Collapse sidebar"
+        >
+          ▶
+        </button>
+        <h2 class="right-sidebar-title">Transcription & Summarization</h2>
+      </div>
+
+      <div class="right-sidebar-content" id="rightSidebarContent">
+        <div class="right-sidebar-empty" id="rightSidebarEmpty">
+          <p>
+            Start a recording or import audio to see processing status here.
+          </p>
+        </div>
+
+        <div
+          class="right-panel-transcription-card hidden"
+          id="rightPanelTranscriptionCard"
+        >
+          <div class="card-header">
+            <h2>Transcription</h2>
+          </div>
+
+          <div
+            class="transcription-progress hidden"
+            id="rightPanelTranscriptionProgress"
+          >
+            <div class="progress-bar">
+              <div class="progress-fill" id="rightPanelProgressFill"></div>
+            </div>
+            <p class="progress-text" id="rightPanelProgressText">
+              Loading model...
+            </p>
+          </div>
+
+          <div
+            class="transcription-result hidden"
+            id="rightPanelTranscriptionResult"
+          >
+            <div
+              class="transcription-text"
+              id="rightPanelTranscriptionText"
+            ></div>
+            <div class="transcription-actions">
+              <button
+                class="action-btn"
+                id="rightPanelCopyTranscription"
+                title="Copy to clipboard"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+
+          <div class="transcription-empty" id="rightPanelTranscriptionEmpty">
+            <p>Record a meeting to see the transcription here.</p>
+          </div>
+        </div>
+
+        <div class="right-panel-summary-card hidden" id="rightPanelSummaryCard">
+          <div class="card-header">
+            <h2>Summary</h2>
+          </div>
+
+          <div class="summary-progress hidden" id="rightPanelSummaryProgress">
+            <div class="progress-bar">
+              <div
+                class="progress-fill"
+                id="rightPanelSummaryProgressFill"
+              ></div>
+            </div>
+            <p class="progress-text" id="rightPanelSummaryProgressText">
+              Generating summary...
+            </p>
+          </div>
+
+          <div class="summary-result hidden" id="rightPanelSummaryResult">
+            <div class="summary-text" id="rightPanelSummaryText"></div>
+            <div class="summary-actions">
+              <button
+                class="action-btn"
+                id="rightPanelCopySummary"
+                title="Copy summary"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+
+          <div class="summary-empty hidden" id="rightPanelSummaryEmpty">
+            <p>Summary will appear here after transcription.</p>
+          </div>
+        </div>
+
+        <div class="right-panel-save-wrapper">
+          <button
+            class="action-btn primary hidden"
+            id="rightPanelSaveNote"
+            title="Save transcription + summary as note"
+          >
+            Save Note
+          </button>
+        </div>
+      </div>
+
+      <div
+        class="right-sidebar-resize-handle"
+        id="rightSidebarResizeHandle"
+        title="Resize right sidebar"
+      ></div>
+    </aside>
 
     <aside class="right-sidebar collapsed" id="rightSidebar">
       <div class="right-sidebar-header">
@@ -411,6 +595,29 @@
               <li>
                 <button
                   class="settings-nav-item"
+<<<<<<< HEAD
+                  data-settings-section="transcription"
+                >
+                  <span class="settings-nav-icon">🎙️</span>
+                  <span>Transcription</span>
+=======
+                  data-settings-section="hotkeys"
+                >
+                  <span class="settings-nav-icon">⌨️</span>
+                  <span>Hotkeys</span>
+>>>>>>> master
+                </button>
+              </li>
+              <li>
+                <button
+<<<<<<< HEAD
+                  class="settings-nav-item"
+                  data-settings-section="hotkeys"
+                >
+                  <span class="settings-nav-icon">⌨️</span>
+                  <span>Hotkeys</span>
+=======
+                  class="settings-nav-item active"
                   data-settings-section="transcription"
                 >
                   <span class="settings-nav-icon">🎙️</span>
@@ -418,17 +625,19 @@
                 </button>
               </li>
               <li>
-                <button
-                  class="settings-nav-item"
-                  data-settings-section="hotkeys"
-                >
-                  <span class="settings-nav-icon">⌨️</span>
-                  <span>Hotkeys</span>
+                <button class="settings-nav-item" data-settings-section="sync">
+                  <span class="settings-nav-icon">🔄</span>
+                  <span>Sync</span>
+>>>>>>> master
                 </button>
               </li>
               <li>
                 <button
+<<<<<<< HEAD
                   class="settings-nav-item active"
+=======
+                  class="settings-nav-item"
+>>>>>>> master
                   data-settings-section="summarization"
                 >
                   <span class="settings-nav-icon">📝</span>
@@ -456,15 +665,24 @@
                 />
               </div>
 
+<<<<<<< HEAD
               <div
                 class="settings-model-manager settings-transcription-manager"
               >
                 <h3 class="settings-section-title">Model Management</h3>
                 <p class="settings-panel-description">
+=======
+              <div class="settings-model-manager">
+                <h3 class="settings-label settings-subheader">
+                  Model Management
+                </h3>
+                <p class="settings-hint settings-description">
+>>>>>>> master
                   Download and select Whisper models for transcription.
                 </p>
                 <div id="transcriptionModelsContainer"></div>
               </div>
+<<<<<<< HEAD
             </div>
 
             <div class="settings-panel" id="settingsPanel-hotkeys">
@@ -497,6 +715,201 @@
               <div class="prompt-customization-section">
                 <h3 class="prompt-section-title">Prompt</h3>
                 <p class="prompt-section-description">
+=======
+
+              <div class="settings-main-group">
+                <h3
+                  class="settings-label settings-subheader settings-group-main"
+                >
+                  Utility Process (advanced)
+                </h3>
+                <p
+                  class="settings-hint settings-description settings-group-main-description"
+                >
+                  Configure memory monitoring and lifecycle behavior for the
+                  transcription utility process.
+                </p>
+              </div>
+
+              <div class="settings-group">
+                <label
+                  class="settings-label"
+                  for="transcriptionMemoryCheckIntervalInput"
+                >
+                  Memory Check Interval (seconds)
+                  <span class="settings-hint"
+                    >How often memory usage is checked (1-600). Mainly for
+                    logging purposes, so leave unchanged unless debugging.</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="transcriptionMemoryCheckIntervalInput"
+                  class="settings-input"
+                  min="1"
+                  max="600"
+                  step="1"
+                  value="10"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label
+                  class="settings-label"
+                  for="transcriptionMemoryThresholdInput"
+                >
+                  Memory Threshold (MB)
+                  <span class="settings-hint"
+                    >Restart process if RSS exceeds this threshold
+                    (256-32768)</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="transcriptionMemoryThresholdInput"
+                  class="settings-input"
+                  min="256"
+                  max="32768"
+                  step="256"
+                  value="4096"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label
+                  class="settings-label"
+                  for="transcriptionRestartDelayInput"
+                >
+                  Restart Delay (seconds)
+                  <span class="settings-hint"
+                    >Delay before restart after an unexpected exit (0-60)</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="transcriptionRestartDelayInput"
+                  class="settings-input"
+                  min="0"
+                  max="60"
+                  step="1"
+                  value="1"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label
+                  class="settings-label"
+                  for="transcriptionProcessRecycleTimeoutInput"
+                >
+                  Process Recycle Timeout (minutes)
+                  <span class="settings-hint"
+                    >Recycle idle utility process after this duration
+                    (1-120)</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="transcriptionProcessRecycleTimeoutInput"
+                  class="settings-input"
+                  min="1"
+                  max="120"
+                  step="1"
+                  value="5"
+                />
+              </div>
+            </div>
+
+            <div class="settings-panel" id="settingsPanel-sync">
+              <h3 class="settings-panel-title">Sync</h3>
+
+              <div class="settings-group">
+                <label class="settings-label" for="serverUrlInput">
+                  Server URL
+                  <span class="settings-hint"
+                    >Base URL of your server (e.g. http://localhost:8080)</span
+                  >
+                </label>
+                <input
+                  type="text"
+                  id="serverUrlInput"
+                  class="settings-input"
+                  placeholder="http://localhost:8080"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label class="settings-label" for="syncIntervalMinutesInput">
+                  Auto Sync Interval (minutes)
+                  <span class="settings-hint"
+                    >How often to sync notes in the background</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="syncIntervalMinutesInput"
+                  class="settings-input"
+                  min="1"
+                  max="240"
+                  step="1"
+                  value="5"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label class="settings-label">
+                  Connection
+                  <span class="settings-hint" id="syncStatusText"
+                    >Not connected</span
+                  >
+                </label>
+                <span class="settings-hint" id="syncLastSyncText"
+                  >Last sync: never</span
+                >
+                <span class="settings-hint" id="syncLastErrorText"></span>
+              </div>
+
+              <div class="settings-actions">
+                <button class="action-btn" id="syncConnectBtn">Connect</button>
+                <button class="action-btn" id="syncLogoutBtn">
+                  Disconnect
+                </button>
+                <button class="action-btn primary" id="syncNowBtn">
+                  Sync Now
+                </button>
+              </div>
+            </div>
+
+            <div class="settings-panel" id="settingsPanel-hotkeys">
+              <h3 class="settings-panel-title">Hotkeys</h3>
+              <div class="settings-group">
+                <label class="settings-label"> Open Settings </label>
+                <div class="hotkey-bindings-control">
+                  <div
+                    id="hotkeyOpenSettingsList"
+                    class="hotkey-bindings-list"
+                  ></div>
+                  <button
+                    type="button"
+                    id="hotkeyOpenSettingsAddBtn"
+                    class="hotkey-add-btn"
+                    title="Add hotkey"
+                    aria-label="Add hotkey"
+                  >
+                    +
+                  </button>
+                </div>
+                <span class="settings-hint" id="hotkeyCaptureHint"
+                  >Ready. Click + to record a new hotkey.</span
+                >
+              </div>
+            </div>
+
+            <div class="settings-panel" id="settingsPanel-summarization">
+              <h3 class="settings-panel-title">Summarization</h3>
+              <div class="prompt-customization-section">
+                <h3 class="settings-label settings-subheader">Prompt</h3>
+                <p class="settings-hint settings-description">
+>>>>>>> master
                   Customize how AI summarizes your meetings. The following
                   variables can be used: {transcript} and {participants}.
                   {transcript} is the full transcription text, and
@@ -530,16 +943,142 @@
                   />
                 </div>
 
+<<<<<<< HEAD
                 <h3 class="settings-section-title">Model Management</h3>
                 <p class="settings-panel-description">
+=======
+                <h3 class="settings-label settings-subheader">
+                  Model Management
+                </h3>
+                <p class="settings-hint settings-description">
+>>>>>>> master
                   Manage GGUF models used for summarization.
                 </p>
 
                 <div id="summarizationModelsContainer"></div>
               </div>
 
+<<<<<<< HEAD
               <!-- NOTE: would it be possible to use values from shared/config.ts? would like to use that file as single source of truth?  -->
 
+=======
+              <div class="settings-main-group">
+                <h3
+                  class="settings-label settings-subheader settings-group-main"
+                >
+                  Utility Process (advanced)
+                </h3>
+                <p
+                  class="settings-hint settings-description settings-group-main-description"
+                >
+                  Configure memory monitoring and lifecycle behavior for the
+                  summarization utility process.
+                </p>
+              </div>
+
+              <div class="settings-group">
+                <label
+                  class="settings-label"
+                  for="summarizationMemoryCheckIntervalInput"
+                >
+                  Memory Check Interval (seconds)
+                  <span class="settings-hint"
+                    >How often memory usage is checked (1-600). Mainly for
+                    logging purposes, so leave unchanged unless debugging.</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="summarizationMemoryCheckIntervalInput"
+                  class="settings-input"
+                  min="1"
+                  max="600"
+                  step="1"
+                  value="10"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label
+                  class="settings-label"
+                  for="summarizationMemoryThresholdInput"
+                >
+                  Memory Threshold (MB)
+                  <span class="settings-hint"
+                    >Restart process if RSS exceeds this threshold
+                    (256-32768)</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="summarizationMemoryThresholdInput"
+                  class="settings-input"
+                  min="256"
+                  max="32768"
+                  step="256"
+                  value="4096"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label
+                  class="settings-label"
+                  for="summarizationRestartDelayInput"
+                >
+                  Restart Delay (seconds)
+                  <span class="settings-hint"
+                    >Delay before restart after an unexpected exit (0-60)</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="summarizationRestartDelayInput"
+                  class="settings-input"
+                  min="0"
+                  max="60"
+                  step="1"
+                  value="1"
+                />
+              </div>
+
+              <div class="settings-group">
+                <label
+                  class="settings-label"
+                  for="summarizationProcessRecycleTimeoutInput"
+                >
+                  Process Recycle Timeout (minutes)
+                  <span class="settings-hint"
+                    >Recycle idle utility process after this duration
+                    (1-120)</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="summarizationProcessRecycleTimeoutInput"
+                  class="settings-input"
+                  min="1"
+                  max="120"
+                  step="1"
+                  value="5"
+                />
+              </div>
+
+              <!-- NOTE: would it be possible to use values from shared/config.ts? would like to use that file as single source of truth?  -->
+
+              <div class="settings-main-group">
+                <h3
+                  class="settings-label settings-subheader settings-group-main"
+                >
+                  Summarization Parameters
+                </h3>
+                <p
+                  class="settings-hint settings-description settings-group-main-description"
+                >
+                  Configure generation behavior for summarization output.
+                </p>
+              </div>
+
+>>>>>>> master
               <div class="settings-group">
                 <label class="settings-label" for="minSummaryLengthInput">
                   Minimum Text Length
@@ -649,6 +1188,52 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay hidden" id="syncAuthModal">
+      <div class="modal-container settings-modal-container">
+        <div class="modal-header">
+          <div>
+            <h2>Connect to Server</h2>
+          </div>
+          <button class="modal-close-btn" id="closeSyncAuthModal" title="Close">
+            ✕
+          </button>
+        </div>
+
+        <div class="settings-group">
+          <label class="settings-label" for="syncAuthUsernameInput"
+            >Username</label
+          >
+          <input
+            type="text"
+            id="syncAuthUsernameInput"
+            class="settings-input"
+            placeholder="your_username"
+          />
+        </div>
+
+        <div class="settings-group">
+          <label class="settings-label" for="syncAuthPasswordInput"
+            >Password</label
+          >
+          <input
+            type="password"
+            id="syncAuthPasswordInput"
+            class="settings-input"
+            placeholder="At least 8 characters"
+          />
+        </div>
+
+        <div class="settings-group">
+          <span class="settings-hint" id="syncAuthStatusText"></span>
+        </div>
+
+        <div class="settings-actions">
+          <button class="action-btn" id="syncSignupBtn">Sign Up</button>
+          <button class="action-btn primary" id="syncLoginBtn">Login</button>
         </div>
       </div>
     </div>

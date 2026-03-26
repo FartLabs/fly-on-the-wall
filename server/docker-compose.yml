@@ -1,0 +1,64 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      PORT: 8080
+      DATABASE_DRIVER: postgres
+      DATABASE_URL: postgres://fly:fly@postgres:5432/flyonthewall?sslmode=disable
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY_ID: minioadmin
+      S3_SECRET_ACCESS_KEY: minioadmin
+      S3_BUCKET: flyonthewall
+      S3_FORCE_PATH_STYLE: "true"
+      CSRF_SECRET: "${CSRF_SECRET:-change-me-in-production-32chars!}"
+      COOKIE_SECURE: "${COOKIE_SECURE:-false}"
+      PREMIUM_MODE: "${PREMIUM_MODE:-all_premium}"
+      STRIPE_ENABLED: "${STRIPE_ENABLED:-false}"
+      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
+      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-}"
+      STRIPE_PRICE_ID: "${STRIPE_PRICE_ID:-}"
+      ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-*}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: fly
+      POSTGRES_PASSWORD: fly
+      POSTGRES_DB: flyonthewall
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fly -d flyonthewall"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - miniodata:/data
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  miniodata:

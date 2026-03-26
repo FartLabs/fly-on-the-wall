@@ -55,7 +55,7 @@ function eventToShortcut(event: KeyboardEvent): string {
   return [...modifiers, key].join("+");
 }
 
-export async function refreshHotkeysFromConfig(): Promise<void> {
+export async function refreshHotkeysFromConfig() {
   const config = await window.electronAPI.configGet();
   const rawOpenSettings = (
     config.hotkeys as { openSettings?: string | string[] }
@@ -69,7 +69,7 @@ export async function refreshHotkeysFromConfig(): Promise<void> {
     : [...HOTKEY_DEFAULTS.openSettings];
 }
 
-export function setupHotkeysListeners(): void {
+export function setupHotkeysListeners() {
   refreshHotkeysFromConfig().catch((error) => {
     console.warn("Failed to load hotkeys config:", error);
   });
