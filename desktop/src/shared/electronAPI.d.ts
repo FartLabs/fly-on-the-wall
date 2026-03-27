@@ -96,7 +96,7 @@ export interface AppConfig {
 }
 
 // typical type response for most IPC calls, can be extended with additional fields as needed
-export type IPCResponse<T = {}> = Promise<
+export type IPCResponse<T = object> = Promise<
   { success: boolean; error?: string } & T
 >;
 

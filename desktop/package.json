@@ -10,7 +10,7 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
-    "lint": "npm run lint:ts; npm run lint:css",
+    "lint": "npm run lint:ts && npm run lint:css",
     "lint:css": "stylelint '**/*.css'",
     "lint:ts": "eslint --ext .ts .",
     "knip": "knip"
