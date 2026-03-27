@@ -1,4 +1,5 @@
 .recorder-card,
+.participants-card,
 .audio-devices-card,
 .model-management-card,
 .transcription-card,
@@ -6,11 +7,11 @@
 .history-card,
 .note-viewer-card,
 .settings-page-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 0.05);
   border-radius: 16px;
   padding: 1.5rem;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgb(255 255 255 / 0.1);
 }
 
 .recorder-card {
@@ -53,7 +54,7 @@
   justify-content: space-between;
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgb(255 255 255 / 0.1);
 }
 
 .card-header h2 {
@@ -71,8 +72,8 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.25rem;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgb(255 255 255 / 0.1);
+  border: 1px solid rgb(255 255 255 / 0.2);
   border-radius: 12px;
   color: white;
   font-size: 0.9rem;
@@ -82,9 +83,9 @@
 }
 
 .nav-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgb(255 255 255 / 0.15);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px rgb(102 126 234 / 0.3);
 }
 
 .nav-btn span:first-child {
@@ -92,7 +93,7 @@
 }
 
 .refresh-btn {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 0.1);
   border: none;
   color: #fff;
   width: 32px;
@@ -104,7 +105,7 @@
 }
 
 .refresh-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(255 255 255 / 0.2);
 }
 
 .refresh-btn.spinning {
@@ -121,6 +122,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -129,7 +131,7 @@
 .action-btn {
   flex: 1;
   padding: 0.5rem 1rem;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 0.1);
   border: none;
   border-radius: 8px;
   color: #fff;
@@ -139,11 +141,11 @@
 }
 
 .action-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(255 255 255 / 0.2);
 }
 
 .close-btn {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 0.1);
   border: none;
   color: #fff;
   width: 32px;
@@ -158,7 +160,7 @@
 }
 
 .close-btn:hover {
-  background: rgba(255, 71, 87, 0.3);
+  background: rgb(255 71 87 / 0.3);
 }
 
 .delete-btn {
@@ -166,14 +168,14 @@
 }
 
 .delete-btn:hover {
-  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.4);
+  box-shadow: 0 4px 12px rgb(255 71 87 / 0.4);
 }
 
 .progress-bar,
 .model-progress-bar {
   width: 100%;
   height: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 0.1);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -196,11 +198,12 @@
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
-@keyframes progressPulse {
+@keyframes progress-pulse {
   0%,
   100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.6;
   }
@@ -208,7 +211,7 @@
 
 .progress-fill.indeterminate {
   width: 100%;
-  animation: progressPulse 1.5s infinite;
+  animation: progress-pulse 1.5s infinite;
 }
 
 .progress-text,
@@ -261,7 +264,7 @@
 .history-list::-webkit-scrollbar-track,
 .transcription-text::-webkit-scrollbar-track,
 .note-content::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 0.05);
   border-radius: 3px;
 }
 
@@ -273,7 +276,7 @@
 .history-list::-webkit-scrollbar-thumb,
 .transcription-text::-webkit-scrollbar-thumb,
 .note-content::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(255 255 255 / 0.2);
   border-radius: 3px;
 }
 

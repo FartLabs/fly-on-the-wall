@@ -1,0 +1,30 @@
+.billing-page {
+  padding: 2rem 0;
+}
+
+.billing-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  max-width: 500px;
+}
+
+.billing-active {
+  border-color: var(--color-success);
+}
+
+.premium-features ul {
+  list-style: none;
+  margin: 1rem 0;
+}
+
+.premium-features li::before {
+  content: "✓ ";
+  color: var(--color-success);
+}
+
+.premium-features li {
+  padding: 0.25rem 0;
+  color: var(--color-text-muted);
+}

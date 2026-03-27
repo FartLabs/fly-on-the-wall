@@ -12,6 +12,7 @@ export function getActiveInputDeviceIds(): string[] {
   const allDeviceItems = Array.from(
     elements.devicesList.querySelectorAll(".device-item")
   );
+  // include only those that are not muted and are input devices
   return allDeviceItems
     .filter((el) => {
       const deviceId = (el as HTMLElement).dataset.deviceId;
@@ -71,7 +72,7 @@ function createDeviceElement(device: AudioDeviceInfo): HTMLElement {
   return deviceItem;
 }
 
-export async function loadAudioDevices(): Promise<void> {
+export async function loadAudioDevices() {
   elements.devicesList.innerHTML =
     '<p class="loading-text">Loading microphones...</p>';
 

@@ -1,0 +1,87 @@
+{{define "admin/users"}} {{template "base" .}} {{end}} {{define "content"}}
+<div class="admin-users">
+  <h2>User Management</h2>
+
+  <p class="user-count">
+    Total Users: {{if .Data}}{{index .Data "total_count"}}{{else}}0{{end}}
+  </p>
+
+  <div class="table-container">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Premium</th>
+          <th>Admin</th>
+          <th>Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{if .Data}} {{$currentUser := .User}} {{range index .Data "users"}}
+        <tr>
+          <td>{{.Username}}</td>
+          <td>
+            <form
+              action="/admin/users/premium"
+              method="POST"
+              class="inline-form"
+            >
+              <input type="hidden" name="user_id" value="{{.ID}}" />
+              <input
+                type="hidden"
+                name="is_premium"
+                value="{{if .IsPremium}}false{{else}}true{{end}}"
+              />
+              <button
+                type="submit"
+                class="btn btn-sm {{if .IsPremium}}btn-success{{else}}btn-secondary{{end}}"
+              >
+                {{if .IsPremium}}Yes{{else}}No{{end}}
+              </button>
+            </form>
+          </td>
+          <td>
+            {{if eq .ID $currentUser.ID}}
+            <span class="badge badge-admin">Yes</span>
+            {{else}}
+            <form action="/admin/users/admin" method="POST" class="inline-form">
+              <input type="hidden" name="user_id" value="{{.ID}}" />
+              <input
+                type="hidden"
+                name="is_admin"
+                value="{{if .IsAdmin}}false{{else}}true{{end}}"
+              />
+              <button
+                type="submit"
+                class="btn btn-sm {{if .IsAdmin}}btn-success{{else}}btn-secondary{{end}}"
+              >
+                {{if .IsAdmin}}Yes{{else}}No{{end}}
+              </button>
+            </form>
+            {{end}}
+          </td>
+          <td>{{.CreatedAt.Format "2006-01-02 15:04"}}</td>
+        </tr>
+        {{end}} {{end}}
+      </tbody>
+    </table>
+  </div>
+
+  {{if .Data}} {{if gt (index .Data "total_pages") 1}}
+  <div class="pagination">
+    {{$currentPage := index .Data "page"}} {{$totalPages := index .Data
+    "total_pages"}} {{if gt $currentPage 1}}
+    <a href="/admin/users?page={{sub $currentPage 1}}" class="btn btn-secondary"
+      >Previous</a
+    >
+    {{end}}
+    <span class="page-info">Page {{$currentPage}} of {{$totalPages}}</span>
+    {{if lt $currentPage $totalPages}}
+    <a href="/admin/users?page={{add $currentPage 1}}" class="btn btn-secondary"
+      >Next</a
+    >
+    {{end}}
+  </div>
+  {{end}} {{end}}
+</div>
+{{end}}

@@ -1,6 +1,9 @@
 // TODO: this is getting quite large, find a better way to organize DOM nodes
 // i.e see history.ts that maintains its own DOM references
 export const elements = {
+  preflightWarning: document.getElementById(
+    "preflightWarning"
+  ) as HTMLDivElement,
   recordBtn: document.getElementById("recordBtn") as HTMLButtonElement,
   btnIcon: document.getElementById("btnIcon") as HTMLSpanElement,
   btnText: document.getElementById("btnText") as HTMLSpanElement,
@@ -76,30 +79,26 @@ export const elements = {
     "rightPanelCopySummary"
   ) as HTMLButtonElement,
 
-  modelsList: document.getElementById("modelsList") as HTMLDivElement,
-
   customPromptInput: document.getElementById(
     "customPromptInput"
   ) as HTMLTextAreaElement,
-  savePromptBtn: document.getElementById("savePromptBtn") as HTMLButtonElement,
-  resetPromptBtn: document.getElementById(
-    "resetPromptBtn"
-  ) as HTMLButtonElement,
-  viewDefaultPromptBtn: document.getElementById(
-    "viewDefaultPromptBtn"
-  ) as HTMLButtonElement,
 
-  sidebar: document.getElementById("sidebar") as HTMLDivElement,
-  sidebarTrigger: document.getElementById("sidebarTrigger") as HTMLDivElement,
-
-  rightPanel: document.getElementById("rightPanel") as HTMLDivElement,
-  rightPanelTrigger: document.getElementById(
-    "rightPanelTrigger"
+  rightSidebar: document.getElementById("rightSidebar") as HTMLElement,
+  rightSidebarCollapseBtn: document.getElementById(
+    "rightSidebarCollapseBtn"
+  ) as HTMLButtonElement,
+  rightSidebarResizeHandle: document.getElementById(
+    "rightSidebarResizeHandle"
+  ) as HTMLDivElement,
+  rightSidebarContent: document.getElementById(
+    "rightSidebarContent"
+  ) as HTMLDivElement,
+  rightSidebarEmpty: document.getElementById(
+    "rightSidebarEmpty"
   ) as HTMLDivElement,
   exportNoteBtn: document.getElementById("exportNoteBtn") as HTMLButtonElement,
 
-  mainPage: document.getElementById("mainPage") as HTMLDivElement,
-  historyPage: document.getElementById("historyPage") as HTMLDivElement,
+  mainPage: document.getElementById("main-page") as HTMLDivElement,
 
   settingsModal: document.getElementById("settingsModal") as HTMLDivElement,
   closeSettingsModal: document.getElementById(
@@ -140,16 +139,186 @@ export const elements = {
   repeatPenaltyInput: document.getElementById(
     "repeatPenaltyInput"
   ) as HTMLInputElement,
-  saveSettingsBtn: document.getElementById(
-    "saveSettingsBtn"
+  transcriptionModelPathInput: document.getElementById(
+    "transcriptionModelPathInput"
+  ) as HTMLInputElement,
+  transcriptionMemoryCheckIntervalInput: document.getElementById(
+    "transcriptionMemoryCheckIntervalInput"
+  ) as HTMLInputElement,
+  transcriptionMemoryThresholdInput: document.getElementById(
+    "transcriptionMemoryThresholdInput"
+  ) as HTMLInputElement,
+  transcriptionRestartDelayInput: document.getElementById(
+    "transcriptionRestartDelayInput"
+  ) as HTMLInputElement,
+  transcriptionProcessRecycleTimeoutInput: document.getElementById(
+    "transcriptionProcessRecycleTimeoutInput"
+  ) as HTMLInputElement,
+  hotkeyOpenSettingsList: document.getElementById(
+    "hotkeyOpenSettingsList"
+  ) as HTMLDivElement,
+  hotkeyOpenSettingsAddBtn: document.getElementById(
+    "hotkeyOpenSettingsAddBtn"
   ) as HTMLButtonElement,
+  hotkeyCaptureHint: document.getElementById(
+    "hotkeyCaptureHint"
+  ) as HTMLSpanElement,
+  summarizationModelPathInput: document.getElementById(
+    "summarizationModelPathInput"
+  ) as HTMLInputElement,
+  summarizationMemoryCheckIntervalInput: document.getElementById(
+    "summarizationMemoryCheckIntervalInput"
+  ) as HTMLInputElement,
+  summarizationMemoryThresholdInput: document.getElementById(
+    "summarizationMemoryThresholdInput"
+  ) as HTMLInputElement,
+  summarizationRestartDelayInput: document.getElementById(
+    "summarizationRestartDelayInput"
+  ) as HTMLInputElement,
+  summarizationProcessRecycleTimeoutInput: document.getElementById(
+    "summarizationProcessRecycleTimeoutInput"
+  ) as HTMLInputElement,
+
+  serverUrlInput: document.getElementById("serverUrlInput") as HTMLInputElement,
+  syncIntervalMinutesInput: document.getElementById(
+    "syncIntervalMinutesInput"
+  ) as HTMLInputElement,
+  syncStatusText: document.getElementById("syncStatusText") as HTMLSpanElement,
+  syncLastSyncText: document.getElementById(
+    "syncLastSyncText"
+  ) as HTMLSpanElement,
+  syncLastErrorText: document.getElementById(
+    "syncLastErrorText"
+  ) as HTMLSpanElement,
+  syncConnectBtn: document.getElementById(
+    "syncConnectBtn"
+  ) as HTMLButtonElement,
+  syncLogoutBtn: document.getElementById("syncLogoutBtn") as HTMLButtonElement,
+  syncNowBtn: document.getElementById("syncNowBtn") as HTMLButtonElement,
+  syncAuthModal: document.getElementById("syncAuthModal") as HTMLDivElement,
+  closeSyncAuthModal: document.getElementById(
+    "closeSyncAuthModal"
+  ) as HTMLButtonElement,
+  syncAuthUsernameInput: document.getElementById(
+    "syncAuthUsernameInput"
+  ) as HTMLInputElement,
+  syncAuthPasswordInput: document.getElementById(
+    "syncAuthPasswordInput"
+  ) as HTMLInputElement,
+  syncAuthStatusText: document.getElementById(
+    "syncAuthStatusText"
+  ) as HTMLSpanElement,
+  syncSignupBtn: document.getElementById("syncSignupBtn") as HTMLButtonElement,
+  syncLoginBtn: document.getElementById("syncLoginBtn") as HTMLButtonElement,
   resetSettingsBtn: document.getElementById(
     "resetSettingsBtn"
   ) as HTMLButtonElement,
+
+  transcriptionModelPathHint: document.getElementById(
+    "transcriptionModelPathHint"
+  ) as HTMLSpanElement,
+  summarizationModelPathHint: document.getElementById(
+    "summarizationModelPathHint"
+  ) as HTMLSpanElement,
 
   importQueue: document.getElementById("importQueue") as HTMLDivElement,
   importQueueList: document.getElementById("importQueueList") as HTMLDivElement,
   importQueueCount: document.getElementById(
     "importQueueCount"
-  ) as HTMLSpanElement
+  ) as HTMLSpanElement,
+
+  meetingParticipantsInput: document.getElementById(
+    "meetingParticipantsInput"
+  ) as HTMLTextAreaElement,
+
+  leftSidebar: document.getElementById("leftSidebar") as HTMLElement,
+  appContent: document.getElementById("appContent") as HTMLDivElement,
+  sidebarCollapseBtn: document.getElementById(
+    "sidebarCollapseBtn"
+  ) as HTMLButtonElement,
+  sidebarResizeHandle: document.getElementById(
+    "sidebarResizeHandle"
+  ) as HTMLDivElement,
+  sidebarNavRecorder: document.getElementById(
+    "sidebarNavRecorder"
+  ) as HTMLButtonElement,
+  sidebarNavSettings: document.getElementById(
+    "sidebarNavSettings"
+  ) as HTMLButtonElement,
+  sidebarRefreshBtn: document.getElementById(
+    "sidebarRefreshBtn"
+  ) as HTMLButtonElement,
+  sidebarSelectedCount: document.getElementById(
+    "sidebarSelectedCount"
+  ) as HTMLSpanElement,
+  sidebarSearchInput: document.getElementById(
+    "sidebarSearchInput"
+  ) as HTMLInputElement,
+  sidebarFileTree: document.getElementById("sidebarFileTree") as HTMLDivElement,
+  sidebarFilesSection: document.getElementById(
+    "sidebarFilesSection"
+  ) as HTMLDivElement,
+  sidebarContextMenu: document.getElementById(
+    "sidebarContextMenu"
+  ) as HTMLDivElement,
+  ctxRenameNote: document.getElementById("ctxRenameNote") as HTMLButtonElement,
+  ctxDeleteNote: document.getElementById("ctxDeleteNote") as HTMLButtonElement,
+
+  noteViewPage: document.getElementById("note-view-page") as HTMLDivElement,
+  noteViewTitle: document.getElementById("noteViewTitle") as HTMLHeadingElement,
+  noteViewTranscription: document.getElementById(
+    "noteViewTranscription"
+  ) as HTMLDivElement,
+  noteViewSummary: document.getElementById("noteViewSummary") as HTMLDivElement,
+  noteViewRecordingPlayer: document.getElementById(
+    "noteViewRecordingPlayer"
+  ) as HTMLDivElement,
+  noteViewAudioPlayer: document.getElementById(
+    "noteViewAudioPlayer"
+  ) as HTMLAudioElement,
+  noteViewOriginalFilename: document.getElementById(
+    "noteViewOriginalFilename"
+  ) as HTMLDivElement,
+  noteViewExportBtn: document.getElementById(
+    "noteViewExportBtn"
+  ) as HTMLButtonElement,
+  noteViewDeleteBtn: document.getElementById(
+    "noteViewDeleteBtn"
+  ) as HTMLButtonElement,
+  noteViewCopyTranscription: document.getElementById(
+    "noteViewCopyTranscription"
+  ) as HTMLButtonElement,
+  noteViewCopySummary: document.getElementById(
+    "noteViewCopySummary"
+  ) as HTMLButtonElement,
+  noteResummarizeBtn: document.getElementById(
+    "noteResummarizeBtn"
+  ) as HTMLButtonElement,
+  noteResummarizeCancelBtn: document.getElementById(
+    "noteResummarizeCancelBtn"
+  ) as HTMLButtonElement,
+  noteResummarizeStatus: document.getElementById(
+    "noteResummarizeStatus"
+  ) as HTMLSpanElement,
+  noteResummarizeParticipants: document.getElementById(
+    "noteResummarizeParticipants"
+  ) as HTMLDivElement,
+  noteResummarizeParticipantsInput: document.getElementById(
+    "noteResummarizeParticipantsInput"
+  ) as HTMLInputElement,
+  noteResummarizeReview: document.getElementById(
+    "noteResummarizeReview"
+  ) as HTMLDivElement,
+  noteResummarizeOldText: document.getElementById(
+    "noteResummarizeOldText"
+  ) as HTMLDivElement,
+  noteResummarizeReviewText: document.getElementById(
+    "noteResummarizeReviewText"
+  ) as HTMLDivElement,
+  noteResummarizeAcceptBtn: document.getElementById(
+    "noteResummarizeAcceptBtn"
+  ) as HTMLButtonElement,
+  noteResummarizeRejectBtn: document.getElementById(
+    "noteResummarizeRejectBtn"
+  ) as HTMLButtonElement
 };

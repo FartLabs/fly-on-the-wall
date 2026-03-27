@@ -1,57 +1,18 @@
-import { app, ipcMain, dialog, shell, BrowserWindow } from "electron";
+import { ipcMain, dialog, shell, BrowserWindow } from "electron";
 import path from "node:path";
 import fs from "node:fs";
-import { formatBytes } from "../utils";
+import { formatBytes, ensureDir } from "../utils";
 import { exportNoteHtml } from "./exportedNote";
+import { pushDeletes, enqueuePendingDelete } from "./sync-manager";
 import type { ModelDownloader } from "node-llama-cpp";
-
-const getModelsDir = (): string => {
-  const modelsDir = path.join(app.getPath("userData"), "models");
-  if (!fs.existsSync(modelsDir)) {
-    fs.mkdirSync(modelsDir, { recursive: true });
-  }
-  return modelsDir;
-};
-
-const getModelsCacheDir = (): string => {
-  const cacheDir = path.join(app.getPath("userData"), "cache", "models");
-  if (!fs.existsSync(cacheDir)) {
-    fs.mkdirSync(cacheDir, { recursive: true });
-  }
-  return cacheDir;
-};
-
-const getSummarizationModelsDir = (): string => {
-  const summarizationDir = path.join(
-    app.getPath("userData"),
-    "models",
-    "summarization"
-  );
-  if (!fs.existsSync(summarizationDir)) {
-    fs.mkdirSync(summarizationDir, { recursive: true });
-  }
-  return summarizationDir;
-};
-
-export const getTranscriptionModelsDir = (): string => {
-  const transcriptionDir = path.join(
-    app.getPath("userData"),
-    "models",
-    "transcription"
-  );
-  if (!fs.existsSync(transcriptionDir)) {
-    fs.mkdirSync(transcriptionDir, { recursive: true });
-  }
-  return transcriptionDir;
-};
-
-const getNotesDir = (): string => {
-  const notesDir = path.join(app.getPath("userData"), "notes");
-  if (!fs.existsSync(notesDir)) {
-    fs.mkdirSync(notesDir, { recursive: true });
-  }
-  return notesDir;
-};
+import {
+  getModelsDir,
+  getModelsCacheDir,
+  getTranscriptionModelsDir,
+  getSummarizationModelsDir,
+  getNotesDir,
+  getRecordingsDir
+} from "./userData";
 
 ipcMain.handle("get-models-dir", () => {
   return getModelsDir();
@@ -59,6 +20,14 @@ ipcMain.handle("get-models-dir", () => {
 
 ipcMain.handle("get-models-cache-dir", () => {
   return getModelsCacheDir();
+});
+
+ipcMain.handle("get-transcription-models-dir", () => {
+  return getTranscriptionModelsDir();
+});
+
+ipcMain.handle("get-summarization-models-dir", () => {
+  return getSummarizationModelsDir();
 });
 
 ipcMain.handle("open-models-folder", async () => {
@@ -75,6 +44,9 @@ ipcMain.handle("open-models-folder", async () => {
 ipcMain.handle("list-gguf-models", async () => {
   try {
     const summarizationDir = getSummarizationModelsDir();
+    if (!fs.existsSync(summarizationDir)) {
+      return { success: true, models: [] };
+    }
     const files = fs.readdirSync(summarizationDir);
     const ggufFiles = files
       .filter((file) => file.toLowerCase().endsWith(".gguf"))
@@ -120,6 +92,7 @@ ipcMain.handle(
   async (_event, data: { sourcePath: string; copyMode?: "copy" | "move" }) => {
     try {
       const summarizationDir = getSummarizationModelsDir();
+      ensureDir(summarizationDir);
       const fileName = path.basename(data.sourcePath);
       const targetPath = path.join(summarizationDir, fileName);
 
@@ -232,14 +205,23 @@ ipcMain.handle(
   ) => {
     try {
       const notesDir = getNotesDir();
-
       const ts = new Date();
+
+      const pad = (num: number) => String(num).padStart(2, "0");
+      const year = ts.getFullYear();
+      const month = pad(ts.getMonth() + 1);
+      const day = pad(ts.getDate());
+      const hours = pad(ts.getHours());
+      const minutes = pad(ts.getMinutes());
+      const seconds = pad(ts.getSeconds());
+
       const filename =
         data.filename ||
-        `note_${ts.getFullYear()}${String(ts.getMonth() + 1).padStart(2, "0")}${String(ts.getDate()).padStart(2, "0")}_${String(ts.getHours()).padStart(2, "0")}${String(ts.getMinutes()).padStart(2, "0")}${String(ts.getSeconds()).padStart(2, "0")}.json`;
+        `note_${year}${month}${day}_${hours}${minutes}${seconds}.json`;
 
+      const fileExtRegex = /\.[^.]+$/;
       const note = {
-        id: filename.replace(/\.[^.]+$/, ""),
+        id: filename.replace(fileExtRegex, ""),
         created: ts.toISOString(),
         transcription: data.transcription,
         summary: data.summary || "",
@@ -307,19 +289,60 @@ ipcMain.handle("read-note", async (_event, filename: string) => {
   }
 });
 
-ipcMain.handle("delete-note", async (_event, filename: string) => {
-  try {
-    const notesDir = getNotesDir();
-    const filePath = path.join(notesDir, filename);
+ipcMain.handle(
+  "delete-note",
+  async (_event, filename: string, deleteRecording = false) => {
+    try {
+      const notesDir = getNotesDir();
+      const filePath = path.join(notesDir, filename);
 
-    fs.unlinkSync(filePath);
-    console.log(`Note deleted: ${filePath}`);
-    return { success: true };
-  } catch (error) {
-    console.error("Error deleting note:", error);
-    return { success: false, error: String(error) };
+      // Before unlinking, extract recording filename and queue any remote deletes
+      let recordingFilename: string | undefined;
+      try {
+        if (fs.existsSync(filePath)) {
+          const raw = fs.readFileSync(filePath, "utf-8");
+          const content = JSON.parse(raw);
+          recordingFilename = content?.metadata?.recordingFilename;
+
+          const remoteId: string | undefined =
+            content?.metadata?.sync?.remoteId;
+
+          if (remoteId) {
+            enqueuePendingDelete(remoteId, filename);
+            console.log(`[sync] Queued remote delete for note: ${remoteId}`);
+            pushDeletes().catch((e) =>
+              console.warn("[sync] Eager pushDeletes failed:", e)
+            );
+          }
+        }
+      } catch (enqueueErr) {
+        console.warn("[sync] Failed to enqueue remote delete:", enqueueErr);
+      }
+
+      if (deleteRecording && recordingFilename) {
+        try {
+          const recordingPath = path.join(
+            getRecordingsDir(),
+            recordingFilename
+          );
+          if (fs.existsSync(recordingPath)) {
+            fs.unlinkSync(recordingPath);
+            console.log(`Recording deleted: ${recordingPath}`);
+          }
+        } catch (recErr) {
+          console.warn("[delete-note] Failed to delete recording:", recErr);
+        }
+      }
+
+      fs.unlinkSync(filePath);
+      console.log(`Note deleted: ${filePath}`);
+      return { success: true };
+    } catch (error) {
+      console.error("Error deleting note:", error);
+      return { success: false, error: String(error) };
+    }
   }
-});
+);
 
 ipcMain.handle(
   "export-note",
@@ -370,10 +393,7 @@ ipcMain.handle(
         // save the recording file if it exists
         if (note.metadata && note.metadata.recordingFilename) {
           try {
-            const recordingsDir = path.join(
-              app.getPath("userData"),
-              "recordings"
-            );
+            const recordingsDir = getRecordingsDir();
             const recordingPath = path.join(
               recordingsDir,
               note.metadata.recordingFilename
@@ -456,7 +476,8 @@ function buildModelUri(data: {
   return { error: "Provide either a URL, or a repo + filename" };
 }
 
-function broadcastToRenderer(channel: string, data: any): void {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function broadcastToRenderer(channel: string, data: any) {
   // there's only one window for this app
   const win = BrowserWindow.getAllWindows()[0];
   if (win && !win.isDestroyed()) {
@@ -553,6 +574,7 @@ ipcMain.handle(
       }
 
       const summarizationDir = getSummarizationModelsDir();
+      ensureDir(summarizationDir);
 
       console.log(`[Models] Downloading GGUF model: ${result.modelUri}`);
       console.log(`[Models] Target directory: ${summarizationDir}`);

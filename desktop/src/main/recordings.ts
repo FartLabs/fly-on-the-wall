@@ -1,14 +1,7 @@
-import { app, ipcMain, desktopCapturer, dialog, BrowserWindow } from "electron";
+import { ipcMain, desktopCapturer, dialog, BrowserWindow } from "electron";
 import path from "node:path";
 import fs from "node:fs";
-
-const getRecordingsDir = (): string => {
-  const recordingsDir = path.join(app.getPath("userData"), "recordings");
-  if (!fs.existsSync(recordingsDir)) {
-    fs.mkdirSync(recordingsDir, { recursive: true });
-  }
-  return recordingsDir;
-};
+import { getRecordingsDir } from "./userData";
 
 ipcMain.handle("get-desktop-sources", async () => {
   try {

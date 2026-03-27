@@ -1,14 +1,14 @@
-import { app, ipcMain } from "electron";
+import { ipcMain } from "electron";
 import path from "node:path";
 import fs from "node:fs";
 import { AppConfig } from "@/shared/electronAPI";
 import { DEFAULT_CONFIG } from "@/shared/config";
+import { getConfigPath } from "./userData";
 
-function getConfigPath(): string {
-  return path.join(app.getPath("userData"), "config.json");
-}
+type ConfigUpdateListener = (config: AppConfig) => void;
+const configUpdateListeners = new Set<ConfigUpdateListener>();
 
-function readConfig(): AppConfig {
+export function readConfig(): AppConfig {
   const configPath = getConfigPath();
   try {
     if (fs.existsSync(configPath)) {
@@ -16,6 +16,9 @@ function readConfig(): AppConfig {
       const parsed = JSON.parse(raw);
 
       // deep merge with defaults to handle missing keys from older configs
+      // TODO: consider migration old configs to new ones if certain keys from
+      // previous versions are missing, instead of just merging them into the new config.
+      // That way, the user's configs aren't messy
       return deepMerge(structuredClone(DEFAULT_CONFIG), parsed);
     }
   } catch (error) {
@@ -24,7 +27,64 @@ function readConfig(): AppConfig {
   return structuredClone(DEFAULT_CONFIG);
 }
 
-function writeConfig(config: AppConfig): void {
+export function onConfigUpdated(listener: ConfigUpdateListener): () => void {
+  configUpdateListeners.add(listener);
+  return () => {
+    configUpdateListeners.delete(listener);
+  };
+}
+
+function notifyConfigUpdated(config: AppConfig) {
+  for (const listener of configUpdateListeners) {
+    try {
+      listener(config);
+    } catch (error) {
+      console.error("Error in config update listener:", error);
+    }
+  }
+}
+
+function logUtilityProcessSettingChanges(previous: AppConfig, next: AppConfig) {
+  const sections: Array<"transcription" | "summarization"> = [
+    "transcription",
+    "summarization"
+  ];
+
+  for (const section of sections) {
+    const before = previous[section].utilityProcess;
+    const after = next[section].utilityProcess;
+
+    const changed: string[] = [];
+
+    if (before.memoryCheckIntervalMs !== after.memoryCheckIntervalMs) {
+      changed.push(
+        `memoryCheckIntervalMs: ${before.memoryCheckIntervalMs} -> ${after.memoryCheckIntervalMs}`
+      );
+    }
+    if (before.memoryThresholdMb !== after.memoryThresholdMb) {
+      changed.push(
+        `memoryThresholdMb: ${before.memoryThresholdMb} -> ${after.memoryThresholdMb}`
+      );
+    }
+    if (before.restartDelayMs !== after.restartDelayMs) {
+      changed.push(
+        `restartDelayMs: ${before.restartDelayMs} -> ${after.restartDelayMs}`
+      );
+    }
+    if (before.processRecycleTimeoutMs !== after.processRecycleTimeoutMs) {
+      changed.push(
+        `processRecycleTimeoutMs: ${before.processRecycleTimeoutMs} -> ${after.processRecycleTimeoutMs}`
+      );
+    }
+
+    if (changed.length > 0) {
+      console.log(
+        `[Config] ${section} utility process settings changed: ${changed.join(", ")}`
+      );
+    }
+  }
+}
+function writeConfig(config: AppConfig) {
   const configPath = getConfigPath();
   try {
     const dir = path.dirname(configPath);
@@ -66,9 +126,15 @@ ipcMain.handle("config-get", () => {
   return readConfig();
 });
 
-ipcMain.handle("config-set", (_event, partialConfig: Partial<AppConfig>) => {
+export function setConfig(partialConfig: Partial<AppConfig>): AppConfig {
   const current = readConfig();
   const merged = deepMerge(current, partialConfig as Record<string, any>);
   writeConfig(merged);
+  logUtilityProcessSettingChanges(current, merged);
+  notifyConfigUpdated(merged);
   return merged;
+}
+
+ipcMain.handle("config-set", (_event, partialConfig: Partial<AppConfig>) => {
+  return setConfig(partialConfig);
 });

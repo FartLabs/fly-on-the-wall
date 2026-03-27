@@ -34,7 +34,8 @@ import {
   stopRecording,
   pauseRecording,
   resumeRecording,
-  isRecordingState
+  isRecordingState,
+  checkRecordingPreflight
 } from "./components/recorder";
 import {
   refreshModelsList,
@@ -47,12 +48,12 @@ import {
 import { setupSummarizationListeners } from "./components/summarizer";
 import { getSelectedModelPath } from "@/summarization";
 import { setupHistoryListeners } from "./components/history";
-import { setupPromptCustomizer } from "./components/promptCustomizer";
-import { setupSidebarListeners } from "./components/leftSideBar";
-import { setupRightPanelListeners } from "./components/rightSideBar";
+import { setupRightSidebarListeners } from "./components/rightSideBar";
 import { setupSettingsListeners } from "./components/settings";
 import { setupNavigationListeners } from "./components/navigation";
 import { setupImportListeners } from "./components/importAudio";
+import { setupHotkeysListeners } from "./components/hotkeys";
+import { setupSidebarListeners } from "./components/sidebar";
 import IElectronAPI from "@/shared/electronAPI";
 
 declare global {
@@ -79,10 +80,12 @@ navigator.mediaDevices.addEventListener("devicechange", () => {
   loadAudioDevices();
 });
 
-elements.recordBtn.addEventListener("click", () => {
+elements.recordBtn.addEventListener("click", async () => {
   if (isRecordingState()) {
     stopRecording();
   } else {
+    const ready = await checkRecordingPreflight();
+    if (!ready) return;
     startRecording((buffer, timestamp, filename) => {
       runTranscription(buffer, timestamp, filename);
     });
@@ -135,9 +138,9 @@ refreshModelsList()
 setupTranscriptionListeners();
 setupSummarizationListeners();
 setupHistoryListeners();
-setupPromptCustomizer();
-setupSidebarListeners();
-setupRightPanelListeners();
+setupRightSidebarListeners();
 setupSettingsListeners();
 setupNavigationListeners();
+setupHotkeysListeners();
 setupImportListeners();
+setupSidebarListeners();

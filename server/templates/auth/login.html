@@ -1,0 +1,34 @@
+{{define "login"}} {{template "base" .}} {{end}} {{define "content"}}
+<div class="auth-page">
+  <div class="auth-card">
+    <h2>Login</h2>
+    <form method="POST" action="/login" class="auth-form">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          required
+          autofocus
+          placeholder="your_username"
+        />
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          required
+          placeholder="••••••••"
+        />
+      </div>
+      <button type="submit" class="btn btn-primary btn-full">Login</button>
+    </form>
+    <p class="auth-footer">
+      Don't have an account? <a href="/register">Sign up</a>
+    </p>
+  </div>
+</div>
+{{end}}

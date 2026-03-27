@@ -1,3 +1,56 @@
+.participants-card {
+  margin-top: 1.5rem;
+  min-width: 300px;
+  text-align: left;
+}
+
+.participants-description {
+  font-size: 0.82rem;
+  color: #b9c0d4;
+  margin-bottom: 0.6rem;
+  line-height: 1.4;
+}
+
+.participants-description code {
+  background: rgb(102 126 234 / 0.2);
+  color: #c8d5ff;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  font-family: "SF Mono", Monaco, Inconsolata, monospace;
+  font-size: 0.75rem;
+}
+
+.participants-input {
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  font-size: 0.85rem;
+  background: rgb(255 255 255 / 0.08);
+  border: 1px solid rgb(255 255 255 / 0.15);
+  border-radius: 8px;
+  color: #fff;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 88px;
+  transition: all 0.2s ease;
+}
+
+.participants-input:focus {
+  outline: none;
+  border-color: rgb(100 149 237 / 0.6);
+  background: rgb(255 255 255 / 0.12);
+  box-shadow: 0 0 0 2px rgb(100 149 237 / 0.2);
+}
+
+.participants-input::placeholder {
+  color: #94a0bf;
+}
+
+.participants-hint {
+  margin-top: 0.45rem;
+  font-size: 0.72rem;
+  color: #8c95ac;
+}
+
 .devices-list {
   display: flex;
   flex-direction: column;
@@ -11,30 +64,26 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 1rem;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 0.03);
   border-radius: 10px;
   transition: background 0.2s ease;
 }
 
 .device-item:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 0.08);
 }
 
 .device-item.system-audio {
-  background: rgba(102, 126, 234, 0.1);
-  border: 1px solid rgba(102, 126, 234, 0.3);
+  background: rgb(102 126 234 / 0.1);
+  border: 1px solid rgb(102 126 234 / 0.3);
 }
 
 .device-item.system-audio:hover {
-  background: rgba(102, 126, 234, 0.15);
+  background: rgb(102 126 234 / 0.15);
 }
 
 .device-item.muted {
   opacity: 0.5;
-}
-
-.device-item.muted .device-name {
-  text-decoration: line-through;
 }
 
 .device-item.disabled,
@@ -68,6 +117,10 @@
   text-overflow: ellipsis;
 }
 
+.device-item.muted .device-name {
+  text-decoration: line-through;
+}
+
 .device-type {
   font-size: 0.7rem;
   color: #888;
@@ -90,16 +143,13 @@
 .mute-slider {
   position: absolute;
   cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.2);
+  inset: 0;
+  background: rgb(255 255 255 / 0.2);
   transition: 0.3s;
   border-radius: 24px;
 }
 
-.mute-slider:before {
+.mute-slider::before {
   position: absolute;
   content: "";
   height: 18px;
@@ -115,7 +165,7 @@
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
-.mute-toggle input:checked + .mute-slider:before {
+.mute-toggle input:checked + .mute-slider::before {
   transform: translateX(20px);
 }
 
@@ -135,5 +185,5 @@
   letter-spacing: 0.5px;
   padding: 0.5rem 0;
   margin-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgb(255 255 255 / 0.05);
 }
