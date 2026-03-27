@@ -32,6 +32,11 @@ const config: ForgeConfig = {
     ignore: (file) => {
       if (!file) return false;
 
+      // Ignore unnecessary files to reduce package size and avoid Windows path length issues
+      if (file.endsWith(".d.ts") || file.endsWith(".map") || file.endsWith(".md") || file.toLowerCase().endsWith("license")) {
+        return true;
+      }
+
       const allowedList = ["/.vite", "/node_modules"];
       if (allowedList.some((allowedPath) => file.startsWith(allowedPath))) {
         return false;
