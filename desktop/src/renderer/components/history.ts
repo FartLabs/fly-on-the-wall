@@ -154,7 +154,7 @@ async function openNoteInViewer(filename: string) {
     summaryEl.textContent = "";
 
     if (result.content && typeof result.content === "object") {
-      const content = result.content as any;
+      const content = result.content;
       const noteId = content.id || filename.replace(/\.json$/, "");
 
       titleEl.textContent = noteId;
@@ -304,7 +304,7 @@ async function openNoteInViewer(filename: string) {
               readRes.content &&
               typeof readRes.content === "object"
             ) {
-              const existing = readRes.content as any;
+              const existing = readRes.content;
               const meta = { ...(existing.metadata || {}) };
               meta.participants = participants;
               await window.electronAPI.saveNote({
@@ -497,7 +497,7 @@ async function saveNoteViewEdits(
         readRes.content &&
         typeof readRes.content === "object"
       ) {
-        const existingContent = readRes.content as any;
+        const existingContent = readRes.content;
         existingMetadata = existingContent.metadata || {};
       }
     } catch (readErr) {

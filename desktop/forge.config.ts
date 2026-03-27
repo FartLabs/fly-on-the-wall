@@ -20,6 +20,7 @@ interface PackageResult {
 
 const config: ForgeConfig = {
   packagerConfig: {
+    executableName: "fly-on-the-wall",
     asar: {
       // https://node-llama-cpp.withcat.ai/guide/electron
       // unpacking the following dependencies since they contain binaries or need to preserve file structure:
@@ -31,6 +32,32 @@ const config: ForgeConfig = {
     },
     ignore: (file) => {
       if (!file) return false;
+
+      // Ignore unnecessary files to reduce package size and avoid Windows path length issues
+      if (
+        file.endsWith(".d.ts") ||
+        file.endsWith(".map") ||
+        file.endsWith(".md") ||
+        file.toLowerCase().endsWith("license")
+      ) {
+        return true;
+      }
+      
+      const isX64 = process.arch === "x64";
+      const isArm64 = process.arch === "arm64";
+
+      // Exclude irrelevant architecture-specific binaries in node_modules
+      if (file.includes("node_modules")) {
+        const segments = file.split(/[/\\]/);
+        // Exclude arm64 binaries if we are building for x64
+        if (isX64 && segments.some(s => s.toLowerCase().includes("arm64") || s.toLowerCase().includes("aarch64"))) {
+          return true;
+        }
+        // Exclude x64 binaries if we are building for arm64
+        if (isArm64 && segments.some(s => s.toLowerCase().includes("x64") || s.toLowerCase().includes("x86_64"))) {
+          return true;
+        }
+      }
 
       const allowedList = ["/.vite", "/node_modules"];
       if (allowedList.some((allowedPath) => file.startsWith(allowedPath))) {
@@ -48,8 +75,18 @@ const config: ForgeConfig = {
   makers: [
     new MakerSquirrel(),
     new MakerZIP(),
-    new MakerRpm(),
-    new MakerDeb(),
+    new MakerRpm({
+      options: {
+        name: "fly-on-the-wall",
+        bin: "fly-on-the-wall"
+      }
+    }),
+    new MakerDeb({
+      options: {
+        name: "fly-on-the-wall",
+        bin: "fly-on-the-wall"
+      }
+    }),
     new MakerDMG()
   ],
   publishers: [

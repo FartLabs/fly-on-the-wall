@@ -377,7 +377,7 @@ async function renameNote(filename: string) {
         return;
       }
 
-      const content = readResult.content as any;
+      const content = readResult.content;
 
       // Save with new filename
       const saveResult = await window.electronAPI.saveNote({
@@ -445,7 +445,7 @@ async function deleteNoteFromSidebar(filename: string) {
     const noteResult = await window.electronAPI.readNote(filename);
     const recordingFilename =
       noteResult.success && noteResult.content
-        ? (noteResult.content as any)?.metadata?.recordingFilename
+        ? noteResult.content?.metadata?.recordingFilename
         : null;
     if (recordingFilename) {
       deleteRecording = confirm(
@@ -524,7 +524,7 @@ async function deleteSelectedSidebarNotes() {
       filenames.map((f) => window.electronAPI.readNote(f))
     );
     const withRecordings = noteContents.filter(
-      (r) => r.success && (r.content as any)?.metadata?.recordingFilename
+      (r) => r.success && r.content?.metadata?.recordingFilename
     );
     if (withRecordings.length > 0) {
       deleteRecording = confirm(

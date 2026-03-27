@@ -48,7 +48,6 @@ import {
 import { setupSummarizationListeners } from "./components/summarizer";
 import { getSelectedModelPath } from "@/summarization";
 import { setupHistoryListeners } from "./components/history";
-import { setupPromptCustomizer } from "./components/promptCustomizer";
 import { setupRightSidebarListeners } from "./components/rightSideBar";
 import { setupSettingsListeners } from "./components/settings";
 import { setupNavigationListeners } from "./components/navigation";
@@ -139,7 +138,6 @@ refreshModelsList()
 setupTranscriptionListeners();
 setupSummarizationListeners();
 setupHistoryListeners();
-setupPromptCustomizer();
 setupRightSidebarListeners();
 setupSettingsListeners();
 setupNavigationListeners();
