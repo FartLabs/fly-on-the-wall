@@ -4,6 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{.Title}} — Fly on the Wall</title>
+    {{if .Description}}
+    <meta name="description" content="{{.Description}}" />
+    {{else}}
+    <meta name="description" content="An open-source, local-first AI tool for recording, transcribing, and summarizing meetings." />
+    {{end}}
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="{{.URL}}" />
+    <meta property="og:title" content="{{.Title}} — Fly on the Wall" />
+    <meta property="og:description" content="{{if .Description}}{{.Description}}{{else}}An open-source, local-first AI tool for recording, transcribing, and summarizing meetings.{{end}}" />
+    <meta property="og:image" content="{{if .OGImage}}{{.OGImage}}{{else}}/static/img/og-image.png{{end}}" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="{{.URL}}" />
+    <meta property="twitter:title" content="{{.Title}} — Fly on the Wall" />
+    <meta property="twitter:description" content="{{if .Description}}{{.Description}}{{else}}An open-source, local-first AI tool for recording, transcribing, and summarizing meetings.{{end}}" />
+    <meta property="twitter:image" content="{{if .OGImage}}{{.OGImage}}{{else}}/static/img/og-image.png{{end}}" />
+
     <link rel="stylesheet" href="/static/css/main.css" />
   </head>
   <body>
