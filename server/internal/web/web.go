@@ -80,11 +80,14 @@ func (h *Handler) Register(mux *http.ServeMux) {
 }
 
 type pageData struct {
-	Title   string
-	User    interface{}
-	Data    interface{}
-	Error   string
-	Success string
+	Title       string
+	Description string
+	OGImage     string
+	URL         string
+	User        interface{}
+	Data        interface{}
+	Error       string
+	Success     string
 }
 
 func (h *Handler) handleHome(w http.ResponseWriter, r *http.Request) {
@@ -101,11 +104,18 @@ func (h *Handler) handleHome(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.render(w, "home", pageData{Title: "Fly on the Wall"})
+	h.render(w, "home", pageData{
+		Title:       "Fly on the Wall",
+		Description: "An open-source, local-first AI tool for recording, transcribing, and summarizing meetings with privacy at its core.",
+		OGImage:     "/static/img/og-image.png",
+	})
 }
 
 func (h *Handler) handleLoginPage(w http.ResponseWriter, r *http.Request) {
-	h.render(w, "login", pageData{Title: "Login"})
+	h.render(w, "login", pageData{
+		Title:       "Login",
+		Description: "Log in to your Fly on the Wall account to sync your notes and recordings.",
+	})
 }
 
 func (h *Handler) handleLoginSubmit(w http.ResponseWriter, r *http.Request) {
@@ -141,7 +151,10 @@ func (h *Handler) handleLoginSubmit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleRegisterPage(w http.ResponseWriter, r *http.Request) {
-	h.render(w, "register", pageData{Title: "Create Account"})
+	h.render(w, "register", pageData{
+		Title:       "Create Account",
+		Description: "Join Fly on the Wall to securely record and summarize your meetings with AI.",
+	})
 }
 
 func (h *Handler) handleRegisterSubmit(w http.ResponseWriter, r *http.Request) {
@@ -1061,6 +1074,9 @@ func (h *Handler) handleAdminSetAdmin(w http.ResponseWriter, r *http.Request) {
 
 // render executes the specified template with the given data and writes it to the response.
 func (h *Handler) render(w http.ResponseWriter, name string, data pageData) {
+	if data.URL == "" {
+		data.URL = "https://fly-on-the-wall.com" // TODO: get from config
+	}
 	tpl, err := h.pageTemplate(name)
 	if err != nil {
 		slog.Error("template parse error", "template", name, "error", err)

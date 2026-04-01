@@ -2,6 +2,7 @@ import { app, ipcMain } from "electron";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import os from "node:os";
 import { readConfig, setConfig, onConfigUpdated } from "./config";
 import { toSafeName } from "../utils";
 import { getNotesDir, getPendingDeletesPath } from "./userData";
@@ -560,7 +561,6 @@ async function signUpOrLogin(
     const cfg = readConfig();
     const deviceId = cfg.sync.deviceId || crypto.randomUUID();
 
-    const os = require("os");
     const deviceInfo = {
       username: data.username,
       password: data.password,
@@ -626,7 +626,9 @@ async function whoAmI(): Promise<{
 async function logout(): Promise<{ success: boolean; error?: string }> {
   try {
     await requestJSON("POST", "/api/v1/auth/logout", undefined, true);
-  } catch {}
+  } catch {
+    // ignore logout errors
+  }
 
   try {
     const cfg = readConfig();

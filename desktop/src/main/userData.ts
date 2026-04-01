@@ -1,5 +1,5 @@
 import { ensureDir } from "@/utils";
-import { app } from "electron/main";
+import { app } from "electron";
 import path from "node:path";
 import { readConfig } from "./config";
 
